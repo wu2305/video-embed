@@ -129,40 +129,75 @@ requests — won't work. The notebook is already local at
 
 ## CPU local port status
 
-`ARCHITECTURE.md` section 3 has the full CPU port diff. The short version:
-- Set `device="cpu"`, `MODEL_DTYPE=torch.float32`.
-- Use `CPUExecutionProvider` for all ONNX sessions; remove CUDA validation
-  guards and `disable_fallback()` calls.
-- Drop OCR worker duplication (one engine only on CPU).
-- Reduce batch sizes: `GPU_BATCH_SIZE=8`, `FACE_BATCH_SIZE=8`.
-- For clustering on corpora with more than ~20 k face vectors, pre-reduce
-  with PCA to 64 dims before HDBSCAN (approximate; validate ARI on a subset
-  before using in production).
+**Implemented** as the `mmindex` package in `src/mmindex/` (2026-10-18).
+`ARCHITECTURE.md` section 3 describes the diff; the shipped code applies it:
+
+- `device="cpu"`, `MODEL_DTYPE=torch.float32` (`Settings` defaults).
+- `CPUExecutionProvider` for all ONNX sessions; no CUDA validation guards or
+  `disable_fallback()` calls.
+- One OCR engine, `OCR_RECOGNITION_BATCH=1`.
+- `GPU_BATCH_SIZE=8`; InsightFace has no batch API, so face detection runs one
+  frame at a time.
+- Clustering pre-reduces with PCA to 64 dims above 20 k face vectors.
+
+Verified against real weights on CPU (local macOS and the CNB dev
+environment): SigLIP 768-d normalised image and text vectors, InsightFace
+`buffalo_l` detection + 512-d recognition, RapidOCR text extraction and
+faster-whisper transcription of real speech.
+
+Known deviations from the notebook worth noting:
+
+- `imagehash` is not a dependency; dhash is implemented directly in
+  `media.py`.
+- faster-whisper raises `IndexError` on containers with no audio stream, so
+  `MLBackend.transcribe` checks for an audio stream first and returns `""`.
+- transformers 5.x returns a `BaseModelOutputWithPooling` from
+  `get_*_features`; `MLBackend._features_to_array` normalises both API
+  generations.
+- `sentencepiece` is required for the SigLIP tokenizer and is part of the
+  `ml` extra.
+
+The `hash` backend exists so the full pipeline, queue and search can run
+without model weights (used by CI and the test suite).
 
 ---
 
 ## Distributed spot architecture status
 
-`ARCHITECTURE.md` section 4 has the full design. It has not been implemented
-yet — it is a design document. The stages are: scan → prepare → extract →
-infer → cluster → export. The cluster and export stages run on a single
-coordinator after all workers report complete. Work queue is a SQLite table
-(or Redis for cloud deployments) with lease-timeout recovery. Workers are
-stateless and safe to preempt at any point; `IncrementalCheckpoint.get()`
-makes re-processing a completed file a no-op.
+**Implemented** in `queue.py`, `worker.py` and `coordinator.py`
+(2026-10-18). `ARCHITECTURE.md` section 4 describes the design; the shipped
+code implements it:
+
+- `WorkQueue` is a SQLite lease queue. A task is one file in one stage, keyed
+  by `task_id = "<stage>:<file_id>"`, so the same file can be queued for
+  prepare, extract and infer independently.
+- Claims run inside `BEGIN IMMEDIATE`; a 5-minute lease with heartbeats lets
+  `reclaim_stale()` recover work from vanished machines.
+- Sharding is fixed at enqueue time
+  (`enqueue(..., n_shards=N)` → `shard = xxhash64(path) % N`) so every worker
+  agrees on the partition across restarts.
+- Workers are stateless: a completed file found in the checkpoint is marked
+  done and skipped.
+- `Coordinator` enqueues each stage, waits for it, and only then runs cluster
+  and export. A stage that times out aborts the run, and export refuses to
+  publish an index with zero units.
+
+Stages 4-5 still run on a single machine; horizontal clustering remains the
+CUDA path from the production notebook and is out of scope for this package.
 
 ---
 
 ## What to do next
 
-1. **Immediate**: user runs notebook cells 2 + 7a + 8 to complete the index
-   export. Once `index_manifest.json` is written with `"complete": true`, the
-   project's primary goal is achieved.
+1. **Production index export (unchanged)**: the user still runs notebook cells
+   2 + 7a + 8 on the existing T4 to finish the Drive index for the 77 k-file
+   corpus. The package in this repo does not replace that run and must not
+   write to the existing checkpoint namespace.
 
 2. **After index export**: save the final `index_manifest.json` snapshot
    contents and the Drive export path to `outputs/`. Stop the heartbeat
    monitor cron job (it was attached to the previous session's chat).
 
-3. **Future work (not started)**: implement the local CPU port as a standalone
-   Python package; implement the distributed spot architecture using the
-   design in `ARCHITECTURE.md`.
+3. **Remaining future work**: validate the PCA-reduced clustering path against
+   the CUDA result on a held-out subset (ARI), and add a CUDA clustering
+   backend if local corpora grow past the CPU threshold.
