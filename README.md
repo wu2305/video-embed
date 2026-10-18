@@ -126,6 +126,12 @@ checks.
 pytest
 ```
 
-The suite covers hashing and dedup, checkpoint resume and guarded overwrite,
-shard round-trips, queue leasing and lease recovery, stage idempotency, export
-consistency checks, and hybrid search ranking — all without model downloads.
+88 tests cover hashing and dedup, canonical timestamps, checkpoint resume and
+guarded overwrite, shard round-trips, queue leasing and lease recovery,
+stage-scoped task ids, stage idempotency, video scene detection, export
+consistency checks, near-duplicate master selection and hybrid search
+ranking — all without model downloads.
+
+`scripts/ml_check.py` additionally exercises the real model stack (SigLIP,
+InsightFace, RapidOCR, faster-whisper) and is what the cloud dev environment
+runs; `scripts/smoke.sh` drives the whole pipeline with the hash backend.
