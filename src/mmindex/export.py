@@ -70,6 +70,21 @@ def _snapshot_id() -> str:
     return f"{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}_{uuid.uuid4().hex[:8]}"
 
 
+def _band_keys(dhash: str, bands: int = 4) -> list[str]:
+    """Split a 64-bit dhash into bands so near-dups sharing no prefix still meet.
+
+    Pigeonhole: two hashes within ``bands - 1`` bits must agree exactly on at
+    least one band. With four bands that finds every pair within hamming 3, and
+    candidates are still confirmed by a full hamming comparison.
+    """
+    if not dhash:
+        return []
+    value = int(dhash, 16)
+    width = 16 // bands
+    mask = (1 << width) - 1
+    return [f"{band}:{(value >> (band * width)) & mask:0{width}x}" for band in range(bands)]
+
+
 def near_duplicates(units: Sequence[dict], settings: Settings) -> dict[int, bool]:
     """Mark the sharpest member of each dhash near-duplicate group as master.
 
@@ -80,35 +95,55 @@ def near_duplicates(units: Sequence[dict], settings: Settings) -> dict[int, bool
     masters: dict[int, bool] = {i: True for i in range(len(units))}
     buckets: dict[str, list[int]] = {}
     for index, unit in enumerate(units):
-        key = (unit.get("dhash") or "")[:8]
-        if key:
+        for key in _band_keys(unit.get("dhash") or ""):
             buckets.setdefault(key, []).append(index)
 
-    for key, members in buckets.items():
+    # Compare each candidate pair once, even when several bands agree.
+    compared: set[tuple[int, int]] = set()
+    groups: list[list[int]] = []
+    assigned: dict[int, int] = {}
+    for members in buckets.values():
         if len(members) < 2:
             continue
-        # Cluster by hamming distance within the prefix bucket.
-        groups: list[list[int]] = []
-        for member in members:
-            placed = False
-            for group in groups:
-                if hamming(units[group[0]]["dhash"], units[member]["dhash"]) <= settings.near_dup_hamming:
-                    group.append(member)
-                    placed = True
-                    break
-            if not placed:
-                groups.append([member])
-        for group in groups:
-            if len(group) < 2:
-                continue
-            best = max(group, key=lambda i: float(units[i].get("sharpness") or 0.0))
-            best_sharp = float(units[best].get("sharpness") or 0.0)
-            for member in group:
-                if member == best:
+        for position, left in enumerate(members):
+            for right in members[position + 1 :]:
+                pair = (min(left, right), max(left, right))
+                if pair in compared:
                     continue
-                member_sharp = float(units[member].get("sharpness") or 0.0)
-                if best_sharp <= 0 or member_sharp < best_sharp * settings.near_dup_sharpness_ratio:
-                    masters[member] = False
+                compared.add(pair)
+                left_hash = units[pair[0]].get("dhash") or ""
+                right_hash = units[pair[1]].get("dhash") or ""
+                if hamming(left_hash, right_hash) > settings.near_dup_hamming:
+                    continue
+                left_group = assigned.get(pair[0])
+                right_group = assigned.get(pair[1])
+                if left_group is None and right_group is None:
+                    groups.append([pair[0], pair[1]])
+                    assigned[pair[0]] = assigned[pair[1]] = len(groups) - 1
+                elif left_group is not None and right_group is None:
+                    groups[left_group].append(pair[1])
+                    assigned[pair[1]] = left_group
+                elif right_group is not None and left_group is None:
+                    groups[right_group].append(pair[0])
+                    assigned[pair[0]] = right_group
+                elif left_group != right_group:
+                    keep, drop = min(left_group, right_group), max(left_group, right_group)
+                    groups[keep].extend(groups[drop])
+                    for member in groups[drop]:
+                        assigned[member] = keep
+                    groups[drop] = []
+
+    for group in groups:
+        if len(group) < 2:
+            continue
+        best = max(group, key=lambda i: float(units[i].get("sharpness") or 0.0))
+        best_sharp = float(units[best].get("sharpness") or 0.0)
+        for member in group:
+            if member == best:
+                continue
+            member_sharp = float(units[member].get("sharpness") or 0.0)
+            if best_sharp <= 0 or member_sharp < best_sharp * settings.near_dup_sharpness_ratio:
+                masters[member] = False
     return masters
 
 
