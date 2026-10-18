@@ -9,7 +9,7 @@ metadata and reproduced across worker machines.
 from __future__ import annotations
 
 import os
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
 IMAGE_EXTENSIONS = frozenset(
@@ -22,10 +22,6 @@ VIDEO_EXTENSIONS = frozenset(
 STAGES = ("prepare", "extract", "infer")
 FINAL_STAGES = ("cluster", "export")
 ALL_STAGES = STAGES + FINAL_STAGES
-
-
-def _default_decode_workers() -> int:
-    return max(1, (os.cpu_count() or 4) // 4)
 
 
 @dataclass
@@ -45,16 +41,12 @@ class Settings:
     whisper_model: str = "base"
     whisper_compute_type: str = "int8"
 
-    ocr_workers: int = 1
     ocr_recognition_batch: int = 1
 
     scene_threshold: float = 27.0
     scene_fallback_seconds: float = 30.0
 
     gpu_batch_size: int = 8
-    face_batch_size: int = 8
-    decode_workers: int = field(default_factory=_default_decode_workers)
-    checkpoint_every: int = 10
 
     hdbscan_min_cluster_size: int = 3
     hdbscan_min_samples: int = 3
@@ -70,24 +62,22 @@ class Settings:
 
     backend: str = "auto"
 
-    extra: dict = field(default_factory=dict)
-
     @classmethod
     def from_env(cls) -> "Settings":
         """Build settings from ``MMINDEX_*`` environment variables."""
-        known = {f.name: f for f in fields(cls)}
         values: dict = {}
-        for name, spec in known.items():
-            env_name = f"MMINDEX_{name.upper()}"
-            raw = os.environ.get(env_name)
+        for spec in fields(cls):
+            raw = os.environ.get(f"MMINDEX_{spec.name.upper()}")
             if raw is None:
                 continue
-            if spec.type in ("int", int) or spec.default.__class__ is int:
-                values[name] = int(raw)
-            elif spec.default.__class__ is float:
-                values[name] = float(raw)
+            if isinstance(spec.default, bool):
+                values[spec.name] = raw.strip().lower() in {"1", "true", "yes"}
+            elif isinstance(spec.default, int):
+                values[spec.name] = int(raw)
+            elif isinstance(spec.default, float):
+                values[spec.name] = float(raw)
             else:
-                values[name] = raw
+                values[spec.name] = raw
         return cls(**values)
 
     def to_dict(self) -> dict:

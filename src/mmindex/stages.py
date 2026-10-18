@@ -173,20 +173,28 @@ def extract_entry(
 
 
 def _scene_text(prepared: dict, index: int) -> str:
-    """Slice the ASR transcript down to the scene's time window."""
+    """Slice the ASR transcript down to the scene's time window.
+
+    Words are assumed to be spread evenly over the video, so a scene covering
+    the first half of the runtime gets the first half of the transcript. This is
+    an approximation; the ASR itself has no per-word timings stored here.
+    """
     transcript = (prepared.get("asr_text") or "").strip()
     if not transcript:
         return ""
     scenes = prepared.get("scenes") or []
     if len(scenes) <= 1:
         return transcript
+    duration = max(float(scene["end"]) for scene in scenes)
+    if duration <= 0:
+        return transcript
     scene = scenes[index] if index < len(scenes) else scenes[-1]
     words = transcript.split()
-    total = max(1, len(words))
-    start = int(total * (scene["start"] / max(scene["end"], 1e-6)))
-    end = int(total * (scene["end"] / max(scene["end"], 1e-6)))
-    if end <= start:
-        end = min(total, start + 1)
+    total = len(words)
+    start = int(total * (float(scene["start"]) / duration))
+    end = int(total * (float(scene["end"]) / duration))
+    start = max(0, min(start, total))
+    end = max(start, min(end, total))
     return " ".join(words[start:end])
 
 

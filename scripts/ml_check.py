@@ -78,7 +78,6 @@ def main() -> int:
     settings.device = "cpu"
     settings.model_dtype = "float32"
     settings.gpu_batch_size = 2
-    settings.face_batch_size = 2
     print(f"device={settings.device} dtype={settings.model_dtype}")
 
     backend = MLBackend(settings)

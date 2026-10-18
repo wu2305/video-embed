@@ -172,14 +172,17 @@ class MLBackend:
             providers=["CPUExecutionProvider"],
             sess_options=options,
         )
-        self._face.prepare(ctx_id=-1, det_size=(640, 640))
+        self._face.prepare(ctx_id=-1, det_size=(self.settings.face_det_size,) * 2)
 
     def _ensure_ocr(self):
         if self._ocr is not None:
             return
         from rapidocr_onnxruntime import RapidOCR
 
-        self._ocr = RapidOCR()
+        kwargs = {}
+        if self.settings.ocr_recognition_batch > 1:
+            kwargs["rec_batch_num"] = self.settings.ocr_recognition_batch
+        self._ocr = RapidOCR(**kwargs)
 
     def _ensure_whisper(self):
         if self._whisper is not None:
