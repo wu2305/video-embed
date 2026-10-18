@@ -28,15 +28,30 @@ def _patch_sklearn(monkeypatch, fake):
     monkeypatch.setitem(sys.modules, "sklearn.datasets", module)
 
 
-def test_lfw_limit_strides_across_identities(tmp_path, monkeypatch):
-    """A head slice would cover one identity; striding must cover many."""
+def test_lfw_limit_keeps_whole_identity_blocks(tmp_path, monkeypatch):
+    """Each sampled person needs several photos for clustering to work."""
     _patch_sklearn(monkeypatch, _FakeLFW(per_person=10, people=20))
     spec = CorpusSpec(lfw_limit=40, enable_cross_age=False, enable_flickr=False, enable_msrvtt=False)
     saved = fetch_lfw(tmp_path, spec, log=lambda _m: None)
-    assert len(saved) == 40
     identities = {path.parent.name for path in saved}
-    # 200 images over 20 identities: 40 strided samples must hit most of them.
-    assert len(identities) >= 15
+    # 40 images over identities with >=5 photos each means at most 8 people,
+    # and every one of them must have enough photos to form a cluster.
+    assert len(identities) <= 8
+    per_identity = {}
+    for path in saved:
+        per_identity[path.parent.name] = per_identity.get(path.parent.name, 0) + 1
+    assert min(per_identity.values()) >= spec.lfw_min_per_identity
+    assert sum(per_identity.values()) == len(saved)
+
+
+def test_lfw_identities_are_spread_across_the_dataset(tmp_path, monkeypatch):
+    _patch_sklearn(monkeypatch, _FakeLFW(per_person=6, people=30))
+    spec = CorpusSpec(lfw_limit=60, enable_cross_age=False, enable_flickr=False, enable_msrvtt=False)
+    saved = fetch_lfw(tmp_path, spec, log=lambda _m: None)
+    people = sorted({int(p.parent.name.split("_", 1)[1].split("_")[-1]) for p in saved})
+    # Sampling is strided over identities, so the sample must not be just the
+    # first few people in the file.
+    assert people[-1] > 10
 
 
 def test_lfw_writes_expected_directory_layout(tmp_path, monkeypatch):

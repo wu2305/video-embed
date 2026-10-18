@@ -49,11 +49,10 @@ def _manifest(rows):
 def test_score_dedup_counts_exact_copies(tmp_path, layout, settings):
     settings.clip_embedding_dim = 8
     export_snapshot([_unit(0, "a.jpg")], layout, settings)
-    manifest = _manifest(
-        [("a.jpg", "same", True), ("backup/a.jpg", "same", False)]
-    )
+    manifest = _manifest([("a.jpg", "same", True)])
+    report = {"groups": {"a.jpg": ["a.jpg", "backup/a.jpg"]}}
     gt = {"exact_duplicates": [{"master": "a.jpg", "duplicate": "backup/a.jpg"}]}
-    score = score_dedup(manifest, gt, layout.root)
+    score = score_dedup(manifest, gt, layout.root, report)
     assert score.exact_expected == 1
     assert score.exact_detected == 1
     assert score.exact_recall == 1.0
@@ -62,13 +61,24 @@ def test_score_dedup_counts_exact_copies(tmp_path, layout, settings):
 def test_score_dedup_detects_missed_copy(tmp_path, layout, settings):
     settings.clip_embedding_dim = 8
     export_snapshot([_unit(0, "a.jpg"), _unit(1, "backup/a.jpg")], layout, settings)
-    manifest = _manifest(
-        [("a.jpg", "one", True), ("backup/a.jpg", "two", True)]
-    )
+    manifest = _manifest([("a.jpg", "one", True), ("backup/a.jpg", "two", True)])
     gt = {"exact_duplicates": [{"master": "a.jpg", "duplicate": "backup/a.jpg"}]}
-    score = score_dedup(manifest, gt, layout.root)
+    score = score_dedup(manifest, gt, layout.root, {"groups": {}})
     assert score.exact_detected == 0
-    assert score.exact_missed == ["backup/a.jpg"]
+    assert score.exact_missed
+    assert score.exact_missed[0]["reason"] == "not detected as a duplicate"
+
+
+def test_score_dedup_reports_wrong_master_group(tmp_path, layout, settings):
+    settings.clip_embedding_dim = 8
+    export_snapshot([_unit(0, "a.jpg")], layout, settings)
+    manifest = _manifest([("a.jpg", "same", True)])
+    # The duplicate was folded, but under a different master.
+    report = {"groups": {"other.jpg": ["other.jpg", "backup/a.jpg"]}}
+    gt = {"exact_duplicates": [{"master": "a.jpg", "duplicate": "backup/a.jpg"}]}
+    score = score_dedup(manifest, gt, layout.root, report)
+    assert score.exact_detected == 0
+    assert score.exact_missed[0]["reason"] == "folded into a different master"
 
 
 def test_score_dedup_master_election_prefers_sharp(tmp_path, layout, settings):

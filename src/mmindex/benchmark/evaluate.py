@@ -120,24 +120,42 @@ class ClusterScore:
 
 
 def score_dedup(
-    manifest: Sequence[dict], ground_truth: dict, root: Path
+    manifest: Sequence[dict],
+    ground_truth: dict,
+    root: Path,
+    dedup_report: dict | None = None,
 ) -> DedupScore:
-    """Compare the manifest's dedup decisions with the injected ground truth."""
+    """Compare the pipeline's dedup decisions with the injected ground truth.
+
+    The manifest holds canonical files only — exact duplicates are folded into
+    ``deduplicated.json`` rather than listed — so a duplicate is correctly
+    detected when it appears in a group keyed by its master, not when it
+    carries its own manifest entry.
+    """
     score = DedupScore()
     by_rel = {entry["rel_path"]: entry for entry in manifest}
+    duplicate_groups = (dedup_report or {}).get("groups") or {}
+    folded_paths = {dup for dups in duplicate_groups.values() for dup in dups}
 
     for pair in ground_truth.get("exact_duplicates", []):
         score.exact_expected += 1
-        master = by_rel.get(pair["master"])
-        duplicate = by_rel.get(pair["duplicate"])
-        if master is None or duplicate is None:
-            score.exact_missed.append(pair["duplicate"])
+        master_rel = pair["master"]
+        duplicate_rel = pair["duplicate"]
+        master = by_rel.get(master_rel)
+        if master is None:
+            score.exact_missed.append({"duplicate": duplicate_rel, "reason": "master missing"})
             continue
-        # The duplicate must have been dropped and point at this master.
-        if duplicate["digest"] == master["digest"] and not duplicate["is_canonical"]:
+        # Correct when the duplicate was folded into this master's group.
+        if duplicate_rel in duplicate_groups.get(master_rel, []):
             score.exact_detected += 1
+        elif duplicate_rel in folded_paths:
+            score.exact_missed.append(
+                {"duplicate": duplicate_rel, "reason": "folded into a different master"}
+            )
         else:
-            score.exact_missed.append(pair["duplicate"])
+            score.exact_missed.append(
+                {"duplicate": duplicate_rel, "reason": "not detected as a duplicate"}
+            )
 
     snapshot = _load_units(root)
     if snapshot is None:

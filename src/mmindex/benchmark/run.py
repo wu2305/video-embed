@@ -144,7 +144,10 @@ def run_benchmark(
     }
 
     entries = [entry.to_dict() for entry in read_manifest(layout)]
-    result.dedup = score_dedup(entries, ground_truth, work_dir).to_dict()
+    dedup_report = {}
+    if layout.deduplicated.exists():
+        dedup_report = json.loads(layout.deduplicated.read_text(encoding="utf-8"))
+    result.dedup = score_dedup(entries, ground_truth, work_dir, dedup_report).to_dict()
 
     index = Index.open(layout, settings)
     backend = build_backend(settings)

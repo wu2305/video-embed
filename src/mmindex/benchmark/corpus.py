@@ -49,6 +49,9 @@ class CorpusSpec:
 
     lfw_min_faces_per_person: int = 0
     lfw_limit: int | None = None
+    # HDBSCAN needs min_cluster_size photos of the same person to form a
+    # cluster, so each sampled identity must contribute at least this many.
+    lfw_min_per_identity: int = 5
     cross_age_limit: int | None = 400
     flickr_limit: int | None = 400
     msrvtt_limit: int | None = 20
@@ -96,10 +99,11 @@ class CorpusReport:
 def fetch_lfw(root: Path, spec: CorpusSpec, log=print) -> list[Path]:
     """Write LFW faces as ``<year>_<person>/LFW_<year>0512_<idx>.jpg``.
 
-    LFW is ordered by identity, so a plain head slice would contain only a
-    handful of people and cluster purity would be meaningless. Indices are
-    strided across the whole set instead, which keeps many identities in the
-    sample at any size.
+    LFW is ordered by identity. Sampling individual images across the whole set
+    would leave about one photo per person, which makes HDBSCAN clustering
+    meaningless (``min_cluster_size`` can never be satisfied). Instead pick
+    whole identity blocks spread across the set, so each sampled person
+    contributes several photos — the property cluster purity is meant to test.
     """
     from sklearn.datasets import fetch_lfw_people
 
@@ -110,28 +114,51 @@ def fetch_lfw(root: Path, spec: CorpusSpec, log=print) -> list[Path]:
         min_faces_per_person=spec.lfw_min_faces_per_person, color=True, resize=1.0
     )
     names = dataset.target_names
-    total = len(dataset.target)
+    targets = dataset.target
+    total = len(targets)
+
+    by_identity: dict[int, list[int]] = {}
+    for index in range(total):
+        by_identity.setdefault(int(targets[index]), []).append(index)
+    identities = sorted(by_identity)
+
     if spec.lfw_limit is None or spec.lfw_limit >= total:
-        indices = range(total)
+        chosen_identities = identities
+        per_identity = None
     else:
-        stride = total / spec.lfw_limit
-        indices = sorted({min(total - 1, int(i * stride)) for i in range(spec.lfw_limit)})
+        # How many identities to keep so the total lands near the limit while
+        # leaving at least min_cluster_size photos for each.
+        average = total / max(1, len(identities))
+        keep = max(1, int(spec.lfw_limit / max(average, spec.lfw_min_per_identity)))
+        keep = min(keep, len(identities))
+        stride = len(identities) / keep
+        chosen_identities = [identities[min(len(identities) - 1, int(i * stride))] for i in range(keep)]
+        chosen_identities = sorted(set(chosen_identities))
+        per_identity = max(spec.lfw_min_per_identity, spec.lfw_limit // max(1, len(chosen_identities)))
 
     from PIL import Image
 
     saved: list[Path] = []
-    for index in indices:
-        image = dataset.images[index]
-        target_id = dataset.target[index]
-        person = names[target_id].replace(" ", "_")
+    for identity in chosen_identities:
+        indices = by_identity[identity]
+        if per_identity is not None and len(indices) > per_identity:
+            indices = indices[:per_identity]
+        person = names[identity].replace(" ", "_")
         year = YEARS[len(saved) % len(YEARS)]
         folder = target / f"{year}_{person}"
         folder.mkdir(parents=True, exist_ok=True)
-        array = (image * 255).astype(np.uint8) if image.max() <= 1.0 else image.astype(np.uint8)
-        out = folder / f"LFW_{year}0512_{index:05d}.jpg"
-        Image.fromarray(array).save(out, "JPEG", quality=95)
-        saved.append(out)
-    log(f"LFW: {len(saved)} faces across {len({p.parent.name for p in saved})} identities")
+        for index in indices:
+            image = dataset.images[index]
+            array = (
+                (image * 255).astype(np.uint8) if image.max() <= 1.0 else image.astype(np.uint8)
+            )
+            out = folder / f"LFW_{year}0512_{index:05d}.jpg"
+            Image.fromarray(array).save(out, "JPEG", quality=95)
+            saved.append(out)
+    log(
+        f"LFW: {len(saved)} faces across {len({p.parent.name for p in saved})} identities "
+        f"({len(saved) / max(1, len({p.parent.name for p in saved})):.1f} per identity)"
+    )
     return saved
 
 
