@@ -24,12 +24,16 @@ $:
         MMINDEX_BACKEND: hash
       stages:
         - name: bootstrap
-          # pip is deliberately not --quiet: a job with no output for 10 minutes
-          # is killed by the platform's no-output timeout.
+          # A job with no output for 10 minutes is killed by the platform. pip
+          # buffers its progress bars when not attached to a TTY, so install
+          # each group separately and print between them to keep the log live.
           timeout: 45m
           script:
             - python -m pip install -U pip
-            - python -m pip install -e ".[ml,test,benchmark]"
+            - echo "installing benchmark extras"
+            - python -m pip install -e ".[ml]"
+            - echo "installing test extras"
+            - python -m pip install -e ".[test,benchmark]"
             - python -c "import mmindex; print('mmindex', mmindex.__version__)"
         - name: test
           timeout: 30m
