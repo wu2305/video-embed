@@ -159,6 +159,10 @@ Scoring is computed from the published index, not pipeline internals:
 - **retrieval**: Recall@1/5/10 and MRR for real Flickr30k captions
 - **clusters**: purity against LFW directory identities
 
+Results from a real CPU run are in [`BENCHMARK.md`](./BENCHMARK.md): 1,182
+units, exact-duplicate recall 1.000, caption Recall@1 0.830 / Recall@5 0.965,
+cluster purity 0.991 with 28/28 persons recovered.
+
 `scripts/benchmark.py` runs the same thing with the real ML stack in the CNB
 dev environment. Note that `sharpness` is `cv2.Laplacian(...).var()` and
 `dhash` is bit-identical to `imagehash.dhash`, so master election and
@@ -171,7 +175,7 @@ approximately reproducing it.
 pytest
 ```
 
-99 tests cover hashing and dedup, canonical timestamps, checkpoint resume and
+112 tests cover hashing and dedup, canonical timestamps, checkpoint resume and
 guarded overwrite, shard round-trips, queue leasing and lease recovery,
 stage-scoped task ids, stage idempotency, video scene detection, export
 consistency checks, near-duplicate master selection, hybrid search ranking and
