@@ -94,7 +94,13 @@ class CorpusReport:
 
 
 def fetch_lfw(root: Path, spec: CorpusSpec, log=print) -> list[Path]:
-    """Write LFW faces as ``<year>_<person>/LFW_<year>0512_<idx>.jpg``."""
+    """Write LFW faces as ``<year>_<person>/LFW_<year>0512_<idx>.jpg``.
+
+    LFW is ordered by identity, so a plain head slice would contain only a
+    handful of people and cluster purity would be meaningless. Indices are
+    strided across the whole set instead, which keeps many identities in the
+    sample at any size.
+    """
     from sklearn.datasets import fetch_lfw_people
 
     target = root / "01_LFW_People_Archive"
@@ -104,21 +110,28 @@ def fetch_lfw(root: Path, spec: CorpusSpec, log=print) -> list[Path]:
         min_faces_per_person=spec.lfw_min_faces_per_person, color=True, resize=1.0
     )
     names = dataset.target_names
+    total = len(dataset.target)
+    if spec.lfw_limit is None or spec.lfw_limit >= total:
+        indices = range(total)
+    else:
+        stride = total / spec.lfw_limit
+        indices = sorted({min(total - 1, int(i * stride)) for i in range(spec.lfw_limit)})
+
+    from PIL import Image
+
     saved: list[Path] = []
-    for index, (image, target_id) in enumerate(zip(dataset.images, dataset.target)):
-        if spec.lfw_limit is not None and len(saved) >= spec.lfw_limit:
-            break
+    for index in indices:
+        image = dataset.images[index]
+        target_id = dataset.target[index]
         person = names[target_id].replace(" ", "_")
-        year = YEARS[index % len(YEARS)]
+        year = YEARS[len(saved) % len(YEARS)]
         folder = target / f"{year}_{person}"
         folder.mkdir(parents=True, exist_ok=True)
         array = (image * 255).astype(np.uint8) if image.max() <= 1.0 else image.astype(np.uint8)
-        from PIL import Image
-
         out = folder / f"LFW_{year}0512_{index:05d}.jpg"
         Image.fromarray(array).save(out, "JPEG", quality=95)
         saved.append(out)
-    log(f"LFW: {len(saved)} faces")
+    log(f"LFW: {len(saved)} faces across {len({p.parent.name for p in saved})} identities")
     return saved
 
 
