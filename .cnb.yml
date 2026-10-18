@@ -1,9 +1,13 @@
 # CNB pipeline for the multimodal media indexer.
 #
 # `$` holds repository-level events (vscode). Branch-scoped events live under
-# the concrete branch names. The CI job runs the dependency-light part of the
-# suite plus a full hash-backend pipeline run, so every push proves the scan →
-# infer → cluster → export → search path still works.
+# the concrete branch names. Every job builds the same image from .ide/Dockerfile
+# so OpenCV's libGL dependency is present wherever the ML stack is imported.
+#
+# The CI job runs the full suite plus a hash-backend pipeline run, proving the
+# scan → infer → cluster → export → search path on every push. The dev
+# environment additionally runs the real ML backend check, since that is where
+# the model weights and ML extras are installed.
 
 $:
   vscode:
@@ -11,7 +15,8 @@ $:
       runner:
         cpus: 8
       docker:
-        image: python:3.12
+        build:
+          dockerfile: .ide/Dockerfile
       services:
         - vscode
       env:
@@ -38,7 +43,8 @@ main:
       runner:
         cpus: 8
       docker:
-        image: python:3.12
+        build:
+          dockerfile: .ide/Dockerfile
       env:
         PIP_DISABLE_PIP_VERSION_CHECK: "1"
       stages:
@@ -52,17 +58,16 @@ main:
             - ruff check src tests --select F,E9
         - name: test
           timeout: 30m
-          script:
-            - python -m pytest -q
+          script: python -m pytest -q
         - name: smoke
-          script:
-            - bash scripts/smoke.sh
+          script: bash scripts/smoke.sh
   pull_request:
     - name: pr-check
       runner:
         cpus: 4
       docker:
-        image: python:3.12
+        build:
+          dockerfile: .ide/Dockerfile
       env:
         PIP_DISABLE_PIP_VERSION_CHECK: "1"
       stages:
@@ -72,8 +77,7 @@ main:
             - python -m pip install --quiet -e ".[test]"
         - name: test
           timeout: 30m
-          script:
-            - python -m pytest -q
+          script: python -m pytest -q
       failStages:
         - name: report-failure
           script: 'echo "PR check failed for $CNB_PULL_REQUEST_IID $CNB_BUILD_FAILED_MSG"'
