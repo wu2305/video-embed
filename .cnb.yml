@@ -17,6 +17,12 @@ $:
       docker:
         build:
           dockerfile: .ide/Dockerfile
+        # Keep downloaded datasets and model weights between dev-environment
+        # restarts; re-downloading several GB on every start is wasteful.
+        volumes:
+          - /workspace/benchmark_corpus:read-write
+          - /root/.cache/huggingface:read-write
+          - /root/.insightface:read-write
       services:
         - vscode
       env:
@@ -26,7 +32,7 @@ $:
         - name: bootstrap
           script:
             - python -m pip install --quiet -U pip
-            - python -m pip install --quiet -e ".[ml,test]"
+            - python -m pip install --quiet -e ".[ml,test,benchmark]"
             - python -c "import mmindex; print('mmindex', mmindex.__version__)"
         - name: test
           timeout: 30m
@@ -36,6 +42,9 @@ $:
         - name: ml-check
           timeout: 60m
           script: python scripts/ml_check.py
+        - name: benchmark
+          timeout: 4h
+          script: python scripts/benchmark.py
 
 main:
   push:

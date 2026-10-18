@@ -160,6 +160,47 @@ def cmd_queue(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_benchmark(args: argparse.Namespace) -> int:
+    from .benchmark.corpus import CorpusSpec
+    from .benchmark.run import run_benchmark, write_report
+
+    spec = CorpusSpec(
+        lfw_limit=args.lfw,
+        cross_age_limit=args.cross_age,
+        flickr_limit=args.flickr,
+        msrvtt_limit=args.videos,
+        duplicate_ratio=args.dup_ratio,
+        seed=args.seed,
+        enable_lfw=not args.no_lfw,
+        enable_cross_age=not args.no_cross_age,
+        enable_flickr=not args.no_flickr,
+        enable_msrvtt=not args.no_videos,
+    )
+    settings = _settings(args)
+    result = run_benchmark(
+        args.corpus_dir,
+        args.work_dir,
+        spec=spec,
+        settings=settings,
+        fetch=not args.skip_fetch,
+        max_queries=args.max_queries,
+    )
+    path = write_report(result, args.report)
+    _print(
+        {
+            "report": str(path),
+            "corpus": result.corpus.get("counts", {}),
+            "index": result.index,
+            "dedup": result.dedup,
+            "retrieval": result.retrieval,
+            "clusters": result.clusters,
+            "timing": result.timing,
+            "errors": result.errors,
+        }
+    )
+    return 0 if not result.errors else 1
+
+
 def _summarise(result):
     if isinstance(result, dict):
         return {
@@ -236,6 +277,25 @@ def build_parser() -> argparse.ArgumentParser:
     queue.add_argument("--stage", default=None)
     queue.add_argument("--lease", type=float, default=300.0)
     queue.set_defaults(func=cmd_queue)
+
+    bench = sub.add_parser(
+        "benchmark", parents=[common], help="fetch the reference corpus, index and score it"
+    )
+    bench.add_argument("--corpus-dir", default="./benchmark_corpus")
+    bench.add_argument("--report", default="./benchmark_report.json")
+    bench.add_argument("--lfw", type=int, default=400, help="LFW images to export")
+    bench.add_argument("--cross-age", type=int, default=400)
+    bench.add_argument("--flickr", type=int, default=400)
+    bench.add_argument("--videos", type=int, default=20)
+    bench.add_argument("--dup-ratio", type=float, default=0.08)
+    bench.add_argument("--seed", type=int, default=42)
+    bench.add_argument("--max-queries", type=int, default=200)
+    bench.add_argument("--skip-fetch", action="store_true")
+    bench.add_argument("--no-lfw", action="store_true")
+    bench.add_argument("--no-cross-age", action="store_true")
+    bench.add_argument("--no-flickr", action="store_true")
+    bench.add_argument("--no-videos", action="store_true")
+    bench.set_defaults(func=cmd_benchmark)
 
     return parser
 

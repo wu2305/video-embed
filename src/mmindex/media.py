@@ -40,16 +40,32 @@ def hamming(a: str, b: str) -> int:
 
 
 def sharpness(image: np.ndarray) -> float:
-    """Laplacian variance: higher means sharper."""
-    gray = image.astype(np.float32).mean(axis=2) if image.ndim == 3 else image.astype(np.float32)
+    """Laplacian variance of the grayscale image; higher means sharper.
+
+    Matches ``cv2.Laplacian(cv2.cvtColor(bgr, COLOR_BGR2GRAY), CV_64F).var()``
+    from the reference notebook because master election in a near-duplicate
+    group is decided by comparing these values. OpenCV is used when installed;
+    the numpy fallback reproduces the same kernel and grayscale weights for
+    the dependency-free path.
+    """
+    try:
+        import cv2
+
+        bgr = image[:, :, ::-1] if image.ndim == 3 else image
+        gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+        return float(cv2.Laplacian(gray, cv2.CV_64F).var())
+    except ImportError:
+        pass
+
+    if image.ndim == 3:
+        gray = image.astype(np.float64) @ np.array([0.299, 0.587, 0.114])
+    else:
+        gray = image.astype(np.float64)
     if gray.shape[0] < 3 or gray.shape[1] < 3:
         return 0.0
-    kernel = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]], dtype=np.float32)
-    h, w = gray.shape
+    kernel = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]], dtype=np.float64)
     windows = np.lib.stride_tricks.sliding_window_view(gray, (3, 3))
-    laplacian = np.einsum("ijkl,kl->ij", windows, kernel)
-    del h, w
-    return float(laplacian.var())
+    return float(np.einsum("ijkl,kl->ij", windows, kernel).var())
 
 
 def probe_video(path: str | Path) -> dict:
