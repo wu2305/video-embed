@@ -21,7 +21,7 @@ $:
         - name: bootstrap
           script:
             - python -m pip install --quiet -U pip
-            - python -m pip install --quiet -e ".[ml,cluster,dev]"
+            - python -m pip install --quiet -e ".[ml,test]"
             - python -c "import mmindex; print('mmindex', mmindex.__version__)"
 
 main:
@@ -37,7 +37,7 @@ main:
         - name: install
           script:
             - python -m pip install --quiet -U pip
-            - python -m pip install --quiet -e ".[cluster,dev]"
+            - python -m pip install --quiet -e ".[test]"
         - name: lint
           script:
             - python -m pip install --quiet ruff
@@ -61,7 +61,7 @@ main:
         - name: install
           script:
             - python -m pip install --quiet -U pip
-            - python -m pip install --quiet -e ".[cluster,dev]"
+            - python -m pip install --quiet -e ".[test]"
         - name: test
           timeout: 30m
           script:
