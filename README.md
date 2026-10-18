@@ -120,17 +120,62 @@ index_work/
 reporting success, and `export` refuses to publish a snapshot that fails those
 checks.
 
+## Benchmark against the reference corpus
+
+The pipeline was designed against `Historical_Media_Benchmark`, which the
+reference Colab notebook builds from four public datasets and augments with
+injected redundancy. `mmindex benchmark` rebuilds that corpus, indexes it and
+scores the exported snapshot against the same ground truth:
+
+```bash
+pip install -e '.[ml,cluster,benchmark]'
+
+# representative subset (default: 400 LFW + 400 Face-Age + 400 Flickr30k + 15 clips)
+mmindex benchmark --corpus-dir ./benchmark_corpus --report ./benchmark_report.json
+
+# everything each dataset yields
+mmindex benchmark --full
+```
+
+| Dataset | What it exercises |
+|---|---|
+| `01_LFW_People_Archive` | face detection, HDBSCAN purity, same-person grouping |
+| `02_Cross_Age_Faces` | cross-age face recall, multi-prototype clusters |
+| `03_Flickr30k_Daily_Albums` | SigLIP natural-language retrieval (Recall@K) |
+| `04_MSRVTT_Videos` | scene splitting, ASR, OCR, multimodal alignment |
+| `99_Cross_Folder_Exact_Backups` | xxhash64 + SHA256 exact dedup |
+
+The fetch also injects the three redundancy classes the notebook uses — byte
+exact copies, lossy `WECHAT_COMP_*` re-encodes, and motion-blurred
+`*_burst_motion_blur.jpg` bursts — and writes
+`ground_truth_dedup_benchmark.json` plus
+`flickr30k_groundtruth_captions.json`.
+
+Scoring is computed from the published index, not pipeline internals:
+
+- **dedup**: exact-copy recall, fold rate for compressed and blurred variants
+- **master election**: whether the sharp original, not the degraded variant,
+  is the searchable master
+- **retrieval**: Recall@1/5/10 and MRR for real Flickr30k captions
+- **clusters**: purity against LFW directory identities
+
+`scripts/benchmark.py` runs the same thing with the real ML stack in the CNB
+dev environment. Note that `sharpness` is `cv2.Laplacian(...).var()` and
+`dhash` is bit-identical to `imagehash.dhash`, so master election and
+near-duplicate grouping match the reference implementation rather than
+approximately reproducing it.
+
 ## Tests
 
 ```bash
 pytest
 ```
 
-88 tests cover hashing and dedup, canonical timestamps, checkpoint resume and
+99 tests cover hashing and dedup, canonical timestamps, checkpoint resume and
 guarded overwrite, shard round-trips, queue leasing and lease recovery,
 stage-scoped task ids, stage idempotency, video scene detection, export
-consistency checks, near-duplicate master selection and hybrid search
-ranking — all without model downloads.
+consistency checks, near-duplicate master selection, hybrid search ranking and
+the benchmark scoring logic — all without model downloads.
 
 `scripts/ml_check.py` additionally exercises the real model stack (SigLIP,
 InsightFace, RapidOCR, faster-whisper) and is what the cloud dev environment
