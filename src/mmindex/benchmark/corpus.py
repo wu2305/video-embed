@@ -191,12 +191,21 @@ def fetch_flickr(root: Path, spec: CorpusSpec, log=print) -> tuple[list[Path], P
 
 
 def fetch_msrvtt(root: Path, spec: CorpusSpec, log=print) -> list[Path]:
-    """Copy up to ``msrvtt_limit`` mp4 files out of the MSR-VTT snapshot."""
+    """Copy up to ``msrvtt_limit`` clips out of the MSR-VTT snapshot.
+
+    The repository only ships videos inside ``MSRVTT_Videos.zip`` (about 2.2 GB),
+    so members are streamed out of the archive rather than extracted wholesale.
+    """
     from huggingface_hub import snapshot_download
 
     target = root / "04_MSRVTT_Videos"
     target.mkdir(parents=True, exist_ok=True)
-    log(f"MSR-VTT: resolving snapshot (limit={spec.msrvtt_limit})")
+    limit = spec.msrvtt_limit
+    if limit == 0:
+        log("MSR-VTT: disabled")
+        return []
+
+    log(f"MSR-VTT: resolving snapshot (limit={limit})")
     try:
         snapshot = Path(
             snapshot_download(
@@ -210,13 +219,42 @@ def fetch_msrvtt(root: Path, spec: CorpusSpec, log=print) -> list[Path]:
         return []
 
     saved: list[Path] = []
-    limit = spec.msrvtt_limit
+
+    def copy_out(stream, name: str) -> bool:
+        out = target / Path(name).name
+        tmp = out.with_name(out.name + ".part")
+        try:
+            with tmp.open("wb") as handle:
+                shutil.copyfileobj(stream, handle)
+            tmp.replace(out)
+        finally:
+            tmp.unlink(missing_ok=True)
+        saved.append(out)
+        return limit is not None and len(saved) >= limit
+
     for source in sorted(snapshot.rglob("*.mp4")):
         if limit is not None and len(saved) >= limit:
             break
-        out = target / source.name
-        shutil.copyfile(source, out)
-        saved.append(out)
+        shutil.copyfile(source, target / source.name)
+        saved.append(target / source.name)
+
+    import zipfile
+
+    for archive in sorted(snapshot.rglob("*.zip")):
+        if limit is not None and len(saved) >= limit:
+            break
+        log(f"MSR-VTT: streaming members from {archive.name}")
+        with zipfile.ZipFile(archive) as zf:
+            members = sorted(
+                (m for m in zf.infolist() if m.filename.lower().endswith(".mp4")),
+                key=lambda m: m.filename,
+            )
+            for member in members:
+                if limit is not None and len(saved) >= limit:
+                    break
+                with zf.open(member) as stream:
+                    copy_out(stream, member.filename)
+
     log(f"MSR-VTT: {len(saved)} clips")
     return saved
 
