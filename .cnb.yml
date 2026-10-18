@@ -17,12 +17,6 @@ $:
       docker:
         build:
           dockerfile: .ide/Dockerfile
-        # Keep downloaded datasets and model weights between dev-environment
-        # restarts; re-downloading several GB on every start is wasteful.
-        volumes:
-          - /workspace/benchmark_corpus:read-write
-          - /root/.cache/huggingface:read-write
-          - /root/.insightface:read-write
       services:
         - vscode
       env:
