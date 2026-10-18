@@ -160,14 +160,3 @@ def cluster_units(units: Sequence[dict], layout: Layout, settings: Settings) -> 
     write_catalog(layout, catalog)
     write_labels(layout, labels, refs)
     return catalog
-
-
-def assign_person_ids(units: list[dict], labels: np.ndarray, refs: Sequence[tuple[int, int]]) -> None:
-    """Attach ``person_ids`` to each unit in place from clustering labels."""
-    by_unit: dict[int, list[str]] = {}
-    for label, (unit_index, _face_index) in zip(labels.tolist(), refs):
-        if label == -1:
-            continue
-        by_unit.setdefault(unit_index, []).append(f"person-{label:04d}")
-    for index, unit in enumerate(units):
-        unit["person_ids"] = sorted(set(by_unit.get(index, [])))

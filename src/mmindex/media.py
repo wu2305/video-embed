@@ -19,10 +19,6 @@ def load_image(path: str | Path) -> np.ndarray:
         return np.asarray(image.convert("RGB"), dtype=np.uint8)
 
 
-def to_bgr(image: np.ndarray) -> np.ndarray:
-    return image[:, :, ::-1].copy()
-
-
 def dhash(image: np.ndarray, size: int = _DHASH_SIZE) -> str:
     """Perceptual difference hash as a hex string."""
     from PIL import Image
@@ -68,23 +64,6 @@ def probe_video(path: str | Path) -> dict:
         frames = float(capture.get(cv2.CAP_PROP_FRAME_COUNT) or 0.0)
         duration = frames / fps if fps > 0 else 0.0
         return {"fps": fps, "frames": int(frames), "duration": duration}
-    finally:
-        capture.release()
-
-
-def read_frame(path: str | Path, timestamp: float) -> np.ndarray:
-    """Seek to ``timestamp`` seconds and return an RGB frame."""
-    import cv2
-
-    capture = cv2.VideoCapture(str(path))
-    if not capture.isOpened():
-        raise OSError(f"cannot open video: {path}")
-    try:
-        capture.set(cv2.CAP_PROP_POS_MSEC, max(0.0, timestamp) * 1000.0)
-        ok, frame = capture.read()
-        if not ok:
-            raise OSError(f"cannot decode frame at {timestamp:.3f}s in {path}")
-        return frame[:, :, ::-1].copy()
     finally:
         capture.release()
 

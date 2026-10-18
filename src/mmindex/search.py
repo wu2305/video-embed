@@ -185,21 +185,3 @@ class Index:
 
     def persons(self) -> list[dict]:
         return list(self.catalog.get("persons", []))
-
-
-def text_query_vector(text: str, backend) -> np.ndarray:
-    """Embed a text query with the backend's CLIP tower when available.
-
-    The hash backend has no text tower, so it returns a deterministic vector
-    derived from the query string — enough to exercise ranking in tests.
-    """
-    embed = getattr(backend, "embed_text", None)
-    if embed is not None:
-        return embed(text)
-    import hashlib
-
-    raw = hashlib.blake2b(text.encode(), digest_size=64).digest()
-    base = np.frombuffer(raw, dtype=np.uint8).astype(np.float32) / 255.0
-    dim = getattr(backend.settings, "clip_embedding_dim", 768)
-    tiled = np.resize(base, dim)
-    return l2_normalize(tiled - tiled.mean())

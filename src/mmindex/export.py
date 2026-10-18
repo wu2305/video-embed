@@ -172,14 +172,6 @@ def collect_units(
     return units
 
 
-def _unit_text(unit: dict) -> str:
-    return " ".join(
-        part.strip()
-        for part in (unit.get("ocr_text") or "", unit.get("asr_text") or "")
-        if part and part.strip()
-    )
-
-
 def export_snapshot(
     units: Sequence[dict],
     layout: Layout,
