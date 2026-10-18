@@ -124,8 +124,14 @@ def score_dedup(
     ground_truth: dict,
     root: Path,
     dedup_report: dict | None = None,
+    index_root: Path | None = None,
 ) -> DedupScore:
     """Compare the pipeline's dedup decisions with the injected ground truth.
+
+    ``root`` is the corpus root: the dedup report and ground truth use paths
+    inside it. ``index_root`` is the work directory holding the published
+    snapshot, which is where the master-election checks read ``is_master`` from.
+    They are usually different directories.
 
     The manifest holds canonical files only — exact duplicates are folded into
     ``deduplicated.json`` rather than listed — so a duplicate is correctly
@@ -159,7 +165,7 @@ def score_dedup(
                 {"duplicate": duplicate_rel, "reason": "not detected as a duplicate"}
             )
 
-    snapshot = _load_units(root)
+    snapshot = _load_units(index_root if index_root is not None else root)
     if snapshot is None:
         return score
 

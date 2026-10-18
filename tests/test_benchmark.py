@@ -81,6 +81,28 @@ def test_score_dedup_reports_wrong_master_group(tmp_path, layout, settings):
     assert score.exact_missed[0]["reason"] == "folded into a different master"
 
 
+def test_score_dedup_uses_separate_index_root(tmp_path, layout, settings):
+    """Corpus paths and the published snapshot live in different directories."""
+    settings.clip_embedding_dim = 8
+    settings.near_dup_hamming = 4
+    corpus = tmp_path / "corpus"
+    corpus.mkdir()
+    # Snapshot lives in the layout root; ground truth is corpus-relative.
+    export_snapshot(
+        [
+            _unit(0, "shot.jpg", dhash="0000000000000000", sharp=100.0),
+            _unit(1, "shot_burst.jpg", dhash="0000000000000000", sharp=1.0),
+        ],
+        layout,
+        settings,
+    )
+    gt = {"blurry_bursts": [{"sharp_cover": "shot.jpg", "blurry_frame": "shot_burst.jpg"}]}
+    score = score_dedup([], gt, corpus, {}, index_root=layout.root)
+    assert score.blurred_expected == 1
+    assert score.blurred_folded == 1
+    assert score.master_correct == 1
+
+
 def test_score_dedup_rebases_absolute_report_paths(tmp_path, layout, settings):
     """The dedup report stores absolute paths; ground truth is relative."""
     settings.clip_embedding_dim = 8

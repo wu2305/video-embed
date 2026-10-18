@@ -148,8 +148,11 @@ def run_benchmark(
     if layout.deduplicated.exists():
         dedup_report = json.loads(layout.deduplicated.read_text(encoding="utf-8"))
     # Pass the corpus root, not the work dir: the dedup report's paths are
-    # absolute paths inside the corpus, and scoring rebases them onto it.
-    result.dedup = score_dedup(entries, ground_truth, corpus_root, dedup_report).to_dict()
+    # absolute paths inside the corpus, and scoring rebases them onto it. The
+    # snapshot for master election lives in the work dir, hence index_root.
+    result.dedup = score_dedup(
+        entries, ground_truth, corpus_root, dedup_report, index_root=work_dir
+    ).to_dict()
 
     index = Index.open(layout, settings)
     backend = build_backend(settings)
