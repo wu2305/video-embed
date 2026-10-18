@@ -45,7 +45,7 @@ $:
           script: python scripts/ml_check.py
         - name: benchmark
           timeout: 4h
-          script: python scripts/benchmark.py
+          script: python -u scripts/benchmark.py
 
 main:
   push:
