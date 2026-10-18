@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from mmindex.backends import HashBackend, _thumbnail, l2_normalize
 
