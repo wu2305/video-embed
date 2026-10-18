@@ -92,10 +92,10 @@ class Worker:
         else:
             raise ValueError(f"unknown stage: {self.stage}")
 
-    def _maybe_heartbeat(self, file_id: str, force: bool = False) -> None:
+    def _maybe_heartbeat(self, task_id: str, force: bool = False) -> None:
         now = time.time()
         if force or now - self._last_heartbeat >= self.heartbeat_every:
-            self.queue.heartbeat(file_id)
+            self.queue.heartbeat(task_id)
             self._last_heartbeat = now
 
     # ----------------------------------------------------------------- loop
@@ -107,18 +107,18 @@ class Worker:
             return False
 
         if self.checkpoint.has(task.file_path, task.digest, stage=self.stage):
-            self.queue.mark_done(task.file_id)
+            self.queue.mark_done(task.task_id)
             self.skipped += 1
             return True
 
         try:
             self._process(task)
-            self.queue.mark_done(task.file_id)
+            self.queue.mark_done(task.task_id)
             self.processed += 1
         except Exception as exc:
-            self.queue.mark_failed(task.file_id, f"{type(exc).__name__}: {exc}")
+            self.queue.mark_failed(task.task_id, f"{type(exc).__name__}: {exc}")
             self.failed += 1
-        self._maybe_heartbeat(task.file_id, force=True)
+        self._maybe_heartbeat(task.task_id, force=True)
         return True
 
     def run(self, max_idle_polls: int = 1) -> dict:

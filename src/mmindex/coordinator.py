@@ -95,6 +95,11 @@ class Coordinator:
 
     def run_export(self) -> dict:
         units = self._all_units()
+        if not units:
+            raise RuntimeError(
+                "refusing to publish an index with no units: stage 3 produced nothing "
+                "(check that the infer stage completed)"
+            )
         catalog = None
         if self.layout.persons.exists():
             catalog = json.loads(self.layout.persons.read_text(encoding="utf-8"))
@@ -117,7 +122,11 @@ class Coordinator:
     # ------------------------------------------------------------- driver
 
     def run(self, stages: Iterable[str] = ALL_STAGES, timeout: float | None = None) -> dict:
-        """Enqueue and wait for worker stages, then cluster and export."""
+        """Enqueue and wait for worker stages, then cluster and export.
+
+        A stage that times out aborts the run: publishing an index built from
+        partial input would be worse than failing loudly.
+        """
         results: dict = {}
         for stage in stages:
             if stage in FINAL_STAGES:
@@ -127,7 +136,12 @@ class Coordinator:
                     results[stage] = self.run_export()
                 continue
             self.enqueue_stage(stage)
-            results[stage] = {"complete": self.wait_for_stage(stage, timeout=timeout)}
+            complete = self.wait_for_stage(stage, timeout=timeout)
+            results[stage] = {"complete": complete, "stats": self.queue.stats(stage)}
+            if not complete:
+                raise RuntimeError(
+                    f"stage '{stage}' did not finish; aborting before cluster/export"
+                )
         return results
 
     def close(self) -> None:

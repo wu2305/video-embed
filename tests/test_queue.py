@@ -44,7 +44,7 @@ def test_mark_done_and_completion(tmp_path):
         queue.enqueue("infer", _entries(2))
         for _ in range(2):
             task = queue.claim("infer", "w")
-            queue.mark_done(task.file_id)
+            queue.mark_done(task.task_id)
         assert queue.stats("infer") == {DONE: 2}
         assert queue.is_complete("infer") is True
     finally:
@@ -60,7 +60,7 @@ def test_reclaim_stale_resets_expired_lease(tmp_path):
         time.sleep(0.05)
         assert queue.reclaim_stale() == 1
         assert queue.stats("infer") == {PENDING: 1}
-        assert queue.claim("infer", "w2").file_id == task.file_id
+        assert queue.claim("infer", "w2").file_id == task.file_id  # same file, new worker
     finally:
         queue.close()
 
@@ -83,7 +83,7 @@ def test_mark_failed_retries_then_parks(tmp_path):
             task = queue.claim("infer", "w")
             if task is None:
                 break
-            queue.mark_failed(task.file_id, "boom")
+            queue.mark_failed(task.task_id, "boom")
         assert queue.stats("infer").get("failed") == 1
         assert len(queue.failures("infer")) == 1
     finally:
@@ -95,7 +95,7 @@ def test_retry_failed_requeues(tmp_path):
     try:
         queue.enqueue("infer", _entries(1))
         task = queue.claim("infer", "w")
-        queue.mark_failed(task.file_id, "boom")
+        queue.mark_failed(task.task_id, "boom")
         assert queue.stats("infer").get("failed") == 1
         assert queue.retry_failed("infer") == 1
         assert queue.stats("infer") == {PENDING: 1}
@@ -114,7 +114,7 @@ def test_shard_claim_partitions_deterministically(tmp_path):
             if task is None:
                 break
             claimed.append(task.file_id)
-            queue.mark_done(task.file_id)
+            queue.mark_done(task.task_id)
         assert claimed
         assert len(claimed) < 20
         assert queue.stats("infer")[DONE] == len(claimed)
@@ -136,7 +136,7 @@ def test_shards_cover_the_whole_workload(tmp_path):
                 if task is None:
                     break
                 seen.append(task.file_id)
-                queue.mark_done(task.file_id)
+                queue.mark_done(task.task_id)
         assert sorted(seen) == sorted(fid for fid, _, _ in entries)
     finally:
         queue.close()
@@ -152,12 +152,43 @@ def test_enqueue_is_idempotent(tmp_path):
         queue.close()
 
 
+def test_same_file_can_be_enqueued_for_every_stage(tmp_path):
+    """Regression: a file queued for prepare must still be queueable for extract."""
+    queue = _queue(tmp_path)
+    try:
+        for stage in ("prepare", "extract", "infer"):
+            queue.enqueue(stage, _entries(3))
+        for stage in ("prepare", "extract", "infer"):
+            assert queue.stats(stage) == {PENDING: 3}, stage
+        task = queue.claim("extract", "w")
+        assert task.stage == "extract"
+        queue.mark_done(task.task_id)
+        assert queue.stats("extract") == {PENDING: 2, DONE: 1}
+        assert queue.stats("prepare") == {PENDING: 3}
+    finally:
+        queue.close()
+
+
+def test_task_id_is_stage_qualified(tmp_path):
+    queue = _queue(tmp_path)
+    try:
+        queue.enqueue("prepare", _entries(1))
+        queue.enqueue("infer", _entries(1))
+        prepare_task = queue.claim("prepare", "w")
+        infer_task = queue.claim("infer", "w")
+        assert prepare_task.task_id != infer_task.task_id
+        assert prepare_task.task_id.startswith("prepare:")
+        assert infer_task.task_id.startswith("infer:")
+    finally:
+        queue.close()
+
+
 def test_release_does_not_count_retry(tmp_path):
     queue = _queue(tmp_path)
     try:
         queue.enqueue("infer", _entries(1))
         task = queue.claim("infer", "w")
-        queue.release(task.file_id)
+        queue.release(task.task_id)
         assert queue.stats("infer") == {PENDING: 1}
         assert queue.failures("infer") == []
     finally:

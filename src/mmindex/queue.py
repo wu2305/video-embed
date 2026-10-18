@@ -19,7 +19,8 @@ from .hashing import shard_for
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS work_queue (
-    file_id     TEXT PRIMARY KEY,
+    task_id     TEXT PRIMARY KEY,
+    file_id     TEXT NOT NULL,
     file_path   TEXT NOT NULL,
     digest      TEXT NOT NULL,
     stage       TEXT NOT NULL,
@@ -46,6 +47,11 @@ DONE = "done"
 FAILED = "failed"
 
 
+def task_id(stage: str, file_id: str) -> str:
+    """A task is one file in one stage; the same file appears once per stage."""
+    return f"{stage}:{file_id}"
+
+
 @dataclass
 class Task:
     file_id: str
@@ -53,6 +59,7 @@ class Task:
     digest: str
     stage: str
     retries: int = 0
+    task_id: str = ""
 
 
 class WorkQueue:
@@ -100,12 +107,13 @@ class WorkQueue:
             )
         now = time.time()
         rows = [
-            (fid, path, digest, stage, shard_for(path, n_shards), now)
+            (task_id(stage, fid), fid, path, digest, stage, shard_for(path, n_shards), now)
             for fid, path, digest in entries
         ]
         self._conn.executemany(
             "INSERT OR IGNORE INTO work_queue "
-            "(file_id, file_path, digest, stage, shard, updated_at) VALUES (?,?,?,?,?,?)",
+            "(task_id, file_id, file_path, digest, stage, shard, updated_at)"
+            " VALUES (?,?,?,?,?,?,?)",
             rows,
         )
         self.set_meta(f"n_shards:{stage}", str(n_shards))
@@ -170,8 +178,8 @@ class WorkQueue:
                 return None
             self._conn.execute(
                 "UPDATE work_queue SET status=?, worker_id=?, claimed_at=?, heartbeat=?,"
-                " updated_at=? WHERE file_id=?",
-                (CLAIMED, worker_id, now, now, now, row["file_id"]),
+                " updated_at=? WHERE task_id=?",
+                (CLAIMED, worker_id, now, now, now, row["task_id"]),
             )
             self._conn.execute("COMMIT")
         except Exception:
@@ -183,43 +191,44 @@ class WorkQueue:
             digest=row["digest"],
             stage=row["stage"],
             retries=int(row["retries"] or 0),
+            task_id=row["task_id"],
         )
 
-    def heartbeat(self, file_id: str) -> None:
+    def heartbeat(self, task_id: str) -> None:
         self._conn.execute(
-            "UPDATE work_queue SET heartbeat=?, updated_at=? WHERE file_id=?",
-            (time.time(), time.time(), file_id),
+            "UPDATE work_queue SET heartbeat=?, updated_at=? WHERE task_id=?",
+            (time.time(), time.time(), task_id),
         )
 
-    def mark_done(self, file_id: str) -> None:
+    def mark_done(self, task_id: str) -> None:
         now = time.time()
         self._conn.execute(
             "UPDATE work_queue SET status=?, error_msg=NULL, heartbeat=?, updated_at=?"
-            " WHERE file_id=?",
-            (DONE, now, now, file_id),
+            " WHERE task_id=?",
+            (DONE, now, now, task_id),
         )
 
-    def mark_failed(self, file_id: str, error: str) -> None:
+    def mark_failed(self, task_id: str, error: str) -> None:
         """Fail a row, re-queueing it while retries remain."""
         now = time.time()
         row = self._conn.execute(
-            "SELECT retries FROM work_queue WHERE file_id=?", (file_id,)
+            "SELECT retries FROM work_queue WHERE task_id=?", (task_id,)
         ).fetchone()
         retries = int(row["retries"] or 0) + 1 if row else 1
         status = PENDING if retries <= self.max_retries else FAILED
         self._conn.execute(
             "UPDATE work_queue SET status=?, retries=?, error_msg=?, heartbeat=?, updated_at=?"
-            " WHERE file_id=?",
-            (status, retries, error[:2000], now, now, file_id),
+            " WHERE task_id=?",
+            (status, retries, error[:2000], now, now, task_id),
         )
 
-    def release(self, file_id: str) -> None:
+    def release(self, task_id: str) -> None:
         """Return a claimed row to ``pending`` without counting a retry."""
         now = time.time()
         self._conn.execute(
             "UPDATE work_queue SET status=?, worker_id=NULL, claimed_at=NULL, updated_at=?"
-            " WHERE file_id=?",
-            (PENDING, now, file_id),
+            " WHERE task_id=?",
+            (PENDING, now, task_id),
         )
 
     # ------------------------------------------------------------- watchdog

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 import numpy as np
+import pytest
 
 from mmindex.coordinator import Coordinator
 from mmindex.pipeline import Pipeline
@@ -89,6 +90,39 @@ def test_coordinator_cluster_and_export(media_tree, layout, settings):
     assert (snapshot / "historical_media_index.sqlite").exists()
     published = json.loads(layout.index_manifest.read_text())
     assert published["snapshot"] == manifest["snapshot"]
+
+
+def test_coordinator_aborts_when_a_stage_does_not_finish(media_tree, layout, settings):
+    """Regression: a timed-out stage must abort, not export a partial index."""
+    from mmindex.export import read_manifest
+    from mmindex.pipeline import Pipeline
+
+    pipeline = Pipeline(layout, settings)
+    try:
+        pipeline.run_scan(media_tree)
+    finally:
+        pipeline.close()
+
+    coordinator = Coordinator(
+        layout, settings, poll_interval=0.01, log=lambda _msg: None
+    )
+    try:
+        with pytest.raises(RuntimeError, match="did not finish"):
+            coordinator.run(["prepare"], timeout=0.05)
+    finally:
+        coordinator.close()
+    assert read_manifest(layout) is None
+
+
+def test_coordinator_refuses_to_export_an_empty_index(layout, settings):
+    """Regression: exporting zero units must fail loudly, not publish an index."""
+    coordinator = Coordinator(layout, settings, poll_interval=0.01, log=lambda _msg: None)
+    try:
+        with pytest.raises(RuntimeError, match="no units"):
+            coordinator.run_export()
+    finally:
+        coordinator.close()
+    assert not layout.index_manifest.exists()
 
 
 def test_person_ids_flow_into_export(layout, settings):

@@ -75,8 +75,13 @@ Stages 1-3 scale horizontally over a SQLite work queue on shared storage:
 mmindex coordinator --work-dir /mnt/shared
 
 # each spot machine: drain its shard of the current stage and exit
-mmindex worker --stage infer --work-dir /mnt/shared --shard 0 --n-shards 8
+mmindex worker --stage infer --work-dir /mnt/shared --shard 0
 ```
+
+The shard count is fixed when a stage is enqueued
+(`Coordinator.enqueue_stage(..., n_shards=8)`), because every worker must agree
+on the same partition for `xxhash64(file_path) % n_shards` to be stable across
+machines and restarts. Omit `--shard` to let a worker take any pending file.
 
 Workers are stateless and preemption-safe. A claim is a single
 `BEGIN IMMEDIATE` transaction; a 5-minute lease with heartbeats lets the
