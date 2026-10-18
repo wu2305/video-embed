@@ -179,6 +179,7 @@ class MLBackend:
             sess_options=options,
         )
         self._face.prepare(ctx_id=-1, det_size=(self.settings.face_det_size,) * 2)
+        self._face_fallback_ready = False
 
     def _ensure_ocr(self):
         if self._ocr is not None:
@@ -254,6 +255,26 @@ class MLBackend:
 
     # ---------------------------------------------------------------- face
 
+    def _detect_one(self, bgr: np.ndarray):
+        """Detect faces, retrying at a smaller detector size when nothing is found.
+
+        ``det_size`` is the size the detector resizes its input to, so it sets
+        the scale of the anchor grid. On tightly-cropped portraits (LFW-style
+        face crops) a 640 px grid misses faces that a 320 px grid finds: on a
+        real LFW image, 640 returned 0 detections and 320 returned 1. Full-size
+        photographs are the opposite case, so try the configured size first and
+        fall back rather than picking one size for every input.
+        """
+        found = self._face.get(bgr)
+        if found:
+            return found
+        if not self._face_fallback_ready:
+            self._face.prepare(
+                ctx_id=-1, det_size=(self.settings.face_det_fallback_size,) * 2
+            )
+            self._face_fallback_ready = True
+        return self._face.get(bgr)
+
     def detect_faces(self, images: Sequence[np.ndarray]) -> list[list[Face]]:
         if not images:
             return []
@@ -262,7 +283,7 @@ class MLBackend:
         for image in images:
             bgr = image[:, :, ::-1].copy()
             found = []
-            for item in self._face.get(bgr):
+            for item in self._detect_one(bgr):
                 found.append(
                     Face(
                         embedding=np.asarray(item.embedding, dtype=np.float32),

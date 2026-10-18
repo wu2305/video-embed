@@ -147,7 +147,9 @@ def run_benchmark(
     dedup_report = {}
     if layout.deduplicated.exists():
         dedup_report = json.loads(layout.deduplicated.read_text(encoding="utf-8"))
-    result.dedup = score_dedup(entries, ground_truth, work_dir, dedup_report).to_dict()
+    # Pass the corpus root, not the work dir: the dedup report's paths are
+    # absolute paths inside the corpus, and scoring rebases them onto it.
+    result.dedup = score_dedup(entries, ground_truth, corpus_root, dedup_report).to_dict()
 
     index = Index.open(layout, settings)
     backend = build_backend(settings)

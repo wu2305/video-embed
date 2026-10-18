@@ -37,6 +37,9 @@ class Settings:
     face_model_name: str = "buffalo_l"
     face_embedding_dim: int = 512
     face_det_size: int = 640
+    # Retry size for tightly-cropped portraits, where the 640 px anchor grid
+    # misses faces that the 320 px grid finds.
+    face_det_fallback_size: int = 320
 
     whisper_model: str = "base"
     whisper_compute_type: str = "int8"
