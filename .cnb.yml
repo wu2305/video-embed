@@ -24,9 +24,12 @@ $:
         MMINDEX_BACKEND: hash
       stages:
         - name: bootstrap
+          # pip is deliberately not --quiet: a job with no output for 10 minutes
+          # is killed by the platform's no-output timeout.
+          timeout: 45m
           script:
-            - python -m pip install --quiet -U pip
-            - python -m pip install --quiet -e ".[ml,test,benchmark]"
+            - python -m pip install -U pip
+            - python -m pip install -e ".[ml,test,benchmark]"
             - python -c "import mmindex; print('mmindex', mmindex.__version__)"
         - name: test
           timeout: 30m
@@ -52,12 +55,13 @@ main:
         PIP_DISABLE_PIP_VERSION_CHECK: "1"
       stages:
         - name: install
+          timeout: 45m
           script:
-            - python -m pip install --quiet -U pip
-            - python -m pip install --quiet -e ".[test]"
+            - python -m pip install -U pip
+            - python -m pip install -e ".[test]"
         - name: lint
           script:
-            - python -m pip install --quiet ruff
+            - python -m pip install ruff
             - ruff check src tests --select F,E9
         - name: test
           timeout: 30m
@@ -75,9 +79,10 @@ main:
         PIP_DISABLE_PIP_VERSION_CHECK: "1"
       stages:
         - name: install
+          timeout: 45m
           script:
-            - python -m pip install --quiet -U pip
-            - python -m pip install --quiet -e ".[test]"
+            - python -m pip install -U pip
+            - python -m pip install -e ".[test]"
         - name: test
           timeout: 30m
           script: python -m pytest -q
