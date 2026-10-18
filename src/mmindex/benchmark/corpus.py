@@ -122,19 +122,28 @@ def fetch_lfw(root: Path, spec: CorpusSpec, log=print) -> list[Path]:
         by_identity.setdefault(int(targets[index]), []).append(index)
     identities = sorted(by_identity)
 
+    # Only identities with enough photos can form an HDBSCAN cluster. LFW's
+    # default average is ~2.3 photos per person, so sampling identities without
+    # this filter yields a corpus where clustering can never find a person.
+    eligible = [i for i in identities if len(by_identity[i]) >= spec.lfw_min_per_identity]
+    if not eligible:
+        eligible = identities
+
     if spec.lfw_limit is None or spec.lfw_limit >= total:
-        chosen_identities = identities
+        chosen_identities = eligible
         per_identity = None
     else:
-        # How many identities to keep so the total lands near the limit while
-        # leaving at least min_cluster_size photos for each.
-        average = total / max(1, len(identities))
+        average = sum(len(by_identity[i]) for i in eligible) / max(1, len(eligible))
         keep = max(1, int(spec.lfw_limit / max(average, spec.lfw_min_per_identity)))
-        keep = min(keep, len(identities))
-        stride = len(identities) / keep
-        chosen_identities = [identities[min(len(identities) - 1, int(i * stride))] for i in range(keep)]
+        keep = min(keep, len(eligible))
+        stride = len(eligible) / keep
+        chosen_identities = [
+            eligible[min(len(eligible) - 1, int(i * stride))] for i in range(keep)
+        ]
         chosen_identities = sorted(set(chosen_identities))
-        per_identity = max(spec.lfw_min_per_identity, spec.lfw_limit // max(1, len(chosen_identities)))
+        per_identity = max(
+            spec.lfw_min_per_identity, spec.lfw_limit // max(1, len(chosen_identities))
+        )
 
     from PIL import Image
 

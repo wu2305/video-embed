@@ -134,13 +134,15 @@ def score_dedup(
     """
     score = DedupScore()
     by_rel = {entry["rel_path"]: entry for entry in manifest}
-    duplicate_groups = (dedup_report or {}).get("groups") or {}
+    # The dedup report keys on absolute paths; ground truth uses paths relative
+    # to the corpus root. Normalise both to a corpus-relative form.
+    duplicate_groups = _relative_groups((dedup_report or {}).get("groups") or {}, root)
     folded_paths = {dup for dups in duplicate_groups.values() for dup in dups}
 
     for pair in ground_truth.get("exact_duplicates", []):
         score.exact_expected += 1
-        master_rel = pair["master"]
-        duplicate_rel = pair["duplicate"]
+        master_rel = _norm(pair["master"])
+        duplicate_rel = _norm(pair["duplicate"])
         master = by_rel.get(master_rel)
         if master is None:
             score.exact_missed.append({"duplicate": duplicate_rel, "reason": "master missing"})
@@ -386,6 +388,22 @@ def _load_units(root: Path) -> dict[str, dict] | None:
 
 def _norm(path: str) -> str:
     return str(path).replace("\\", "/")
+
+
+def _relative_groups(groups: dict, root: Path) -> dict[str, list[str]]:
+    """Rebase absolute duplicate-group paths onto the corpus root."""
+    root_str = _norm(str(root)).rstrip("/")
+    rebased: dict[str, list[str]] = {}
+
+    def rel(path: str) -> str:
+        text = _norm(path)
+        if text.startswith(root_str + "/"):
+            return text[len(root_str) + 1 :]
+        return text
+
+    for master, duplicates in groups.items():
+        rebased.setdefault(rel(master), []).extend(rel(dup) for dup in duplicates)
+    return rebased
 
 
 def _lookup_suffix(snapshot: dict[str, dict], rel: str) -> dict | None:

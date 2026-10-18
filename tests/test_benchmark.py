@@ -81,6 +81,23 @@ def test_score_dedup_reports_wrong_master_group(tmp_path, layout, settings):
     assert score.exact_missed[0]["reason"] == "folded into a different master"
 
 
+def test_score_dedup_rebases_absolute_report_paths(tmp_path, layout, settings):
+    """The dedup report stores absolute paths; ground truth is relative."""
+    settings.clip_embedding_dim = 8
+    export_snapshot([_unit(0, "a.jpg")], layout, settings)
+    manifest = _manifest([("a.jpg", "same", True)])
+    corpus = tmp_path / "corpus"
+    report = {
+        "groups": {
+            f"{corpus}/a.jpg": [f"{corpus}/a.jpg", f"{corpus}/backup/a.jpg"],
+        }
+    }
+    gt = {"exact_duplicates": [{"master": "a.jpg", "duplicate": "backup/a.jpg"}]}
+    score = score_dedup(manifest, gt, corpus, report)
+    assert score.exact_detected == 1
+    assert score.exact_recall == 1.0
+
+
 def test_score_dedup_master_election_prefers_sharp(tmp_path, layout, settings):
     settings.clip_embedding_dim = 8
     # Same dhash, very different sharpness: export must elect the sharp one.

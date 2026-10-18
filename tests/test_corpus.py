@@ -54,6 +54,29 @@ def test_lfw_identities_are_spread_across_the_dataset(tmp_path, monkeypatch):
     assert people[-1] > 10
 
 
+def test_lfw_skips_identities_too_small_to_cluster(tmp_path, monkeypatch):
+    """LFW averages ~2 photos per person; those can never form a cluster."""
+
+    class _Mixed:
+        target_names = [f"Person {i}" for i in range(4)]
+        # Person 0..1 have 2 photos each (too few), person 2..3 have 6 each.
+        target = np.array([0, 0, 1, 1] + [2] * 6 + [3] * 6)
+        images = np.random.default_rng(0).random((len(target), 62, 47, 3)).astype(np.float32)
+
+    _patch_sklearn(monkeypatch, _Mixed())
+    spec = CorpusSpec(
+        lfw_limit=None,
+        lfw_min_per_identity=5,
+        enable_cross_age=False,
+        enable_flickr=False,
+        enable_msrvtt=False,
+    )
+    saved = fetch_lfw(tmp_path, spec, log=lambda _m: None)
+    # Directory names are "<year>_<person>"; assert on the person part only.
+    people = {path.parent.name.split("_", 1)[1] for path in saved}
+    assert people == {"Person_2", "Person_3"}
+
+
 def test_lfw_writes_expected_directory_layout(tmp_path, monkeypatch):
     _patch_sklearn(monkeypatch, _FakeLFW(per_person=4, people=3))
     spec = CorpusSpec(lfw_limit=None, enable_cross_age=False, enable_flickr=False, enable_msrvtt=False)
