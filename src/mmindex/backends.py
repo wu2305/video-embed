@@ -152,10 +152,16 @@ class MLBackend:
         self._torch = torch
         dtype = getattr(torch, self.settings.model_dtype)
         self._processor = AutoProcessor.from_pretrained(self.settings.siglip_model_id)
-        self._clip = (
-            AutoModel.from_pretrained(self.settings.siglip_model_id, torch_dtype=dtype)
-            .eval()
-        )
+        # transformers renamed the kwarg from torch_dtype to dtype in v5.
+        try:
+            model = AutoModel.from_pretrained(
+                self.settings.siglip_model_id, dtype=dtype
+            )
+        except TypeError:
+            model = AutoModel.from_pretrained(
+                self.settings.siglip_model_id, torch_dtype=dtype
+            )
+        self._clip = model.eval()
 
     def _ensure_face(self):
         if self._face is not None:
@@ -204,6 +210,21 @@ class MLBackend:
 
     # ---------------------------------------------------------------- clip
 
+    @staticmethod
+    def _features_to_array(output) -> np.ndarray:
+        """Normalise a CLIP tower output to a float32 matrix.
+
+        transformers 4.x returns a tensor from ``get_*_features``; 5.x returns a
+        ``BaseModelOutputWithPooling`` whose ``pooler_output`` is the embedding.
+        """
+        if hasattr(output, "pooler_output"):
+            tensor = output.pooler_output
+        elif hasattr(output, "last_hidden_state"):
+            tensor = output.last_hidden_state[:, 0]
+        else:
+            tensor = output
+        return tensor.detach().cpu().numpy().astype(np.float32)
+
     def embed_images(self, images: Sequence[np.ndarray]) -> np.ndarray:
         if not images:
             return np.zeros((0, self.settings.clip_embedding_dim), dtype=np.float32)
@@ -217,7 +238,7 @@ class MLBackend:
             inputs = self._processor(images=batch, return_tensors="pt")
             with self._torch.no_grad():
                 features = self._clip.get_image_features(**inputs)
-            outputs.append(features.cpu().numpy().astype(np.float32))
+            outputs.append(self._features_to_array(features))
         return l2_normalize(np.vstack(outputs))
 
     def embed_text(self, text: str) -> np.ndarray:
@@ -225,7 +246,7 @@ class MLBackend:
         inputs = self._processor(text=[text], return_tensors="pt", padding=True)
         with self._torch.no_grad():
             features = self._clip.get_text_features(**inputs)
-        return l2_normalize(features.cpu().numpy().astype(np.float32))[0]
+        return l2_normalize(self._features_to_array(features))[0]
 
     # ---------------------------------------------------------------- face
 
