@@ -1,0 +1,55 @@
+from __future__ import annotations
+
+import json
+
+from mmindex.scan import canonical_time, read_manifest, scan
+
+
+def test_scan_deduplicates_exact_copies(media_tree, layout):
+    result = scan(media_tree, layout)
+    assert len(result.canonical) == 3
+    assert sum(len(v) - 1 for v in result.duplicates.values()) == 1
+    assert result.skipped == []
+
+
+def test_scan_writes_manifest_and_dedup_report(media_tree, layout):
+    scan(media_tree, layout)
+    entries = read_manifest(layout)
+    assert len(entries) == 3
+    assert all(entry.kind == "image" for entry in entries)
+    assert all(entry.digest for entry in entries)
+
+    payload = json.loads(layout.deduplicated.read_text())
+    assert payload["canonical_count"] == 3
+    assert payload["duplicate_count"] == 1
+
+
+def test_scan_is_deterministic(media_tree, layout):
+    scan(media_tree, layout)
+    first = [entry.rel_path for entry in read_manifest(layout)]
+    scan(media_tree, layout)
+    second = [entry.rel_path for entry in read_manifest(layout)]
+    assert first == second == sorted(first)
+
+
+def test_scan_excludes_directory(media_tree, layout):
+    skip = media_tree / "nested"
+    skip.mkdir()
+    (skip / "ignored.png").write_bytes((media_tree / "shot_0.png").read_bytes())
+    result = scan(media_tree, layout, exclude=[str(skip)])
+    assert all("nested" not in entry.path for entry in result.canonical)
+
+
+def test_canonical_time_prefers_filename_date(media_tree):
+    path = media_tree / "IMG_20240115_103000.png"
+    path.write_bytes((media_tree / "shot_0.png").read_bytes())
+    stamp, source = canonical_time(path)
+    assert source == "filename"
+    assert stamp > 0
+
+
+def test_canonical_time_falls_back_to_mtime(tmp_path):
+    path = tmp_path / "plain.png"
+    path.write_bytes(b"data")
+    _stamp, source = canonical_time(path)
+    assert source == "mtime"

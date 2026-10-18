@@ -1,0 +1,71 @@
+# CNB pipeline for the multimodal media indexer.
+#
+# `$` holds repository-level events (vscode). Branch-scoped events live under
+# the concrete branch names. The CI job runs the dependency-light part of the
+# suite plus a full hash-backend pipeline run, so every push proves the scan →
+# infer → cluster → export → search path still works.
+
+$:
+  vscode:
+    - name: mmindex-dev
+      runner:
+        cpus: 8
+      docker:
+        image: python:3.12
+      services:
+        - vscode
+      env:
+        PIP_DISABLE_PIP_VERSION_CHECK: "1"
+        MMINDEX_BACKEND: hash
+      stages:
+        - name: bootstrap
+          script:
+            - python -m pip install --quiet -U pip
+            - python -m pip install --quiet -e ".[ml,cluster,dev]"
+            - python -c "import mmindex; print('mmindex', mmindex.__version__)"
+
+main:
+  push:
+    - name: ci
+      runner:
+        cpus: 8
+      docker:
+        image: python:3.12
+      env:
+        PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      stages:
+        - name: install
+          script:
+            - python -m pip install --quiet -U pip
+            - python -m pip install --quiet -e ".[cluster,dev]"
+        - name: lint
+          script:
+            - python -m pip install --quiet ruff
+            - ruff check src tests --select F,E9
+        - name: test
+          timeout: 30m
+          script:
+            - python -m pytest -q
+        - name: smoke
+          script:
+            - bash scripts/smoke.sh
+  pull_request:
+    - name: pr-check
+      runner:
+        cpus: 4
+      docker:
+        image: python:3.12
+      env:
+        PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      stages:
+        - name: install
+          script:
+            - python -m pip install --quiet -U pip
+            - python -m pip install --quiet -e ".[cluster,dev]"
+        - name: test
+          timeout: 30m
+          script:
+            - python -m pytest -q
+      failStages:
+        - name: report-failure
+          script: 'echo "PR check failed for $CNB_PULL_REQUEST_IID $CNB_BUILD_FAILED_MSG"'

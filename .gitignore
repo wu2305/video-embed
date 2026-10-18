@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# index working directories produced by mmindex
+index_work/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.npy
+
+# agent-local state
+.commandcode/
+.claude/
