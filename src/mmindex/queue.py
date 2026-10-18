@@ -119,9 +119,6 @@ class WorkQueue:
         self.set_meta(f"n_shards:{stage}", str(n_shards))
         return len(rows)
 
-    def n_shards(self, stage: str) -> int:
-        return int(self.get_meta(f"n_shards:{stage}", "1") or 1)
-
     def set_meta(self, key: str, value: str) -> None:
         self._conn.execute(
             "INSERT OR REPLACE INTO queue_meta (key, value) VALUES (?,?)", (key, value)
