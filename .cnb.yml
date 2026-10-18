@@ -23,6 +23,14 @@ $:
             - python -m pip install --quiet -U pip
             - python -m pip install --quiet -e ".[ml,test]"
             - python -c "import mmindex; print('mmindex', mmindex.__version__)"
+        - name: test
+          timeout: 30m
+          script: python -m pytest -q
+        - name: smoke
+          script: bash scripts/smoke.sh
+        - name: ml-check
+          timeout: 60m
+          script: python scripts/ml_check.py
 
 main:
   push:
