@@ -78,6 +78,7 @@ class DedupScore:
 @dataclass
 class RetrievalScore:
     queries: int = 0
+    skipped: int = 0
     recall_at_1: float = 0.0
     recall_at_5: float = 0.0
     recall_at_10: float = 0.0
@@ -87,6 +88,7 @@ class RetrievalScore:
     def to_dict(self) -> dict:
         return {
             "queries": self.queries,
+            "skipped_non_master": self.skipped,
             "recall_at_1": round(self.recall_at_1, 4),
             "recall_at_5": round(self.recall_at_5, 4),
             "recall_at_10": round(self.recall_at_10, 4),
@@ -207,16 +209,25 @@ def score_retrieval(
     hits = {k: 0 for k in ks}
     reciprocal = 0.0
     used = 0
+    skipped = 0
+    # Search as a user does: masters only, matching the reference
+    # hybrid_search(only_master=True). A target demoted to a non-master (for
+    # example because it was chosen as a compressed variant) cannot be found,
+    # so its query is skipped rather than counted as a miss.
+    master_paths = _master_paths(index)
     for position, rel in enumerate(paths, start=1):
         captions_for = captions.get(rel) or []
         caption = next((c.strip() for c in captions_for if c and c.strip()), "")
         if not caption:
             continue
+        target = _norm(rel)
+        if master_paths is not None and not any(p.endswith(target) for p in master_paths):
+            skipped += 1
+            continue
         if position % 25 == 0:
             log(f"  retrieval: {position}/{len(paths)} queries")
-        target = _norm(rel)
         vector = backend.embed_text(caption)
-        results = index.search(vector, limit=max(ks), include_non_master=True)
+        results = index.search(vector, limit=max(ks))
         if not results:
             continue
         used += 1
@@ -234,12 +245,23 @@ def score_retrieval(
         score.per_query.append({"caption": caption, "target": rel, "rank": found})
 
     score.queries = used
+    score.skipped = skipped
     if used:
         score.recall_at_1 = hits[1] / used
         score.recall_at_5 = hits[5] / used
         score.recall_at_10 = hits[10] / used
         score.mrr = reciprocal / used
     return score
+
+
+def _master_paths(index) -> set[str] | None:
+    """Paths of units that are searchable masters."""
+    conn = sqlite3.connect(index.db_path)
+    try:
+        rows = conn.execute("SELECT path FROM units WHERE is_master = 1").fetchall()
+    finally:
+        conn.close()
+    return {_norm(row[0]) for row in rows}
 
 
 # ------------------------------------------------------------- clusters

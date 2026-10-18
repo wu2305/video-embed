@@ -168,6 +168,26 @@ def test_score_retrieval_skips_empty_captions(layout, settings):
     assert score.queries == 0
 
 
+def test_score_retrieval_skips_demoted_targets(layout, settings):
+    """A target folded into a near-duplicate group cannot be retrieved."""
+    settings.clip_embedding_dim = 8
+    settings.near_dup_hamming = 4
+    export_snapshot(
+        [
+            _unit(0, "sharp.jpg", dhash="0000000000000000", sharp=100.0),
+            _unit(1, "blurry.jpg", dhash="0000000000000000", sharp=1.0),
+        ],
+        layout,
+        settings,
+    )
+    index = Index.open(layout, settings)
+    captions = {"blurry.jpg": ["a blurry shot"]}
+    backend = _FakeBackend({"a blurry shot": np.eye(8, dtype=np.float32)[1]})
+    score = score_retrieval(index, captions, backend, log=lambda _m: None)
+    assert score.queries == 0
+    assert score.skipped == 1
+
+
 # --------------------------------------------------------------- clusters
 
 
