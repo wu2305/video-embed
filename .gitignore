@@ -18,3 +18,8 @@ index_work/
 # agent-local state
 .commandcode/
 .claude/
+
+# benchmark artifacts
+benchmark_corpus/
+benchmark_work/
+benchmark_report.json

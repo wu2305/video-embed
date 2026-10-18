@@ -18,13 +18,17 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from pathlib import Path
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--corpus-dir", default="/workspace/benchmark_corpus")
-    parser.add_argument("--work-dir", default="/workspace/benchmark_work")
-    parser.add_argument("--report", default="/workspace/benchmark_report.json")
+    # Keep the corpus and index outside /workspace: the workspace is backed up
+    # and restored on every environment restart, and that backup is capped at
+    # 100 MB, so multi-GB datasets do not belong there.
+    parser.add_argument("--corpus-dir", default="/opt/benchmark_corpus")
+    parser.add_argument("--work-dir", default="/opt/benchmark_work")
+    parser.add_argument("--report", default="/opt/benchmark_report.json")
     parser.add_argument("--lfw", type=int, default=400)
     parser.add_argument("--cross-age", type=int, default=400)
     parser.add_argument("--flickr", type=int, default=400)
@@ -62,6 +66,14 @@ def main() -> int:
         max_queries=args.max_queries,
     )
     path = write_report(result, args.report)
+    # Also publish a copy into the workspace so it survives the run and can be
+    # retrieved without shell access to the container.
+    published = Path(__file__).resolve().parent.parent / "benchmark_report.json"
+    try:
+        published.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+        print(f"report copied to {published}")
+    except OSError as exc:
+        print(f"could not publish report copy: {exc}", file=sys.stderr)
 
     summary = {
         "report": str(path),
