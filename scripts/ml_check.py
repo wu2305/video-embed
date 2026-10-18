@@ -50,6 +50,24 @@ def _synthetic_text_image(size: int = 320) -> np.ndarray:
     return np.asarray(image, dtype=np.uint8)
 
 
+def _reference_face() -> np.ndarray | None:
+    """Fetch a public face photo used to assert detection actually works."""
+    import urllib.request
+
+    url = "https://raw.githubusercontent.com/opencv/opencv/master/samples/data/lena.jpg"
+    target = Path(tempfile.gettempdir()) / "mmindex-reference-face.jpg"
+    try:
+        if not target.exists():
+            urllib.request.urlretrieve(url, target)
+        from PIL import Image
+
+        with Image.open(target) as image:
+            return np.asarray(image.convert("RGB"), dtype=np.uint8)
+    except Exception as exc:
+        print(f"could not load reference photo: {exc}")
+        return None
+
+
 def _synthetic_video(path: Path, seconds: float = 1.5, fps: int = 10) -> bool:
     try:
         import cv2
@@ -105,13 +123,27 @@ def main() -> int:
 
         print("== InsightFace ==")
         started = time.time()
+        # Detection needs a real face; the synthetic ovals are only there to
+        # exercise the model load. Validate the embedding contract on any face
+        # that is found, and fail if the download or session is broken.
         faces = backend.detect_faces(images)
         counts = [len(group) for group in faces]
-        print(f"faces per image={counts} elapsed={time.time() - started:.1f}s")
+        print(f"faces per synthetic image={counts} elapsed={time.time() - started:.1f}s")
         for group in faces:
             for face in group:
                 if face.embedding.shape != (settings.face_embedding_dim,):
                     failures.append(f"face embedding shape {face.embedding.shape}")
+        reference = _reference_face()
+        if reference is not None:
+            detected = backend.detect_faces([reference])[0]
+            print(f"faces in reference photo={len(detected)}")
+            if not detected:
+                failures.append("InsightFace found no face in the reference photo")
+            for face in detected:
+                if face.embedding.shape != (settings.face_embedding_dim,):
+                    failures.append(f"reference face embedding {face.embedding.shape}")
+        else:
+            print("reference photo unavailable; skipping detection assertion")
 
         print("== RapidOCR ==")
         started = time.time()

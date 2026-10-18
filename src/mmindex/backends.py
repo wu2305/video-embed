@@ -286,7 +286,25 @@ class MLBackend:
 
     # ----------------------------------------------------------- whisper
 
+    @staticmethod
+    def _has_audio(path: str) -> bool:
+        """Whether the container carries at least one audio stream.
+
+        faster-whisper decodes through PyAV and raises ``IndexError`` on a
+        video-only file, which is common in screen recordings and GIF-style
+        clips. Checking first keeps the stage from failing on them.
+        """
+        try:
+            import av
+
+            with av.open(str(path)) as container:
+                return any(s.type == "audio" for s in container.streams)
+        except Exception:
+            return False
+
     def transcribe(self, path: str, language: str | None = None) -> str:
+        if not self._has_audio(path):
+            return ""
         self._ensure_whisper()
         segments, _info = self._whisper.transcribe(str(path), language=language, vad_filter=True)
         return " ".join(segment.text.strip() for segment in segments).strip()
