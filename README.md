@@ -63,6 +63,26 @@ similarity, since both sides are L2-normalised — and adds `text_bonus` when th
 query appears in a unit's OCR/ASR text. There is no separate vector database:
 metadata is SQLite, vectors are one FP16 `.npy` matrix.
 
+### Query console
+
+`scripts/serve.py` puts the same query behind a small web page: a query box, the
+filters, result cards with thumbnails, and the embed/filter/rank timings for each
+search. It uses only the standard library, so it runs anywhere the CLI does.
+
+```bash
+# in the CNB dev environment, against the index scripts/benchmark.py built
+python scripts/serve.py --work-dir /opt/benchmark_work --port 8000
+
+# it listens on 0.0.0.0, so forward the port from your machine and open
+# http://localhost:8000
+```
+
+Thumbnails are cached JPEGs; for video units the frame is re-extracted from the
+clip at the scene midpoint, because `infer` deletes the extracted frames.
+`/api/source?id=N` streams the original file with `Range` support, which is what
+lets the browser play a video rather than show a broken player. The server is a
+demo, not a service: no auth, no pagination, one process.
+
 Without the ML extras installed, use `--backend hash`. It produces deterministic
 pseudo-embeddings from image content so the whole pipeline — including the work
 queue and search — can be exercised on any machine. Records are tagged

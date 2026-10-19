@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import os
 import sqlite3
 import sys
 import threading
@@ -666,7 +667,14 @@ def main() -> int:
     info = server.info()
     print(f"snapshot {info['snapshot']}  backend {info['backend']}")
     print(f"{info['units']} units ({info['masters']} masters), matrix {info['matrix']}")
-    print(f"listening on http://{args.host}:{args.port}/  (forward this port to browse)")
+    print(f"listening on http://{args.host}:{args.port}/")
+    # CNB dev containers publish a URL template per port; show the filled-in
+    # one so the console is reachable from a browser without guessing.
+    proxy = os.environ.get("CNB_VSCODE_PROXY_URI")
+    if proxy:
+        print(f"open in the browser: {proxy.replace('{{port}}', str(args.port))}")
+    else:
+        print("forward this port from your machine, then open http://localhost:%d/" % args.port)
     print("Ctrl-C to stop")
 
     httpd = ThreadingHTTPServer((args.host, args.port), build_handler(server))
