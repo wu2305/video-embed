@@ -98,9 +98,20 @@ class Layout:
 
     root: Path
     namespace: str = "default"
+    # Per-machine scratch directory for a worker's own checkpoint database. Set it
+    # when ``root`` is on shared storage that several machines mount: SQLite over
+    # NFS or a FUSE bucket is unreliable, so each machine keeps its database local
+    # and exchanges progress only through the immutable shards under ``root``.
+    local_dir: Path | None = None
+    # ``DELETE`` instead of ``WAL`` when the queue file sits on a network mount:
+    # WAL needs shared memory and so only works for processes on one host.
+    queue_journal_mode: str = "WAL"
 
     def __post_init__(self) -> None:
         self.root = Path(self.root)
+        if self.local_dir is not None:
+            self.local_dir = Path(self.local_dir)
+        self.queue_journal_mode = self.queue_journal_mode.upper()
 
     @property
     def checkpoint_dir(self) -> Path:
@@ -109,6 +120,13 @@ class Layout:
     @property
     def checkpoint_db(self) -> Path:
         return self.checkpoint_dir / f"checkpoint-v2-{self.namespace}.sqlite"
+
+    @property
+    def worker_checkpoint_db(self) -> Path:
+        """The checkpoint database a worker on this machine writes to."""
+        if self.local_dir is None:
+            return self.checkpoint_db
+        return self.local_dir / f"checkpoint-v2-{self.namespace}.sqlite"
 
     @property
     def shard_dir(self) -> Path:
@@ -158,6 +176,7 @@ class Layout:
             self.frames_dir,
             self.prepare_dir,
             self.snapshots_dir,
+            *([self.local_dir] if self.local_dir is not None else []),
         ):
             path.mkdir(parents=True, exist_ok=True)
         return self

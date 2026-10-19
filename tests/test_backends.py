@@ -99,3 +99,82 @@ def test_hash_backend_detects_contrast_not_flat_frames(settings):
 def test_thumbnail_shape():
     image = np.zeros((100, 50, 3), dtype="uint8")
     assert _thumbnail(image, 16).shape == (16, 16)
+
+
+class _FakeFaceApp:
+    """Stands in for an InsightFace app whose detector size is fixed at build time."""
+
+    def __init__(self, det_size):
+        self.det_size = det_size
+        self.calls = 0
+
+    def get(self, bgr):
+        self.calls += 1
+        marker = int(bgr[0, 0, 0])
+        # marker 0 = tight crop: only the small grid finds the face.
+        # marker 1 = full-size photo: only the large grid finds it.
+        found = (marker == 0 and self.det_size == 320) or (marker == 1 and self.det_size == 640)
+        if not found:
+            return []
+        return [type("F", (), {"embedding": np.ones(4), "bbox": [0, 0, 1, 1], "det_score": 0.9})()]
+
+
+def _face_backend(settings, built):
+    from mmindex.backends import MLBackend
+
+    backend = MLBackend(settings)
+
+    def build(det_size):
+        app = _FakeFaceApp(det_size)
+        built.append(app)
+        return app
+
+    backend._build_face_app = build
+    return backend
+
+
+def test_face_fallback_does_not_demote_later_images(settings):
+    """Regression: one tight crop must not switch every later image to 320 px."""
+    built: list = []
+    backend = _face_backend(settings, built)
+    crop = np.zeros((8, 8, 3), dtype="uint8")  # found only at 320
+    photo = np.ones((8, 8, 3), dtype="uint8")  # found only at 640
+
+    results = backend.detect_faces([crop, photo, photo, crop])
+
+    assert [len(r) for r in results] == [1, 1, 1, 1]
+    primary, fallback = built
+    assert (primary.det_size, fallback.det_size) == (640, 320)
+    # The fallback ran only for the two crops; both photos were served at 640.
+    assert fallback.calls == 2
+    assert primary.calls == 4
+
+
+def test_face_detection_is_order_independent(settings):
+    crop = np.zeros((8, 8, 3), dtype="uint8")
+    photo = np.ones((8, 8, 3), dtype="uint8")
+    forward = _face_backend(settings, [])
+    backward = _face_backend(settings, [])
+    a = forward.detect_faces([crop, photo])
+    b = backward.detect_faces([photo, crop])
+    assert [len(r) for r in a] == [1, 1]
+    assert [len(r) for r in reversed(b)] == [1, 1]
+
+
+def test_face_fallback_app_is_built_lazily_and_once(settings):
+    built: list = []
+    backend = _face_backend(settings, built)
+    photo = np.ones((8, 8, 3), dtype="uint8")
+    backend.detect_faces([photo, photo])
+    assert [app.det_size for app in built] == [640]  # no fallback needed, none built
+    crop = np.zeros((8, 8, 3), dtype="uint8")
+    backend.detect_faces([crop, crop, crop])
+    assert [app.det_size for app in built] == [640, 320]
+
+
+def test_close_releases_the_fallback_app(settings):
+    built: list = []
+    backend = _face_backend(settings, built)
+    backend.detect_faces([np.zeros((8, 8, 3), dtype="uint8")])
+    backend.close()
+    assert backend._face is None and backend._face_fallback is None

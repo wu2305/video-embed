@@ -16,7 +16,7 @@ from .checkpoint import IncrementalCheckpoint
 from .clustering import cluster_units
 from .config import ALL_STAGES, FINAL_STAGES, Layout, Settings
 from .export import collect_units, export_snapshot
-from .queue import WorkQueue
+from .queue import FAILED, WorkQueue
 from .scan import ManifestEntry, read_manifest
 
 @dataclass
@@ -31,7 +31,11 @@ class Coordinator:
     @property
     def queue(self) -> WorkQueue:
         if self._queue is None:
-            self._queue = WorkQueue(self.layout.queue_db, lease_seconds=self.lease_seconds)
+            self._queue = WorkQueue(
+                self.layout.queue_db,
+                lease_seconds=self.lease_seconds,
+                journal_mode=self.layout.queue_journal_mode,
+            )
         return self._queue
 
     # ------------------------------------------------------------ enqueue
@@ -52,7 +56,12 @@ class Coordinator:
     # --------------------------------------------------------------- poll
 
     def wait_for_stage(self, stage: str, timeout: float | None = None) -> bool:
-        """Poll until no pending/claimed/failed rows remain for ``stage``."""
+        """Poll until every row of ``stage`` is done.
+
+        Returns ``False`` as soon as nothing is left to run but some rows have
+        exhausted their retries, rather than polling forever for work that no
+        worker will pick up; ``queue retry`` re-queues them.
+        """
         started = time.time()
         while True:
             self.queue.reclaim_stale(self.lease_seconds)
@@ -61,6 +70,9 @@ class Coordinator:
             if remaining == 0:
                 self.log(f"stage '{stage}' complete: {stats}")
                 return True
+            if stats.get(FAILED, 0) == remaining:
+                self.log(f"stage '{stage}' stalled: only failed tasks remain {stats}")
+                return False
             if timeout is not None and time.time() - started > timeout:
                 self.log(f"stage '{stage}' timed out with {stats}")
                 return False
@@ -78,7 +90,7 @@ class Coordinator:
 
     def _all_units(self) -> list[dict]:
         checkpoint = IncrementalCheckpoint(
-            self.layout.checkpoint_db,
+            self.layout.worker_checkpoint_db,
             stage="infer",
             shard_dir=self.layout.shard_dir,
             auto_sync=False,
@@ -139,8 +151,13 @@ class Coordinator:
             complete = self.wait_for_stage(stage, timeout=timeout)
             results[stage] = {"complete": complete, "stats": self.queue.stats(stage)}
             if not complete:
+                failures = self.queue.failures(stage, limit=3)
+                detail = "".join(
+                    f"\n  {f['file_path']}: {f['error_msg']}" for f in failures
+                )
                 raise RuntimeError(
-                    f"stage '{stage}' did not finish; aborting before cluster/export"
+                    f"stage '{stage}' did not finish ({results[stage]['stats']}); "
+                    f"aborting before cluster/export{detail}"
                 )
         return results
 

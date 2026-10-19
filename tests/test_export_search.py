@@ -122,3 +122,116 @@ def test_search_requires_query(layout, settings):
     index = Index.open(layout, settings)
     with pytest.raises(ValueError):
         index.search()
+
+
+def _unit_for(i, backend=None, dim=4):
+    import numpy as np
+
+    unit = {
+        "unit_index": 0,
+        "path": f"/m/{i}.jpg",
+        "digest": f"d{i}",
+        "kind": "image",
+        "canonical_time": 0.0,
+        "clip_embedding": np.eye(dim, dtype=np.float32)[i % dim],
+        "faces": [],
+        "dhash": f"{i * 0x0101010101010101 % (1 << 64):016x}",
+        "sharpness": 1.0,
+    }
+    if backend:
+        unit["backend"] = backend
+    return unit
+
+
+def test_export_records_the_real_backend_not_the_setting(layout, settings):
+    from mmindex.export import export_snapshot
+    from mmindex.search import Index
+
+    settings.clip_embedding_dim = 4
+    settings.backend = "auto"
+    manifest = export_snapshot([_unit_for(0, "ml"), _unit_for(1, "ml")], layout, settings)
+    assert manifest["settings"]["backend"] == "ml"
+    assert Index.open(layout, settings).backend == "ml"
+
+
+def test_export_refuses_to_mix_backends(layout, settings):
+    """Regression: hash and ml vectors were accepted into one index."""
+    import pytest
+
+    from mmindex.export import ExportError, export_snapshot
+
+    settings.clip_embedding_dim = 4
+    with pytest.raises(ExportError, match="several inference backends"):
+        export_snapshot([_unit_for(0, "hash"), _unit_for(1, "ml")], layout, settings)
+    assert not layout.index_manifest.exists()
+
+
+def test_search_rejects_a_query_from_another_backend(layout, settings):
+    import pytest
+
+    from mmindex.export import export_snapshot
+    from mmindex.search import Index
+
+    settings.clip_embedding_dim = 4
+    export_snapshot([_unit_for(0, "hash")], layout, settings)
+    index = Index.open(layout, settings)
+    index.check_backend("hash")
+    with pytest.raises(ValueError, match="built with the 'hash' backend"):
+        index.check_backend("ml")
+
+
+def test_snapshots_without_a_recorded_backend_still_open(layout, settings):
+    from mmindex.export import export_snapshot
+    from mmindex.search import Index
+
+    settings.clip_embedding_dim = 4
+    settings.backend = "auto"
+    export_snapshot([_unit_for(0)], layout, settings)
+    index = Index.open(layout, settings)
+    index.check_backend("ml")  # legacy/unknown index: nothing to compare against
+
+
+def test_stale_person_labels_are_refused_not_misapplied(layout, settings):
+    """Regression: labels joined by list position, so a new record shifted persons."""
+    import pytest
+
+    from mmindex.clustering import write_labels
+    from mmindex.export import ExportError, collect_units
+
+    a, b = _unit_for(0), _unit_for(1)
+    records = [{"units": [a, b]}]
+    import numpy as np
+
+    write_labels(
+        layout,
+        np.array([0, 1]),
+        [(0, 0), (1, 0)],
+        [("/m/0.jpg", "d0", 0), ("/m/1.jpg", "d1", 0)],
+    )
+    import json
+
+    labels = json.loads(layout.person_labels.read_text())
+
+    # Same units in a different order: persons follow the unit, not the position.
+    flipped = collect_units([{"units": [b, a]}], labels)
+    assert {u["path"]: u["person_ids"] for u in flipped} == {
+        "/m/0.jpg": ["person-0000"],
+        "/m/1.jpg": ["person-0001"],
+    }
+
+    # A unit inferred after clustering makes the labels stale.
+    with pytest.raises(ExportError, match="stale"):
+        collect_units([{"units": [_unit_for(2), a, b]}], labels)
+    # So does a unit that disappeared.
+    with pytest.raises(ExportError, match="stale"):
+        collect_units(records[:0] + [{"units": [a]}], labels)
+
+
+def test_legacy_labels_without_keys_still_join_by_position(layout):
+    from mmindex.export import collect_units
+
+    units = collect_units(
+        [{"units": [_unit_for(0), _unit_for(1)]}],
+        {"labels": [0], "unit_refs": [[1, 0]]},
+    )
+    assert [u["person_ids"] for u in units] == [[], ["person-0000"]]

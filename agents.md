@@ -187,6 +187,46 @@ CUDA path from the production notebook and is out of scope for this package.
 
 ---
 
+## Code-review fixes (2026-10-19)
+
+A review against this handover found eight defects, now fixed with regression
+tests (145 tests). Behaviour you may otherwise be surprised by:
+
+- **Distributed `prepare` runs ASR.** The worker builds a backend lazily on the
+  first video task; images never load models.
+- **Near-duplicate grouping** (`export.near_duplicates`) cuts the 64-bit dhash
+  into `near_dup_hamming + 1` bands over every bit, so no pair within the
+  threshold is missed, and confirms candidates with vectorised hamming checks.
+  `BENCHMARK.md`'s 0.375 lossy re-encode fold rate predates this fix and has not
+  been re-measured.
+- **Face detection** keeps two InsightFace apps (640 px, plus a 320 px fallback
+  built on first use) instead of re-`prepare`-ing one, which had left every later
+  image at 320 px.
+- **Leases**: a background heartbeat runs while a task is processed, and
+  `heartbeat/mark_done/mark_failed/release(task_id, worker_id)` apply only if that
+  worker still owns the claim. `Worker` summaries report `lost` leases.
+- **Failed stages**: `Coordinator.wait_for_stage` returns `False` as soon as only
+  failed rows remain, and `run` aborts naming the failing files.
+- **Person labels** are written with `unit_keys` (path, digest, unit index) and
+  joined by key at export; a changed unit set raises `ExportError` ("re-run the
+  cluster stage"). Label files from older runs fall back to the positional join.
+- **Backend identity**: units carry the backend that produced them; export refuses
+  a mix, stores the real name in the snapshot, and `Index.check_backend` (used by
+  `mmindex search`) rejects a query embedded by another backend.
+- **Multi-machine checkpoints**: shards are named
+  `shard-<writer>-<seq>.json.gz` (writer id minted once per database) and
+  imported shards are hash-checked. `--local-dir` gives each machine its own
+  database, and a durable worker syncs its shard before marking a task done.
+  `--queue-journal delete` is for a queue file on a network mount. This is tested
+  with simulated machines on one disk, not on a real NFS or FUSE mount.
+
+Still open from the review: per-scene ASR timing, uncompressed full-resolution
+frames in stage 2, SHA256 on every file in `scan`, per-query hit construction in
+`search`, and a guard against the production checkpoint namespace.
+`scripts/query.py` does not call `Index.check_backend` yet.
+
+---
+
 ## What to do next
 
 1. **Production index export (unchanged)**: the user still runs notebook cells

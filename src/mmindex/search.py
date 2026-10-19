@@ -67,6 +67,7 @@ class Index:
             raise FileNotFoundError(f"incomplete snapshot: {self.snapshot_dir}")
         self.matrix = np.load(self.npy_path).astype(np.float32)
         self.matrix = l2_normalize(self.matrix)
+        self.backend = self._read_backend()
         catalog_path = self.snapshot_dir / "person_catalog.json"
         self.catalog = (
             json.loads(catalog_path.read_text(encoding="utf-8"))
@@ -80,6 +81,27 @@ class Index:
         if not manifest or not manifest.get("complete"):
             raise FileNotFoundError(f"no complete index manifest at {layout.index_manifest}")
         return cls(manifest["snapshot_dir"], settings)
+
+    def _read_backend(self) -> str | None:
+        conn = sqlite3.connect(self.db_path)
+        try:
+            row = conn.execute("SELECT value FROM meta WHERE key='backend'").fetchone()
+        except sqlite3.Error:
+            return None
+        finally:
+            conn.close()
+        return row[0] if row else None
+
+    def check_backend(self, name: str) -> None:
+        """Refuse a query embedded by a different backend than the one that built
+        the index: the vectors would not be comparable and the ranking is noise.
+        Snapshots from before the backend was recorded (``auto`` or absent) pass.
+        """
+        if self.backend in ("hash", "ml") and name in ("hash", "ml") and name != self.backend:
+            raise ValueError(
+                f"index was built with the '{self.backend}' backend but the query was "
+                f"embedded with '{name}'; pass --backend {self.backend}"
+            )
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)

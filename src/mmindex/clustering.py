@@ -113,12 +113,30 @@ def write_catalog(layout: Layout, catalog: dict) -> Path:
     return target
 
 
-def write_labels(layout: Layout, labels: np.ndarray, unit_refs: Sequence[tuple[int, int]]) -> Path:
+def unit_key(unit: dict) -> tuple[str, str, int]:
+    """Stable identity of a unit, independent of its position in any list."""
+    return (unit.get("path", ""), unit.get("digest", ""), int(unit.get("unit_index", 0)))
+
+
+def write_labels(
+    layout: Layout,
+    labels: np.ndarray,
+    unit_refs: Sequence[tuple[int, int]],
+    unit_keys: Sequence[tuple[str, str, int]] | None = None,
+) -> Path:
+    """Write per-face labels.
+
+    ``unit_keys[i]`` identifies the unit at position ``i``, which is what
+    ``unit_refs`` points into; export joins on these keys, never on positions,
+    so labels computed for a different set of units are detected, not misapplied.
+    """
     layout.ensure()
     payload = {
         "labels": labels.astype(int).tolist(),
         "unit_refs": [[int(u), int(f)] for u, f in unit_refs],
     }
+    if unit_keys is not None:
+        payload["unit_keys"] = [[k[0], k[1], int(k[2])] for k in unit_keys]
     target = layout.person_labels
     tmp = target.with_suffix(".json.tmp")
     with tmp.open("w", encoding="utf-8") as handle:
@@ -158,5 +176,5 @@ def cluster_units(units: Sequence[dict], layout: Layout, settings: Settings) -> 
         catalog = {"generated_at": time.time(), "persons": [], "person_count": 0, "noise_faces": 0}
     catalog["diagnostics"] = diagnostics
     write_catalog(layout, catalog)
-    write_labels(layout, labels, refs)
+    write_labels(layout, labels, refs, [unit_key(unit) for unit in units])
     return catalog

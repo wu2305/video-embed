@@ -130,3 +130,78 @@ def test_meta_roundtrip(tmp_path):
         assert store.get_meta("missing", "fallback") == "fallback"
     finally:
         store.close(sync=False)
+
+
+def test_two_machines_syncing_to_one_shard_dir_do_not_overwrite_each_other(tmp_path):
+    """Regression: shard numbers came from listing the folder, so two machines with
+    their own databases both wrote shard-000001 and the second silently replaced
+    the first."""
+    shards = tmp_path / "shared" / "shards"
+    machine_a = IncrementalCheckpoint(
+        tmp_path / "a" / "cp.sqlite", stage="infer", shard_dir=shards, auto_sync=False
+    )
+    machine_b = IncrementalCheckpoint(
+        tmp_path / "b" / "cp.sqlite", stage="infer", shard_dir=shards, auto_sync=False
+    )
+    try:
+        machine_a.put("a.jpg", "da", {"from": "a"})
+        machine_b.put("b.jpg", "db", {"from": "b"})
+        shard_a, shard_b = machine_a.sync(), machine_b.sync()
+        assert shard_a != shard_b and shard_a.exists() and shard_b.exists()
+        assert machine_a.writer_id != machine_b.writer_id
+        assert len(list(shards.glob("shard-*.json.gz"))) == 2
+
+        # A third machine rebuilds the union.
+        reader = IncrementalCheckpoint(
+            tmp_path / "c" / "cp.sqlite", stage="infer", shard_dir=shards, auto_sync=False
+        )
+        try:
+            assert reader.import_shards() == 2
+            assert reader.get("a.jpg", "da") == {"from": "a"}
+            assert reader.get("b.jpg", "db") == {"from": "b"}
+        finally:
+            reader.close(sync=False)
+    finally:
+        machine_a.close(sync=False)
+        machine_b.close(sync=False)
+
+
+def test_shard_sequence_and_writer_id_survive_a_restart(tmp_path):
+    db, shards = tmp_path / "cp.sqlite", tmp_path / "shards"
+    first = IncrementalCheckpoint(db, stage="infer", shard_dir=shards, auto_sync=False)
+    first.put("a.jpg", "da", {"n": 1})
+    one = first.sync()
+    writer = first.writer_id
+    first.close(sync=False)
+
+    again = IncrementalCheckpoint(db, stage="infer", shard_dir=shards, auto_sync=False)
+    try:
+        assert again.writer_id == writer
+        again.put("b.jpg", "db", {"n": 2})
+        two = again.sync()
+        assert two != one and one.exists() and two.exists()
+    finally:
+        again.close(sync=False)
+
+
+def test_corrupt_shard_is_rejected(tmp_path):
+    import gzip
+    import json
+
+    shards = tmp_path / "shards"
+    shards.mkdir()
+    envelope = {
+        "path": "a.jpg", "digest": "da", "stage": "infer",
+        "payload_sha": "0" * 64, "created_at": 1.0, "payload": '{"n":1}',
+    }
+    with gzip.open(shards / "shard-bad-000001.json.gz", "wb") as handle:
+        handle.write(json.dumps(envelope).encode() + b"\n")
+    store = IncrementalCheckpoint(
+        tmp_path / "cp.sqlite", stage="infer", shard_dir=shards, auto_sync=False
+    )
+    try:
+        with pytest.raises(CheckpointConflict, match="corrupt"):
+            store.import_shards()
+        assert store.has("a.jpg", "da") is False
+    finally:
+        store.close(sync=False)

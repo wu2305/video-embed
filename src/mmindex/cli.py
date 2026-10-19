@@ -11,7 +11,12 @@ from .config import ALL_STAGES, STAGES, Layout, Settings
 
 
 def _layout(args: argparse.Namespace) -> Layout:
-    return Layout(Path(args.work_dir), namespace=args.namespace)
+    return Layout(
+        Path(args.work_dir),
+        namespace=args.namespace,
+        local_dir=Path(args.local_dir) if args.local_dir else None,
+        queue_journal_mode=args.queue_journal,
+    )
 
 
 def _settings(args: argparse.Namespace) -> Settings:
@@ -80,6 +85,7 @@ def cmd_search(args: argparse.Namespace) -> int:
     if args.query:
         backend = build_backend(settings)
         try:
+            index.check_backend(backend.name)
             vector = backend.embed_text(args.query)
         finally:
             backend.close()
@@ -145,7 +151,8 @@ def cmd_coordinator(args: argparse.Namespace) -> int:
 def cmd_queue(args: argparse.Namespace) -> int:
     from .queue import WorkQueue
 
-    queue = WorkQueue(_layout(args).queue_db)
+    layout = _layout(args)
+    queue = WorkQueue(layout.queue_db, journal_mode=layout.queue_journal_mode)
     try:
         if args.queue_action == "stats":
             _print(queue.stats(args.stage))
@@ -225,6 +232,18 @@ def build_parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--work-dir", default="./index_work", help="index working directory")
     common.add_argument("--namespace", default="default", help="checkpoint namespace")
+    common.add_argument(
+        "--local-dir",
+        default=None,
+        help="per-machine directory for a worker's own checkpoint database; use it "
+        "when --work-dir is shared storage mounted by several machines",
+    )
+    common.add_argument(
+        "--queue-journal",
+        default="wal",
+        choices=["wal", "delete"],
+        help="SQLite journal mode of the work queue; 'delete' for network mounts",
+    )
     common.add_argument(
         "--backend", default=None, choices=["auto", "ml", "hash"], help="inference backend"
     )

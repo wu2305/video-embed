@@ -137,6 +137,7 @@ class MLBackend:
         self._clip = None
         self._processor = None
         self._face = None
+        self._face_fallback = None
         self._ocr = None
         self._whisper = None
         self._torch = None
@@ -163,23 +164,27 @@ class MLBackend:
             )
         self._clip = model.eval()
 
-    def _ensure_face(self):
-        if self._face is not None:
-            return
+    def _build_face_app(self, det_size: int):
+        """One InsightFace app whose detector runs at a fixed ``det_size``."""
         import onnxruntime
         from insightface.app import FaceAnalysis
 
         options = onnxruntime.SessionOptions()
         options.intra_op_num_threads = 1 if self.settings.device != "cpu" else _cpu_count()
         options.inter_op_num_threads = 1
-        self._face = FaceAnalysis(
+        app = FaceAnalysis(
             name=self.settings.face_model_name,
             allowed_modules=["detection", "recognition"],
             providers=["CPUExecutionProvider"],
             sess_options=options,
         )
-        self._face.prepare(ctx_id=-1, det_size=(self.settings.face_det_size,) * 2)
-        self._face_fallback_ready = False
+        app.prepare(ctx_id=-1, det_size=(det_size,) * 2)
+        return app
+
+    def _ensure_face(self):
+        if self._face is not None:
+            return
+        self._face = self._build_face_app(self.settings.face_det_size)
 
     def _ensure_ocr(self):
         if self._ocr is not None:
@@ -264,16 +269,18 @@ class MLBackend:
         real LFW image, 640 returned 0 detections and 320 returned 1. Full-size
         photographs are the opposite case, so try the configured size first and
         fall back rather than picking one size for every input.
+
+        The fallback is a second app, built on first use, rather than a second
+        ``prepare`` of the first one: ``prepare`` changes the detector's size for
+        every later call, which would silently demote all subsequent images to
+        the fallback size and make results depend on file order.
         """
         found = self._face.get(bgr)
         if found:
             return found
-        if not self._face_fallback_ready:
-            self._face.prepare(
-                ctx_id=-1, det_size=(self.settings.face_det_fallback_size,) * 2
-            )
-            self._face_fallback_ready = True
-        return self._face.get(bgr)
+        if self._face_fallback is None:
+            self._face_fallback = self._build_face_app(self.settings.face_det_fallback_size)
+        return self._face_fallback.get(bgr)
 
     def detect_faces(self, images: Sequence[np.ndarray]) -> list[list[Face]]:
         if not images:
@@ -338,6 +345,7 @@ class MLBackend:
         self._clip = None
         self._processor = None
         self._face = None
+        self._face_fallback = None
         self._ocr = None
         self._whisper = None
 

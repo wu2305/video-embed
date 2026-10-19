@@ -47,6 +47,22 @@ mmindex search "red car on a bridge" --work-dir ./index_work --limit 10
 mmindex verify --work-dir ./index_work
 ```
 
+`mmindex search` prints raw JSON. `scripts/query.py` is the same query with
+readable output, and it explains the mechanics when given `--explain`:
+
+```bash
+# in the CNB dev environment, against the benchmark index from scripts/benchmark.py
+python scripts/query.py "a man in a suit" --limit 5
+python scripts/query.py "crowd of people" --person person-0003 --min-faces 1 --explain
+```
+
+A query is one text embedding, one SQL filter and one matrix multiply:
+`Index` embeds the text with SigLIP, selects candidate rows from the SQLite
+`units` table, then scores `matrix[vec_row_idx] @ query_vector` — cosine
+similarity, since both sides are L2-normalised — and adds `text_bonus` when the
+query appears in a unit's OCR/ASR text. There is no separate vector database:
+metadata is SQLite, vectors are one FP16 `.npy` matrix.
+
 Without the ML extras installed, use `--backend hash`. It produces deterministic
 pseudo-embeddings from image content so the whole pipeline — including the work
 queue and search — can be exercised on any machine. Records are tagged
@@ -94,6 +110,29 @@ mmindex queue stats --work-dir /mnt/shared
 mmindex queue reclaim --work-dir /mnt/shared
 mmindex queue retry --work-dir /mnt/shared --stage infer
 ```
+
+A running task keeps its lease alive from a background heartbeat, so only a
+vanished machine loses its claim, and a worker whose lease was reclaimed cannot
+finish, fail or release a row that another worker now owns. A stage whose tasks
+have all exhausted their retries makes the coordinator stop with the failing
+files instead of waiting forever; fix the cause and run `mmindex queue retry`.
+
+### Several machines, shared storage
+
+When `--work-dir` is a network mount, give every machine its own database:
+
+```bash
+mmindex worker --stage infer --work-dir /mnt/shared --shard 0 \
+    --local-dir /tmp/mmindex --queue-journal delete
+```
+
+`--local-dir` keeps the worker's checkpoint database on the machine and shares
+progress only through immutable shards under `<work-dir>/checkpoints/shards`,
+named `shard-<writer>-<seq>.json.gz` so two machines can never overwrite each
+other. A worker syncs its shard before it marks a task done and imports other
+machines' shards before it needs their records. `--queue-journal delete` is for
+a queue file on a network mount, where SQLite's default WAL mode does not work;
+use Redis or a managed queue instead if the mount cannot provide POSIX locks.
 
 ## Index layout
 
@@ -175,7 +214,7 @@ approximately reproducing it.
 pytest
 ```
 
-112 tests cover hashing and dedup, canonical timestamps, checkpoint resume and
+145 tests cover hashing and dedup, canonical timestamps, checkpoint resume and
 guarded overwrite, shard round-trips, queue leasing and lease recovery,
 stage-scoped task ids, stage idempotency, video scene detection, export
 consistency checks, near-duplicate master selection, hybrid search ranking and
