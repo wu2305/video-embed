@@ -16,10 +16,15 @@ from pathlib import Path
 import numpy as np
 
 SOURCES = {
-    "group_portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/"
-    "The_Beatles_in_America.JPG/2560px-The_Beatles_in_America.JPG",
-    "sign_board": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/"
-    "Street_sign_in_London.jpg/2560px-Street_sign_in_London.jpg",
+    # Genuinely large photographs (2000-3000 px) are needed to exercise the
+    # bound at all; the sample images bundled with OpenCV/HF are already small.
+    # Pexels serves these anonymously, Wikimedia often times out from CI.
+    "portrait": "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg"
+    "?auto=compress&cs=tinysrgb&w=3000",
+    "group": "https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg"
+    "?auto=compress&cs=tinysrgb&w=3000",
+    "street_sign": "https://images.pexels.com/photos/1092730/pexels-photo-1092730.jpeg"
+    "?auto=compress&cs=tinysrgb&w=3000",
     "lena": "https://raw.githubusercontent.com/opencv/opencv/master/samples/data/lena.jpg",
 }
 
@@ -29,7 +34,13 @@ def fetch(name: str, url: str, root: Path) -> Path | None:
     if target.exists():
         return target
     try:
-        request = urllib.request.Request(url, headers={"User-Agent": "mmindex-probe/1.0"})
+        request = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; mmindex-probe/1.0)",
+                "Accept": "image/jpeg,image/*",
+            },
+        )
         with urllib.request.urlopen(request, timeout=60) as response:
             target.write_bytes(response.read())
         return target
