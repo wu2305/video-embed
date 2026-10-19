@@ -11,9 +11,32 @@ to do next, in that order.
 > sections below describe the state when only findings 1-8 were done and are
 > kept for the reasoning and the still-valid gaps.
 
+## Start here
+
+All 13 review findings are fixed on `review/2026-10-19` (HEAD `05a5a26`, 12
+commits ahead of `main`, clean tree, pushed). Last verified on that HEAD: 154
+passed / 4 skipped, smoke clean, `ml_check.py` passed, full-corpus benchmark
+passed. **Nothing is committed to `main` yet — that decision is the user's.**
+
+Read in this order:
+
+1. `agents.md` — production constraints that must not be broken.
+2. This section 6 — what each finding does now, how it was verified, and the
+   traps (no exec on CNB workspaces; builds only see pushed commits).
+3. Section 2.2 and section 3 — the gaps that are still real.
+4. `BENCHMARK.md` — before/after numbers and which deltas are *not* the fixes.
+
+The highest-value next task is sharpness normalisation for master election
+(section 6, open item 2); the highest-priority decision is how to land the
+branch (open item 1).
+
+
 ---
 
 ## 0. State of the working tree
+
+> **Superseded:** everything described here was committed to
+> `review/2026-10-19`. See "Start here" and section 6 for the current state.
 
 - **Nothing is committed.** 18 files modified, 2 new (`tests/test_worker.py`,
   and the user's own untracked `scripts/query.py`, which I did not touch).
@@ -52,6 +75,10 @@ uses `media_kind()` instead of always `"image"`; `Worker.run()` summaries gain a
 ---
 
 ## 2. Issues NOT solved
+
+> **Superseded for findings 9-13:** they are fixed on `review/2026-10-19`; see
+> section 6. Table 2.1 below is kept only as the original problem statement.
+> Section 2.2 and section 3 are still accurate.
 
 Findings 9–13 from the review table are untouched, plus items I noticed while
 fixing. Priority order within each group.
@@ -339,22 +366,66 @@ download progress bars before reading. A build checks out a git ref, so
   the delta is corpus drift, not the fix. `BENCHMARK.md` says so.
 
 
-### What is still open
+### State at hand-off (2026-10-20, end of session)
 
-1. **Re-measure the benchmark on a full corpus.** Needs a `datasets` version
-   that still runs loading scripts, or a Flickr30k mirror shipping Parquet.
-   Until then the caption metrics and the 0.375 figure are unre-run.
-2. **Findings 9-13 are uncommitted to `main`.** They are on the review branch
-   only; the user decides how to merge.
-3. Everything in section 2.2 and section 3 above is still true except the items
-   findings 9-13 closed: `put` is still `INSERT OR REPLACE`, durable workers
-   still write one shard per task, `coordinator` still has no `--n-shards`,
-   `asr_error` is still silent in summaries, `snapshot_dir` is still absolute,
-   `_all_units` still loads everything, and sharpness is still measured at each
-   frame's own resolution.
-4. **Sharpness-based master election** is now the visible weak spot (4/48 wrong
-   on blurred copies, and the compressed-variant copies score *higher* Laplacian
-   variance because downscale-then-upscale inflates it). Normalising to a fixed
-   size before the Laplacian is the fix; it is not done.
-5. `scripts/query.py` still bypasses `Index.check_backend` — the user's file.
+- Branch `review/2026-10-19`, HEAD `05a5a26`, 12 commits ahead of `main`,
+  working tree clean, everything pushed. `main` is still `30613c6`.
+- Last verification on that exact HEAD: **154 passed, 4 skipped, smoke clean**
+  (build `cnb-fss-1k5ahru2p`). Nothing has been changed since.
+- The CNB dev workspace was recycled by the platform after its pipeline
+  finished; no workspace is running. Nothing is left running locally either.
+- Only untracked file: `scripts/query.py` (the user's).
+
+### What is still open, in priority order
+
+1. **[user] Decide how to land this.** 12 commits sit on the review branch and
+   `main` has none of them. One merge, or a replay as one commit per finding
+   (findings 1-8 touch mostly disjoint code; `export.py`, `worker.py` and
+   `queue.py` are shared). Do not assume the branch is wanted as-is.
+2. **Sharpness-based master election is the weakest remaining behaviour.**
+   Downscale-then-upscale inflates Laplacian variance, so a lossy copy can
+   outscore its original. Two separate measurements: on 60 Face-Age images the
+   lossy copies had median sharpness 275 against 38 for the originals (the
+   compressed copies would win every election), and in the full benchmark 3 of
+   80 blurred bursts elect the blurred copy over the sharp one
+   (`BENCHMARK.md`, `dedup.master_wrong`). Fix: normalise to a fixed size before
+   the Laplacian, then re-measure. This is also why "master election is 0.963"
+   has never been 1.0.
+3. **Section 2.2 items that findings 9-13 did not touch**, all still true:
+   `IncrementalCheckpoint.put` is still `INSERT OR REPLACE` (not
+   first-writer-wins); durable workers still write one shard per task; no
+   `--n-shards` on `mmindex coordinator`; `asr_error` still silent in stage
+   summaries; `snapshot_dir` still absolute in `index_manifest.json`;
+   `_all_units` still loads every infer record at once.
+4. **Unverified areas from section 3 that remain unverified**: PCA-reduced
+   clustering has still never been compared to full-dimension or CUDA (no ARI);
+   no real NFS/FUSE mount has been exercised; nothing near 77 k files has run,
+   so `_all_units` memory and search latency at production scale are unknown.
+   The `cluster_selection_epsilon=0.55` question (raw vs normalised face
+   vectors) is still open — the notebook that would settle it is not in this
+   checkout.
+5. `scripts/query.py` still bypasses `Index.check_backend` and hand-copies the
+   `--explain` SQL. Leave it unless the user asks.
+
+### Traps for the next session
+
+- **CNB dev workspaces cannot be driven from a shell.** `cnb workspace` offers
+  only start/list/stop/delete/detail; there is no exec. Use api-triggered builds
+  (see "How to run anything remotely") and remember a build checks out a git
+  ref — nothing uncommitted can be tested.
+- **`pytest -q` is already in `addopts`**, so `-q -q` hides the summary line and
+  makes the pass/skip count look wrong. Use `-o addopts="" -q -rs` when the
+  count matters.
+- **`mmindex.scan` is the re-exported function, not the module.** Patching it in
+  a test needs `importlib.import_module("mmindex.scan")`.
+- **The Flickr30k mirror matters.** `lmms-lab-encoder/flickr30k` is Parquet and
+  works on `datasets` 5.x; `nlphuji/flickr30k` ships a loading script that 5.x
+  refuses. `scripts/flickr_probe.py` prints both outcomes if a benchmark run
+  loses images again.
+- **`fetch_flickr`'s fallback is error-hiding by design.** It logs the first
+  mirror's failure now, but a silent `skipped` entry in the benchmark report is
+  still the signal that the corpus shrank — check `corpus.skipped` before
+  quoting any metric.
+- **Do not re-run `scripts/benchmark.py` casually.** A full run costs ~46 min
+  of 8-vCPU time plus ~22 min of dataset download.
 
