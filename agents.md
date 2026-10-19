@@ -220,10 +220,34 @@ tests (145 tests). Behaviour you may otherwise be surprised by:
   `--queue-journal delete` is for a queue file on a network mount. This is tested
   with simulated machines on one disk, not on a real NFS or FUSE mount.
 
-Still open from the review: per-scene ASR timing, uncompressed full-resolution
-frames in stage 2, SHA256 on every file in `scan`, per-query hit construction in
-`search`, and a guard against the production checkpoint namespace.
-`scripts/query.py` does not call `Index.check_backend` yet.
+Findings 9-13 are covered in the next section. `scripts/query.py` still does not
+call `Index.check_backend`.
+
+---
+
+## Findings 9-13 (2026-10-19, same branch)
+
+- **Per-scene ASR (9).** `prepare` records carry `schema: 2` and
+  `asr_segments` (Whisper `start`/`end`/`text`); `infer` gives a scene every
+  segment that overlaps it. Records without `asr_segments` still use the old
+  pro-rata word split, so existing checkpoints keep working. `infer` also keys
+  its per-frame arrays by `frame["index"]`, so a scene whose frame failed to
+  decode no longer shifts later units onto the wrong scene.
+- **Frame storage (10).** `extract` writes a bounded JPEG (`frame_max_edge`
+  1024, `frame_jpeg_quality` 90) instead of a full-resolution `.npy`, and
+  `infer` unlinks the frames after storing its record. `keep_frames` (env
+  `MMINDEX_KEEP_FRAMES`) retains them. Because `infer` now reads through
+  `media.load_frame`, an extract record written before this change (pointing at
+  a `.npy` file) must be re-extracted.
+- **Scan (11).** `hashing.digests` returns SHA256 and xxhash from one read;
+  `scan` groups by SHA256 alone, and an unreadable file lands in `skipped`
+  instead of aborting the run.
+- **Search (12).** `Index.search` ranks with numpy, pulls the k-th tie group
+  for exact ordering, and builds `SearchHit`s only for the returned rows.
+- **Production guard (13).** `Layout` and `IncrementalCheckpoint` raise
+  `ProtectedPathError` for namespace `7d928ad0a65d18eab89b` and for
+  `checkpoint-38193eda9da83f4d2192.sqlite`. `IncrementalCheckpoint.delete()` was
+  removed; it had no callers.
 
 ---
 
