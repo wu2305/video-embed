@@ -506,3 +506,21 @@ Tests: `tests/test_serve.py` (12) drive the real handler over a loopback socket,
 including range semantics and error codes; `tests/test_sharpness.py` (8) cover
 the metric, the recorded scale and the mixed-scale refusal. Removing the range
 handling makes `test_source_streams_with_range_support` fail, which was checked.
+
+**Verified in the CNB container itself** (build `cnb-snl-1k5asv48o`, real `ml`
+backend, 127 units / 110 masters over a reduced benchmark corpus):
+`/api/info` 200 with the person catalog, `/` 200 with the page, `/api/search`
+200 with ranked hits, `/api/thumb` 200 returning JPEG bytes. An earlier run of
+the same check failed only because `file(1)` is not installed in that image —
+the endpoint itself had already returned 200.
+
+### Console caveats for whoever opens it
+
+- It holds **one** `Index` and **one** backend for the process; a second
+  snapshot needs a restart. Fine for a demo, wrong for a service.
+- `embed_text` is serialised behind a lock, so concurrent searches queue on the
+  text tower rather than racing it.
+- Thumbnails are cached in memory with a 512-entry cap, cleared wholesale when
+  full (not LRU). A video thumbnail re-decodes the clip on every miss.
+- No auth. Anything that reaches the port can read every indexed file through
+  `/api/source`. Bind it behind a forwarded port, not on a public interface.
