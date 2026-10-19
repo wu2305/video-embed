@@ -21,8 +21,11 @@ class _AsrBackend:
         self.transcribed: list[str] = []
 
     def transcribe(self, path, language=None):
+        return " ".join(s["text"] for s in self.transcribe_segments(path, language))
+
+    def transcribe_segments(self, path, language=None):
         self.transcribed.append(path)
-        return "hello from the clip"
+        return [{"start": 0.0, "end": 1.0, "text": "hello from the clip"}]
 
     def close(self):
         self.closed = True

@@ -16,7 +16,7 @@ import numpy as np
 from .backends import Backend
 from .checkpoint import IncrementalCheckpoint
 from .config import Layout, Settings
-from .media import dhash, iter_scene_frames, load_image, sharpness
+from .media import dhash, iter_scene_frames, load_frame, load_image, save_frame, sharpness
 from .scan import ManifestEntry
 
 
@@ -80,21 +80,25 @@ def prepare_entry(
     }
     if entry.kind == "video":
         spans = scene_boundaries(entry.path, settings)
-        transcript = ""
+        segments: list[dict] = []
         if backend is not None:
             try:
-                transcript = backend.transcribe(entry.path)
+                segments = backend.transcribe_segments(entry.path)
             except Exception as exc:  # ASR failure must not lose the scenes
                 record["asr_error"] = str(exc)
+        record["schema"] = 2
         record["scenes"] = [
             {"index": i, "start": float(s), "end": float(e), "midpoint": float((s + e) / 2)}
             for i, (s, e) in enumerate(spans)
         ]
-        record["asr_text"] = transcript
+        record["asr_segments"] = segments
+        record["asr_text"] = " ".join(s["text"] for s in segments).strip()
     else:
+        record["schema"] = 2
         record["scenes"] = [
             {"index": 0, "start": 0.0, "end": 0.0, "midpoint": 0.0}
         ]
+        record["asr_segments"] = []
         record["asr_text"] = ""
 
     checkpoint.put(entry.path, entry.digest, record)
@@ -106,7 +110,7 @@ def prepare_entry(
 
 def frame_path(layout: Layout, entry: ManifestEntry, index: int) -> Path:
     digest = entry.digest[:16]
-    suffix = ".npy"
+    suffix = ".jpg"
     return layout.frames_dir / f"{digest}-{index:05d}{suffix}"
 
 
@@ -117,7 +121,7 @@ def extract_entry(
     checkpoint: IncrementalCheckpoint,
     prepared: dict | None = None,
 ) -> dict:
-    """Stage 2: one representative frame per scene, persisted as ``.npy``."""
+    """Stage 2: one representative frame per scene, stored as a bounded JPEG."""
     existing = checkpoint.get(entry.path, entry.digest)
     if existing is not None:
         return existing
@@ -129,33 +133,26 @@ def extract_entry(
     scenes = prepared.get("scenes", [])
     frames: list[dict] = []
 
+    def store(index: int, image, timestamp: float) -> None:
+        target = frame_path(layout, entry, index)
+        size = save_frame(
+            target, image, settings.frame_max_edge, settings.frame_jpeg_quality
+        )
+        frames.append(
+            {
+                "index": index,
+                "file": str(target),
+                "timestamp": timestamp,
+                **size,
+            }
+        )
+
     if entry.kind == "video":
         timestamps = [float(scene["midpoint"]) for scene in scenes]
         for index, image in iter_scene_frames(entry.path, timestamps):
-            target = frame_path(layout, entry, index)
-            np.save(target, image)
-            frames.append(
-                {
-                    "index": index,
-                    "file": str(target),
-                    "timestamp": timestamps[index],
-                    "width": int(image.shape[1]),
-                    "height": int(image.shape[0]),
-                }
-            )
+            store(index, image, timestamps[index])
     else:
-        image = load_image(entry.path)
-        target = frame_path(layout, entry, 0)
-        np.save(target, image)
-        frames.append(
-            {
-                "index": 0,
-                "file": str(target),
-                "timestamp": 0.0,
-                "width": int(image.shape[1]),
-                "height": int(image.shape[0]),
-            }
-        )
+        store(0, load_image(entry.path), 0.0)
 
     record = {
         "path": entry.path,
@@ -173,22 +170,39 @@ def extract_entry(
 
 
 def _scene_text(prepared: dict, index: int) -> str:
-    """Slice the ASR transcript down to the scene's time window.
+    """Text spoken during the scene at ``index``.
 
-    Words are assumed to be spread evenly over the video, so a scene covering
-    the first half of the runtime gets the first half of the transcript. This is
-    an approximation; the ASR itself has no per-word timings stored here.
+    With ``asr_segments`` (schema 2), each Whisper segment contributes to the
+    scene it overlaps, which is what the transcript timings are for. Records
+    written before schema 2 carry only one transcript, so the words are split
+    pro rata across the runtime as a best effort.
     """
+    scenes = prepared.get("scenes") or []
+    scene = scenes[index] if 0 <= index < len(scenes) else (scenes[-1] if scenes else None)
+    segments = prepared.get("asr_segments")
+    if segments is not None:
+        if scene is None:
+            return ""
+        start, end = float(scene["start"]), float(scene["end"])
+        if end <= start:
+            return " ".join(s["text"] for s in segments).strip()
+        # Every segment overlapping the scene contributes; a segment inside a gap
+        # between scenes is dropped rather than duplicated across neighbours.
+        chosen = []
+        for segment in segments:
+            overlap = min(end, float(segment["end"])) - max(start, float(segment["start"]))
+            if overlap > 0:
+                chosen.append(segment["text"])
+        return " ".join(chosen).strip()
+
     transcript = (prepared.get("asr_text") or "").strip()
     if not transcript:
         return ""
-    scenes = prepared.get("scenes") or []
     if len(scenes) <= 1:
         return transcript
-    duration = max(float(scene["end"]) for scene in scenes)
+    duration = max(float(s["end"]) for s in scenes)
     if duration <= 0:
         return transcript
-    scene = scenes[index] if index < len(scenes) else scenes[-1]
     words = transcript.split()
     total = len(words)
     start = int(total * (float(scene["start"]) / duration))
@@ -221,21 +235,23 @@ def infer_entry(
     if not frames:
         raise RuntimeError(f"no frames extracted for {entry.path}")
 
-    images = [np.load(frame["file"]) for frame in frames]
+    images = [load_frame(frame["file"]) for frame in frames]
     embeddings = backend.embed_images(images)
     faces = backend.detect_faces(images)
     ocr_texts = backend.ocr(images)
 
+    scenes = prepared.get("scenes", [])
     units: list[dict] = []
-    for index, (frame, image) in enumerate(zip(frames, images)):
-        scene = (
-            prepared.get("scenes", [])[index]
-            if index < len(prepared.get("scenes", []))
-            else {"start": 0.0, "end": 0.0}
-        )
+    for position, frame in enumerate(frames):
+        # Frames whose scene failed to decode are absent from ``frames``, so the
+        # list position is not the scene index; every per-frame array is keyed by
+        # the frame's own index instead.
+        index = int(frame.get("index", position))
+        scene = scenes[index] if 0 <= index < len(scenes) else {"start": 0.0, "end": 0.0}
+        image = images[position]
         unit_faces = [
             {"embedding": face.embedding, "bbox": face.bbox, "det_score": face.det_score}
-            for face in faces[index]
+            for face in faces[position]
         ]
         units.append(
             {
@@ -246,9 +262,9 @@ def infer_entry(
                 "canonical_time": entry.canonical_time,
                 "scene_start": float(scene.get("start", 0.0)),
                 "scene_end": float(scene.get("end", 0.0)),
-                "clip_embedding": embeddings[index],
+                "clip_embedding": embeddings[position],
                 "faces": unit_faces,
-                "ocr_text": ocr_texts[index] if index < len(ocr_texts) else "",
+                "ocr_text": ocr_texts[position] if position < len(ocr_texts) else "",
                 "asr_text": _scene_text(prepared, index),
                 "dhash": dhash(image),
                 "sharpness": sharpness(image),
@@ -266,6 +282,14 @@ def infer_entry(
         "inferred_at": time.time(),
     }
     checkpoint.put(entry.path, entry.digest, record)
+    if not settings.keep_frames:
+        # Frames are scratch data. They are removed only after the infer record
+        # is stored, so a crash here costs re-extraction, never the record.
+        for frame in frames:
+            try:
+                Path(frame["file"]).unlink()
+            except OSError:
+                pass
     return record
 
 

@@ -57,6 +57,10 @@ class Backend(Protocol):
 
     def transcribe(self, path: str, language: str | None = None) -> str: ...
 
+    def transcribe_segments(
+        self, path: str, language: str | None = None
+    ) -> list[dict]: ...
+
     def close(self) -> None: ...
 
 
@@ -115,6 +119,9 @@ class HashBackend:
 
     def transcribe(self, path: str, language: str | None = None) -> str:
         return ""
+
+    def transcribe_segments(self, path: str, language: str | None = None) -> list[dict]:
+        return []
 
     def close(self) -> None:
         return None
@@ -335,11 +342,26 @@ class MLBackend:
             return False
 
     def transcribe(self, path: str, language: str | None = None) -> str:
+        return " ".join(s["text"] for s in self.transcribe_segments(path, language)).strip()
+
+    def transcribe_segments(self, path: str, language: str | None = None) -> list[dict]:
+        """Whisper segments with their own ``start``/``end`` seconds.
+
+        The timings are what let a scene receive the words actually spoken
+        during it instead of a pro-rata slice of the whole transcript.
+        """
         if not self._has_audio(path):
-            return ""
+            return []
         self._ensure_whisper()
         segments, _info = self._whisper.transcribe(str(path), language=language, vad_filter=True)
-        return " ".join(segment.text.strip() for segment in segments).strip()
+        found: list[dict] = []
+        for segment in segments:
+            text = segment.text.strip()
+            if text:
+                found.append(
+                    {"start": float(segment.start), "end": float(segment.end), "text": text}
+                )
+        return found
 
     def close(self) -> None:
         self._clip = None

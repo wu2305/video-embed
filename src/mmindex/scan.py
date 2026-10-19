@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Iterable, Iterator
 
 from .config import Layout, media_kind
-from .hashing import fast_digest, sha256_digest
+from .hashing import digests, fast_digest
 
 _EXIF_PATTERN = re.compile(
     r"(?P<y>(?:19|20)\d{2})[-_.]?(?P<m>0[1-9]|1[0-2])[-_.]?(?P<d>0[1-9]|[12]\d|3[01])"
@@ -152,56 +152,48 @@ def scan(
     exclude: Iterable[str] = (),
     progress: object | None = None,
 ) -> ScanResult:
-    """Walk ``root``, hash every file and write the manifest + dedup report."""
+    """Walk ``root``, hash every file and write the manifest + dedup report.
+
+    Each file is read once for both its SHA256 (content identity, and the key
+    every checkpoint uses) and its xxhash candidate hash. A file that cannot be
+    read is recorded in ``skipped`` and the scan continues; only duplicates are
+    decided by comparing SHA256 values, so nothing else needs a second pass.
+    """
     root = Path(root)
     layout.ensure()
     result = ScanResult()
 
-    fast_groups: dict[str, list[Path]] = {}
+    candidates: list[tuple[Path, str, str]] = []
     total = 0
     for path in iter_media(root, exclude):
         total += 1
         try:
-            fast = fast_digest(path)
+            digest, fast = digests(path)
         except OSError as exc:
             result.skipped.append({"path": str(path), "error": str(exc)})
             continue
-        fast_groups.setdefault(fast, []).append(path)
+        candidates.append((path, digest, fast))
         if progress is not None and hasattr(progress, "update"):
             progress.update(1)
 
     by_digest: dict[str, ManifestEntry] = {}
-    for _fast, paths in sorted(fast_groups.items()):
-        if len(paths) == 1:
-            path = paths[0]
-            entry = _entry(root, path, sha256_digest(path))
-            by_digest[entry.digest] = entry
-            result.canonical.append(entry)
+    for path, digest, fast in sorted(candidates, key=lambda item: str(item[0])):
+        existing = by_digest.get(digest)
+        if existing is None:
+            by_digest[digest] = _entry(root, path, digest, fast)
+            result.canonical.append(by_digest[digest])
             continue
-        # Fast-hash collision: confirm byte equality with SHA256.
-        for path in sorted(paths):
-            try:
-                digest = sha256_digest(path)
-            except OSError as exc:
-                result.skipped.append({"path": str(path), "error": str(exc)})
-                continue
-            existing = by_digest.get(digest)
-            if existing is None:
-                entry = _entry(root, path, digest)
-                by_digest[digest] = entry
-                result.canonical.append(entry)
-            else:
-                dup = _entry(root, path, digest)
-                dup.is_canonical = False
-                dup.duplicate_of = existing.path
-                result.duplicates.setdefault(existing.path, [existing.path]).append(dup.path)
+        dup = _entry(root, path, digest, fast)
+        dup.is_canonical = False
+        dup.duplicate_of = existing.path
+        result.duplicates.setdefault(existing.path, [existing.path]).append(dup.path)
 
     result.canonical.sort(key=lambda e: e.rel_path)
     _write_manifest(layout, result)
     return result
 
 
-def _entry(root: Path, path: Path, digest: str) -> ManifestEntry:
+def _entry(root: Path, path: Path, digest: str, fast: str | None = None) -> ManifestEntry:
     stat = path.stat()
     stamp, source = canonical_time(path)
     return ManifestEntry(
@@ -210,7 +202,7 @@ def _entry(root: Path, path: Path, digest: str) -> ManifestEntry:
         kind=media_kind(path) or "unknown",
         size=stat.st_size,
         digest=digest,
-        fast_digest=fast_digest(path),
+        fast_digest=fast if fast is not None else fast_digest(path),
         canonical_time=stamp,
         time_source=source,
         mtime=stat.st_mtime,

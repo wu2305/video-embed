@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Iterator
 
 from . import codec
+from .config import LEGACY_CHECKPOINT_NAME, PRODUCTION_NAMESPACE, ProtectedPathError
 
 try:  # POSIX advisory locking
     import fcntl
@@ -78,6 +79,16 @@ class IncrementalCheckpoint:
         self.db_path = Path(db_path)
         self.stage = stage
         self.namespace = namespace
+        if namespace == PRODUCTION_NAMESPACE:
+            raise ProtectedPathError(
+                f"namespace {PRODUCTION_NAMESPACE!r} holds the production checkpoint "
+                "shards and is immutable; use another namespace"
+            )
+        if self.db_path.name == LEGACY_CHECKPOINT_NAME:
+            raise ProtectedPathError(
+                f"{LEGACY_CHECKPOINT_NAME} is the read-only production checkpoint; "
+                "this package must not open it for writing"
+            )
         self.shard_dir = Path(shard_dir) if shard_dir else self.db_path.parent / "shards"
         self.sync_interval = sync_interval
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -183,15 +194,6 @@ class IncrementalCheckpoint:
             self._conn.commit()
         self._baseline[key] = payload_sha
         return True
-
-    def delete(self, path: str, digest: str) -> bool:
-        with self._exclusive():
-            cur = self._conn.execute(
-                "DELETE FROM records WHERE path=? AND digest=? AND stage=?",
-                (path, digest, self.stage),
-            )
-            self._conn.commit()
-            return cur.rowcount > 0
 
     def count(self, stage: str | None = None) -> int:
         stage = stage or self.stage

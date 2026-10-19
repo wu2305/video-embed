@@ -23,6 +23,16 @@ STAGES = ("prepare", "extract", "infer")
 FINAL_STAGES = ("cluster", "export")
 ALL_STAGES = STAGES + FINAL_STAGES
 
+# The production corpus lives in a checkpoint namespace of immutable Drive shards
+# and a legacy SQLite file that is read-only. Nothing in this package may write
+# to either, so both names are refused outright rather than guarded by convention.
+PRODUCTION_NAMESPACE = "7d928ad0a65d18eab89b"
+LEGACY_CHECKPOINT_NAME = "checkpoint-38193eda9da83f4d2192.sqlite"
+
+
+class ProtectedPathError(ValueError):
+    """Raised when a layout or checkpoint would touch production state."""
+
 
 @dataclass
 class Settings:
@@ -48,6 +58,16 @@ class Settings:
 
     scene_threshold: float = 27.0
     scene_fallback_seconds: float = 30.0
+
+    # Extracted frames are stored as bounded JPEGs, not full-resolution raw
+    # arrays: a 12 MP photo is 36 MB as ``.npy`` but ~150 KB as a JPEG at this
+    # size, which is what keeps a 77 k-file corpus on one disk. 1024 px leaves
+    # the 640 px face grid and OCR enough detail.
+    frame_max_edge: int = 1024
+    frame_jpeg_quality: int = 90
+    # Frames are deleted once their infer record exists; set this to keep them
+    # for inspection, at the cost of the full frame footprint.
+    keep_frames: bool = False
 
     gpu_batch_size: int = 8
 
@@ -112,6 +132,11 @@ class Layout:
         if self.local_dir is not None:
             self.local_dir = Path(self.local_dir)
         self.queue_journal_mode = self.queue_journal_mode.upper()
+        if self.namespace == PRODUCTION_NAMESPACE:
+            raise ProtectedPathError(
+                f"namespace {PRODUCTION_NAMESPACE!r} holds the production checkpoint "
+                "shards and is immutable; use another --namespace"
+            )
 
     @property
     def checkpoint_dir(self) -> Path:

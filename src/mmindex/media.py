@@ -19,6 +19,35 @@ def load_image(path: str | Path) -> np.ndarray:
         return np.asarray(image.convert("RGB"), dtype=np.uint8)
 
 
+def save_frame(path: str | Path, image: np.ndarray, max_edge: int, quality: int) -> dict:
+    """Write ``image`` as a bounded-size JPEG and report what was stored.
+
+    Frames are scratch data for the infer stage, not deliverables, so they are
+    kept small enough that a large corpus fits on one disk. The stored size is
+    returned so the extract record states what the infer stage will actually
+    read, rather than the source resolution.
+    """
+    from PIL import Image
+
+    picture = Image.fromarray(image)
+    width, height = picture.size
+    scale = min(1.0, max_edge / max(width, height)) if max(width, height) else 1.0
+    if scale < 1.0:
+        picture = picture.resize(
+            (max(1, round(width * scale)), max(1, round(height * scale))),
+            Image.Resampling.LANCZOS,
+        )
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    picture.save(target, format="JPEG", quality=quality, optimize=True)
+    return {"width": picture.size[0], "height": picture.size[1]}
+
+
+def load_frame(path: str | Path) -> np.ndarray:
+    """Read a frame written by :func:`save_frame` as an RGB ``uint8`` array."""
+    return load_image(path)
+
+
 def dhash(image: np.ndarray, size: int = _DHASH_SIZE) -> str:
     """Perceptual difference hash as a hex string."""
     from PIL import Image

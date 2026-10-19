@@ -36,7 +36,12 @@ def test_extract_writes_frames(prepared_tree, layout, settings):
         prepare_entry(entry, layout, settings, prepare_store)
         record = extract_entry(entry, layout, settings, extract_store)
         assert len(record["frames"]) == 1
-        assert np.load(record["frames"][0]["file"]).ndim == 3
+        from mmindex.media import load_frame
+
+        frame = record["frames"][0]
+        assert frame["file"].endswith(".jpg")
+        assert load_frame(frame["file"]).ndim == 3
+        assert frame["width"] <= settings.frame_max_edge
     finally:
         prepare_store.close(sync=False)
         extract_store.close(sync=False)
@@ -49,6 +54,62 @@ def test_extract_requires_prepare(prepared_tree, layout, settings):
             extract_entry(prepared_tree[0], layout, settings, store)
     finally:
         store.close(sync=False)
+
+
+def test_stored_frame_is_bounded_and_much_smaller_than_raw(tmp_path, layout, settings):
+    """Regression: frames were full-resolution raw arrays, so a large photo cost
+    tens of megabytes on disk for every unit."""
+    import numpy as np
+
+    from mmindex.media import save_frame
+
+    image = np.zeros((3000, 4000, 3), dtype=np.uint8)
+    image[::7, ::5] = 255
+    target = tmp_path / "big.jpg"
+    size = save_frame(target, image, settings.frame_max_edge, settings.frame_jpeg_quality)
+    assert max(size["width"], size["height"]) == settings.frame_max_edge
+    assert target.stat().st_size < image.nbytes // 20
+
+
+def test_infer_deletes_frames_after_the_record_is_stored(
+    prepared_tree, layout, settings, backend
+):
+    """Regression: frames were never removed, so extract's output accumulated."""
+    from pathlib import Path
+
+    prepare_store = IncrementalCheckpoint(layout.checkpoint_db, stage="prepare", auto_sync=False)
+    extract_store = IncrementalCheckpoint(layout.checkpoint_db, stage="extract", auto_sync=False)
+    infer_store = IncrementalCheckpoint(layout.checkpoint_db, stage="infer", auto_sync=False)
+    try:
+        entry = prepared_tree[0]
+        prepare_entry(entry, layout, settings, prepare_store, backend)
+        extracted = extract_entry(entry, layout, settings, extract_store)
+        assert Path(extracted["frames"][0]["file"]).exists()
+        infer_entry(entry, layout, settings, infer_store, backend)
+        assert not Path(extracted["frames"][0]["file"]).exists()
+    finally:
+        for store in (prepare_store, extract_store, infer_store):
+            store.close(sync=False)
+
+
+def test_keep_frames_leaves_them_on_disk(prepared_tree, layout, settings, backend):
+    from dataclasses import replace
+    from pathlib import Path
+
+    keeping = replace(settings, keep_frames=True)
+    stores = {
+        stage: IncrementalCheckpoint(layout.checkpoint_db, stage=stage, auto_sync=False)
+        for stage in ("prepare", "extract", "infer")
+    }
+    try:
+        entry = prepared_tree[0]
+        prepare_entry(entry, layout, keeping, stores["prepare"], backend)
+        extracted = extract_entry(entry, layout, keeping, stores["extract"])
+        infer_entry(entry, layout, keeping, stores["infer"], backend)
+        assert Path(extracted["frames"][0]["file"]).exists()
+    finally:
+        for store in stores.values():
+            store.close(sync=False)
 
 
 def test_infer_produces_units(prepared_tree, layout, settings, backend):

@@ -205,3 +205,22 @@ def test_corrupt_shard_is_rejected(tmp_path):
         assert store.has("a.jpg", "da") is False
     finally:
         store.close(sync=False)
+
+
+def test_production_namespace_is_refused(tmp_path):
+    from mmindex.config import PRODUCTION_NAMESPACE, ProtectedPathError
+
+    with pytest.raises(ProtectedPathError, match="immutable"):
+        IncrementalCheckpoint(
+            tmp_path / "cp.sqlite", namespace=PRODUCTION_NAMESPACE, auto_sync=False
+        )
+    assert not (tmp_path / "cp.sqlite").exists()
+
+
+def test_legacy_checkpoint_file_is_refused(tmp_path):
+    from mmindex.config import LEGACY_CHECKPOINT_NAME, ProtectedPathError
+
+    with pytest.raises(ProtectedPathError, match="read-only"):
+        IncrementalCheckpoint(tmp_path / LEGACY_CHECKPOINT_NAME, auto_sync=False)
+    assert not (tmp_path / LEGACY_CHECKPOINT_NAME).exists()
+

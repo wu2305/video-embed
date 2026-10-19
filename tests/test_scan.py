@@ -53,3 +53,49 @@ def test_canonical_time_falls_back_to_mtime(tmp_path):
     path.write_bytes(b"data")
     _stamp, source = canonical_time(path)
     assert source == "mtime"
+
+
+def test_scan_skips_an_unreadable_file_instead_of_aborting(media_tree, layout):
+    """Regression: only the collision branch caught OSError, so one unreadable
+    unique file aborted the whole scan."""
+    from mmindex.hashing import digests
+
+    unreadable = media_tree / "locked.png"
+    unreadable.write_bytes(b"x")
+
+    def boom(path):
+        if str(path).endswith("locked.png"):
+            raise PermissionError(13, "Permission denied", str(path))
+        return digests(path)
+
+    import mmindex.scan as scan_module
+
+    original = scan_module.digests
+    scan_module.digests = boom
+    try:
+        result = scan(media_tree, layout)
+    finally:
+        scan_module.digests = original
+
+    assert len(result.canonical) == 3
+    assert [s["path"].rsplit("/", 1)[-1] for s in result.skipped] == ["locked.png"]
+
+
+def test_scan_reads_each_file_once(media_tree, layout):
+    """Regression: the fast digest was computed twice and SHA256 ran on every
+    file, so the xxhash pre-filter saved nothing."""
+    calls: list[str] = []
+    import mmindex.scan as scan_module
+
+    original = scan_module.digests
+
+    def counting(path):
+        calls.append(str(path))
+        return original(path)
+
+    scan_module.digests = counting
+    try:
+        scan(media_tree, layout)
+    finally:
+        scan_module.digests = original
+    assert len(calls) == len(set(calls)) == 4

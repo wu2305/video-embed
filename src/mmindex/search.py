@@ -169,28 +169,59 @@ class Index:
                 raise ValueError(
                     f"query vector has {vector.shape[0]} dims, index has {self.matrix.shape[1]}"
                 )
-            similarities = self.matrix[rows_index] @ vector
+            similarities = (self.matrix[rows_index] @ vector).astype(np.float32)
         else:
             similarities = np.zeros(len(rows), dtype=np.float32)
 
+        bonus = self.settings.text_bonus
         needle = (text or "").strip().lower()
-        hits: list[SearchHit] = []
-        for row, similarity in zip(rows, similarities):
-            bonus = 0.0
-            if needle:
+        bonuses = np.zeros(len(rows), dtype=np.float32)
+        if needle:
+            # Only rows that can still reach the top k need their text read: a
+            # row matches only if its similarity is within one bonus of the k-th
+            # best similarity, so the rest are skipped without touching the
+            # OCR/ASR columns.
+            cutoff = self._similarity_cutoff(similarities, limit, bonus)
+            for position in np.flatnonzero(similarities >= cutoff).tolist():
+                row = rows[position]
                 haystack = f"{row['ocr_text'] or ''} {row['asr_text'] or ''}".lower()
                 if needle in haystack:
-                    bonus = self.settings.text_bonus
-            score = float(similarity) + bonus
-            if min_score is not None and score < min_score:
-                continue
+                    bonuses[position] = bonus
+
+        scores = similarities + bonuses
+        if min_score is not None:
+            scores = np.where(scores >= min_score, scores, -np.inf)
+        if limit <= 0:
+            return []
+        if len(scores) > limit:
+            # argpartition finds the k best in O(n); only those get a SearchHit.
+            top = np.argpartition(-scores, limit - 1)[:limit]
+            # Ties at the k-th score are broken by path and unit index, exactly
+            # as the previous full sort did, so pull every row sharing that score.
+            boundary = float(scores[top].min())
+            top = np.flatnonzero(scores >= boundary) if np.isfinite(boundary) else top
+        else:
+            top = np.arange(len(scores))
+
+        chosen = [position for position in top.tolist() if np.isfinite(scores[position])]
+        chosen.sort(
+            key=lambda position: (
+                -scores[position],
+                rows[position]["path"],
+                rows[position]["unit_index"],
+            )
+        )
+
+        hits: list[SearchHit] = []
+        for position in chosen:
+            row = rows[position]
             hits.append(
                 SearchHit(
                     unit_id=int(row["unit_id"]),
                     path=row["path"],
-                    score=score,
-                    similarity=float(similarity),
-                    text_bonus=bonus,
+                    score=float(scores[position]),
+                    similarity=float(similarities[position]),
+                    text_bonus=float(bonuses[position]),
                     kind=row["kind"],
                     canonical_time=float(row["canonical_time"]),
                     ocr_text=row["ocr_text"] or "",
@@ -201,9 +232,17 @@ class Index:
                     unit_index=int(row["unit_index"]),
                 )
             )
-
-        hits.sort(key=lambda hit: (-hit.score, hit.path, hit.unit_index))
         return hits[:limit]
+
+    @staticmethod
+    def _similarity_cutoff(similarities: np.ndarray, limit: int, bonus: float) -> float:
+        """Lowest similarity a row needs to reach the top ``limit`` after bonuses."""
+        if limit <= 0:
+            return np.inf
+        if len(similarities) <= limit:
+            return -np.inf
+        kth = np.partition(similarities, len(similarities) - limit)[len(similarities) - limit]
+        return float(kth) - bonus
 
     def persons(self) -> list[dict]:
         return list(self.catalog.get("persons", []))
