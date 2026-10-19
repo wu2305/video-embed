@@ -190,7 +190,8 @@ CUDA path from the production notebook and is out of scope for this package.
 ## Code-review fixes (2026-10-19)
 
 A review against this handover found eight defects, now fixed with regression
-tests (145 tests). Behaviour you may otherwise be surprised by:
+tests (158 tests, 4 skipped without PyAV or torch). Behaviour you may otherwise
+be surprised by:
 
 - **Distributed `prepare` runs ASR.** The worker builds a backend lazily on the
   first video task; images never load models.

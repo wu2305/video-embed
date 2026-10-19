@@ -302,7 +302,10 @@ download progress bars before reading. A build checks out a git ref, so
 
 ### Verification actually performed
 
-- **Full suite + smoke on CNB: 157 passed, 3 skipped** (`smoke.sh` clean).
+- **Full suite + smoke on CNB: 154 passed, 4 skipped** (158 collected). The
+  skips are environmental: 3 in `test_audio_guard.py` (PyAV absent under the
+  `test` extra) and 1 in `test_ml_retrieval.py` (torch absent). `smoke.sh` ran
+  clean on the same build.
 - **New tests fail on the old source.** Built a throwaway branch with `main`'s
   source and the new tests, ran with `--continue-on-collection-errors`. 34 of
   the new tests failed there for the expected reasons. Caveat: the four

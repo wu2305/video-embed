@@ -226,11 +226,12 @@ approximately reproducing it.
 pytest
 ```
 
-145 tests cover hashing and dedup, canonical timestamps, checkpoint resume and
+158 tests cover hashing and dedup, canonical timestamps, checkpoint resume and
 guarded overwrite, shard round-trips, queue leasing and lease recovery,
-stage-scoped task ids, stage idempotency, video scene detection, export
-consistency checks, near-duplicate master selection, hybrid search ranking and
-the benchmark scoring logic — all without model downloads.
+stage-scoped task ids, stage idempotency, video scene detection, per-scene ASR
+assignment, bounded frame storage, export consistency checks, near-duplicate
+master selection, hybrid search ranking and the benchmark scoring logic — all
+without model downloads. Four of them skip when PyAV or torch is absent.
 
 `scripts/ml_check.py` additionally exercises the real model stack (SigLIP,
 InsightFace, RapidOCR, faster-whisper) and is what the cloud dev environment
