@@ -190,6 +190,8 @@ def collect_units(
             copy.setdefault("person_ids", [])
             if record.get("backend"):
                 copy.setdefault("backend", record["backend"])
+            if "sharpness_edge" in record:
+                copy.setdefault("sharpness_edge", record["sharpness_edge"])
             units.append(copy)
 
     if person_labels:
@@ -240,6 +242,24 @@ def resolve_backend(units: Sequence[dict], settings: Settings) -> str:
     return names[0] if names else settings.backend
 
 
+def resolve_sharpness_edge(units: Sequence[dict], settings: Settings) -> int:
+    """The one scale the units' sharpness values were measured at.
+
+    Sharpness is only comparable at a fixed size (``media.sharpness``), and
+    master election compares it across files. A record set written partly at the
+    old full-resolution scale and partly at the normalised one would elect
+    masters by an artefact of when each file was inferred, so refuse the mix.
+    Units with no scale recorded predate the field and are all treated as raw.
+    """
+    edges = sorted({int(unit.get("sharpness_edge") or 0) for unit in units})
+    if len(edges) > 1:
+        raise ExportError(
+            f"units record {len(edges)} sharpness scales {edges}; sharpness is only "
+            "comparable at one scale, so re-run the infer stage for the whole corpus"
+        )
+    return edges[0] if edges else int(settings.sharpness_edge)
+
+
 def export_snapshot(
     units: Sequence[dict],
     layout: Layout,
@@ -251,6 +271,8 @@ def export_snapshot(
     """Write a snapshot to local disk and flip the manifest when consistent."""
     layout.ensure()
     backend_name = resolve_backend(units, settings)
+    # Checked before any file is written: a mixed-scale corpus must not publish.
+    sharpness_edge = resolve_sharpness_edge(units, settings)
     snapshot_dir = layout.snapshots_dir / _snapshot_id()
     tmp_dir = snapshot_dir.with_name(snapshot_dir.name + ".tmp")
     tmp_dir.mkdir(parents=True, exist_ok=False)
@@ -349,6 +371,7 @@ def export_snapshot(
             "clip_embedding_dim": settings.clip_embedding_dim,
             "face_embedding_dim": settings.face_embedding_dim,
             "backend": backend_name,
+            "sharpness_edge": sharpness_edge,
         },
     }
     if manifest_extra:

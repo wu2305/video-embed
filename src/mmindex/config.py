@@ -68,6 +68,10 @@ class Settings:
     # Frames are deleted once their infer record exists; set this to keep them
     # for inspection, at the cost of the full frame footprint.
     keep_frames: bool = False
+    # Long edge that sharpness is measured at, so the value is comparable across
+    # images of different sizes (master election depends on that). 0 keeps the
+    # raw full-resolution Laplacian variance, which is not comparable.
+    sharpness_edge: int = 256
 
     gpu_batch_size: int = 8
 

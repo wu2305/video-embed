@@ -267,7 +267,7 @@ def infer_entry(
                 "ocr_text": ocr_texts[position] if position < len(ocr_texts) else "",
                 "asr_text": _scene_text(prepared, index),
                 "dhash": dhash(image),
-                "sharpness": sharpness(image),
+                "sharpness": sharpness(image, settings.sharpness_edge or None),
                 "width": int(image.shape[1]),
                 "height": int(image.shape[0]),
             }
@@ -278,6 +278,10 @@ def infer_entry(
         "digest": entry.digest,
         "kind": entry.kind,
         "backend": backend.name,
+        # Which scale the sharpness values were measured at. Master election
+        # compares them across files, so a record set that mixes scales cannot
+        # be compared; export refuses such a mix.
+        "sharpness_edge": int(settings.sharpness_edge),
         "units": units,
         "inferred_at": time.time(),
     }
