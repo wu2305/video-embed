@@ -5,6 +5,12 @@ production constraints; this file covers only the 2026-10-19 review session. It
 says what was done, what is **not** solved, what is **not verified**, and what
 to do next, in that order.
 
+> **Update (later the same day): findings 9-13 are now fixed too.** The work
+> lives on branch `review/2026-10-19` (pushed to CNB), not on `main`. See
+> section 6 for what changed, what was measured, and what is still open. The
+> sections below describe the state when only findings 1-8 were done and are
+> kept for the reasoning and the still-valid gaps.
+
 ---
 
 ## 0. State of the working tree
@@ -250,3 +256,96 @@ Do in this order; each with regression tests.
 - Do not re-run media inference on the production corpus (`INDEX_ONLY=True`).
 - Keep the PyAV guard (`av.__version__ >= 19` raises) in `MLBackend`.
 - The `mmindex` package must not write to the production checkpoint namespace.
+  Finding 13 now enforces this: `Layout` and `IncrementalCheckpoint` raise
+  `ProtectedPathError` for that namespace and for the legacy SQLite filename.
+
+---
+
+## 6. Second session: findings 9-13, verified on CNB
+
+### Where the work is
+
+- Branch **`review/2026-10-19`**, pushed to `origin` (CNB). `main` is untouched
+  and still at `30613c6`.
+- Seven commits: the eight-finding fix, findings 9-13, two test fixes, the
+  search top-k perf fix with docs, and two frame-bound probe commits.
+- `scripts/query.py` is still untracked — it is the user's file and was left
+  alone. It still does not call `Index.check_backend`.
+
+### How to run anything remotely
+
+CNB dev workspaces have **no exec endpoint** — only `start`, `list`, `stop`,
+`delete`, `detail` (webide/jump URL). The working path is an API-triggered
+build with an inline config, which is how every measurement below was taken:
+
+```bash
+cnb build start-build --repo wu2305/video-embed --branch review/2026-10-19 \
+  --event api_trigger --config "$(cat scratch/cnb-test.yml)" --title "suite"
+cnb build get-build-status --repo wu2305/video-embed --sn <sn>
+cnb build get-build-stage --repo wu2305/video-embed --sn <sn> \
+  --pipelineId <sn>-001 --stageId stage-1
+```
+
+Stage logs come back as a JSON `content` array; strip the ANSI codes and the
+download progress bars before reading. A build checks out a git ref, so
+**nothing can be tested until it is committed and pushed.**
+
+### What each finding now does
+
+| # | Change | Regression test |
+|---|---|---|
+| 9 | `prepare` writes `schema: 2` + `asr_segments` (Whisper start/end/text); `_scene_text` gives a scene every segment overlapping it; `infer` keys per-frame arrays by `frame["index"]` | `test_scene_text.py` (5 new), `test_infer_aligns_units_to_frame_index_after_a_dropped_scene` |
+| 10 | `extract` writes a bounded JPEG (`frame_max_edge` 1024, q90); `infer` unlinks frames after the record is stored; `keep_frames` retains them | `test_stored_frame_is_bounded_and_much_smaller_than_raw`, `test_infer_deletes_frames_after_the_record_is_stored`, `test_keep_frames_leaves_them_on_disk` |
+| 11 | `hashing.digests` returns SHA256 + xxhash from one read; `scan` groups by SHA256 and records unreadable files in `skipped` | `test_combined_digests_match_the_standalone_hashes`, `test_scan_reads_each_file_once`, `test_scan_skips_an_unreadable_file_instead_of_aborting` |
+| 12 | `Index.search` ranks with numpy, pulls the k-th tie group for exact ordering, builds hits only for returned rows | `test_search_ranks_without_building_a_hit_per_row`, `test_search_still_honours_min_score_and_ties` |
+| 13 | `ProtectedPathError` for the production namespace and legacy filename; `delete()` removed | `test_production_namespace_is_refused`, `test_legacy_checkpoint_file_is_refused`, `test_layout_refuses_the_production_namespace` |
+
+### Verification actually performed
+
+- **Full suite + smoke on CNB: 157 passed, 3 skipped** (`smoke.sh` clean).
+- **New tests fail on the old source.** Built a throwaway branch with `main`'s
+  source and the new tests, ran with `--continue-on-collection-errors`. 34 of
+  the new tests failed there for the expected reasons. Caveat: the four
+  `test_backends` face-detector tests failed with `ModuleNotFoundError:
+  onnxruntime` in that configuration rather than on their assertion, so for
+  those four the before/after check is **not** clean — they were confirmed only
+  by reading, not by a red run. That branch was deleted afterwards.
+- **`scripts/ml_check.py` on CNB: passed** — SigLIP 768-d normalised vectors,
+  InsightFace found the face in the reference photo (1 face), RapidOCR read
+  "HELLO 2026". The two synthetic ovals correctly yield 0 faces; the script
+  asserts on the reference photo instead.
+- **`scripts/benchmark.py` on CNB: passed**, but on an incomplete corpus —
+  `datasets` 5.x refuses the Flickr30k loading script, so 400 images were
+  missing. Numbers and their interpretation are in `BENCHMARK.md`
+  ("Re-run after the 2026-10-19 fixes").
+- **Frame bound justified by measurement**: `scripts/frame_bound_check.py`
+  (new) shows a 3000 px portrait keeps its face at the same det_score after the
+  1024 px bound (0.910 → 0.911) and loses no OCR text.
+
+### The one number that looks like a regression but is not
+
+Lossy re-encode fold rate went 0.375 → 0.021. Both the old and new
+`near_duplicates` fold identically on identical inputs (2/6 on six reference
+photos, 2/60 on Face-Age images), so the grouping did not change; the corpus
+did, because the sampler drew its variants from a Flickr-less pool. Do not
+quote 0.021 as a new baseline.
+
+### What is still open
+
+1. **Re-measure the benchmark on a full corpus.** Needs a `datasets` version
+   that still runs loading scripts, or a Flickr30k mirror shipping Parquet.
+   Until then the caption metrics and the 0.375 figure are unre-run.
+2. **Findings 9-13 are uncommitted to `main`.** They are on the review branch
+   only; the user decides how to merge.
+3. Everything in section 2.2 and section 3 above is still true except the items
+   findings 9-13 closed: `put` is still `INSERT OR REPLACE`, durable workers
+   still write one shard per task, `coordinator` still has no `--n-shards`,
+   `asr_error` is still silent in summaries, `snapshot_dir` is still absolute,
+   `_all_units` still loads everything, and sharpness is still measured at each
+   frame's own resolution.
+4. **Sharpness-based master election** is now the visible weak spot (4/48 wrong
+   on blurred copies, and the compressed-variant copies score *higher* Laplacian
+   variance because downscale-then-upscale inflates it). Normalising to a fixed
+   size before the Laplacian is the fix; it is not done.
+5. `scripts/query.py` still bypasses `Index.check_backend` — the user's file.
+

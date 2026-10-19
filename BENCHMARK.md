@@ -79,3 +79,53 @@ root as `benchmark_report.json`.
 - **Noise fraction is 0.82.** Only LFW contributes repeat identities; the
   Flickr30k and Face-Age samples are single photos of distinct people, so
   HDBSCAN correctly leaves them as noise rather than inventing clusters.
+
+## Re-run after the 2026-10-19 fixes
+
+The numbers above were measured before the review fixes. Re-running on the
+`review/2026-10-19` branch in the same CNB environment gives the results below.
+Read them as a check that the fixes did not regress the pipeline, not as a new
+baseline: the corpus is **not the same one**, because `datasets` 5.x refuses the
+`nlphuji/flickr30k` loading script, so that run lost all 400 Flickr30k images
+and every count derived from them.
+
+| Metric | Before | After | Note |
+|---|---|---|---|
+| Indexed units | 1,182 | 718 | Flickr30k absent |
+| Exact-duplicate recall | 1.000 | **1.000** | unchanged |
+| Motion-blur fold rate | 0.963 (77/80) | 0.917 (44/48) | same failure mode, smaller sample |
+| Master election accuracy | 0.963 (77/80) | 0.917 (44/48) | 4 wrong, all blurred copies |
+| Caption Recall@1/5/10 | .830/.965/.990 | *not measured* | captions come from Flickr30k |
+| Person clusters / purity | 28 / 0.991 | 31 / **1.000** | 224 labelled faces |
+| Persons recovered | 28/28 | **28/28** | unchanged |
+| Lossy re-encode fold rate | 0.375 | 0.021 | **corpus artifact, see below** |
+| Index consistency | ok | **ok** | 718 rows / 718 vectors / 768 dims |
+
+The 0.021 lossy-encode figure is not a regression. Two checks say so:
+
+1. The same six images, run through the old and new `near_duplicates` on
+   identical inputs, fold identically (2/6 both ways).
+2. On 60 Face-Age images the old and new implementations both fold 2/60.
+
+What changed is which images the variants were drawn from: with Flickr gone the
+sampler picked far fewer photographs whose half-resolution copy stays within 6
+dhash bits. The 0.375 figure stands until a run has the full corpus again.
+
+Frame storage (finding 10) does not move the dedup numbers: on six reference
+photos, dhash distance between an original and its stored 1024 px JPEG is 0-1
+bits, and on 120 LFW faces the compressed copies still fold 118/120 (raw:
+120/120). `scripts/frame_bound_check.py` checks the bound against the models
+themselves: on 3000 px photos the 1024 px copy keeps the same face at the same
+detection score (0.910 -> 0.911) and loses no OCR text.
+
+### Still not verified
+
+- **`scripts/benchmark.py` against a full corpus.** Flickr30k needs a
+  `datasets` version that still runs loading scripts, or a mirror that ships
+  Parquet. Until then the caption metrics cannot be re-measured.
+- **PCA-reduced clustering vs full-dimension / CUDA.** Unchanged: no ARI check
+  has been run, and the epsilon is applied unchanged in PCA space.
+- **A real shared mount.** Multi-machine tests still simulate machines on one
+  disk; NFS and FUSE behaviour is untested.
+- **Scale.** Nothing has been run near 77 k files; `_all_units` memory and
+  search latency at that size remain unmeasured.
