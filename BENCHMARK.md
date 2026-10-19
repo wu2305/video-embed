@@ -82,50 +82,68 @@ root as `benchmark_report.json`.
 
 ## Re-run after the 2026-10-19 fixes
 
-The numbers above were measured before the review fixes. Re-running on the
-`review/2026-10-19` branch in the same CNB environment gives the results below.
-Read them as a check that the fixes did not regress the pipeline, not as a new
-baseline: the corpus is **not the same one**, because `datasets` 5.x refuses the
-`nlphuji/flickr30k` loading script, so that run lost all 400 Flickr30k images
-and every count derived from them.
+Measured on `review/2026-10-19` in the same CNB environment (8 vCPU, CPU
+`float32`, backend `ml`), against the same corpus: 1,001 images, 15 clips, 80
+exact copies, 80 lossy re-encodes, 80 blurred bursts, 1,182 units.
 
-| Metric | Before | After | Note |
+| Metric | Before | After | Δ |
 |---|---|---|---|
-| Indexed units | 1,182 | 718 | Flickr30k absent |
-| Exact-duplicate recall | 1.000 | **1.000** | unchanged |
-| Motion-blur fold rate | 0.963 (77/80) | 0.917 (44/48) | same failure mode, smaller sample |
-| Master election accuracy | 0.963 (77/80) | 0.917 (44/48) | 4 wrong, all blurred copies |
-| Caption Recall@1/5/10 | .830/.965/.990 | *not measured* | captions come from Flickr30k |
-| Person clusters / purity | 28 / 0.991 | 31 / **1.000** | 224 labelled faces |
-| Persons recovered | 28/28 | **28/28** | unchanged |
-| Lossy re-encode fold rate | 0.375 | 0.021 | **corpus artifact, see below** |
-| Index consistency | ok | **ok** | 718 rows / 718 vectors / 768 dims |
+| Index consistency | ok | **ok** (1,182 rows / 1,182 vectors / 768 dims) | — |
+| Exact-duplicate recall | 1.000 (80/80) | **1.000** (80/80) | — |
+| Lossy re-encode fold rate | 0.375 (30/80) | **0.438** (35/80) | +5 |
+| Motion-blur fold rate | 0.963 (77/80) | **0.963** (77/80) | — |
+| Master election accuracy | 0.963 (77/80) | **0.963** (77/80) | — |
+| Caption Recall@1 | 0.830 | **0.845** | +0.015 |
+| Caption Recall@5 | 0.965 | **0.965** | — |
+| Caption Recall@10 | 0.990 | **0.990** | — |
+| Caption MRR | 0.892 | **0.903** | +0.011 |
+| Person clusters | 28 | **28** | — |
+| Cluster purity | 0.991 | **0.990** | -0.001 |
+| Persons recovered | 28/28 | **28/28** | — |
 
-The 0.021 lossy-encode figure is not a regression. Two checks say so:
+Timing, same machine class (this runner was slower than the original run, so
+compare the ratio, not the absolute seconds):
 
-1. The same six images, run through the old and new `near_duplicates` on
-   identical inputs, fold identically (2/6 both ways).
-2. On 60 Face-Age images the old and new implementations both fold 2/60.
+| Stage | Before | After |
+|---|---|---|
+| scan (1,176 canonical, 80 duplicates) | 0.26 s | 0.37 s |
+| prepare | 0.78 s | 1.80 s |
+| extract | 1.29 s | 3.98 s |
+| infer (1,176 files, CPU) | 504.7 s | 1,386.6 s |
+| cluster (1,649 faces) | 2.22 s | 3.17 s |
+| export | 0.34 s | 0.29 s |
 
-What changed is which images the variants were drawn from: with Flickr gone the
-sampler picked far fewer photographs whose half-resolution copy stays within 6
-dhash bits. The 0.375 figure stands until a run has the full corpus again.
+The lossy re-encode fold rate moved 0.375 -> 0.438 (30 -> 35 of 80). This is
+**not** attributed to the grouping fix: the old and new `near_duplicates` return
+identical masters on 200 Face-Age images with their lossy copies (10 folds
+each, zero differing units), and the old banding only missed ~0.5% of pairs at
+hamming distance 6 in a direct check. The most likely cause is corpus drift —
+the sampler is seeded, but the Flickr30k mirror's contents and ordering are not
+pinned — so the two runs may not share the exact same 80 re-encoded images.
+Do not read the +5 as a measured improvement.
 
-Frame storage (finding 10) does not move the dedup numbers: on six reference
-photos, dhash distance between an original and its stored 1024 px JPEG is 0-1
-bits, and on 120 LFW faces the compressed copies still fold 118/120 (raw:
-120/120). `scripts/frame_bound_check.py` checks the bound against the models
-themselves: on 3000 px photos the 1024 px copy keeps the same face at the same
-detection score (0.910 -> 0.911) and loses no OCR text.
+Inference timing is **not comparable** between these two runs: 1.39 s/file here
+versus 0.43 s/file in the original, with no added per-file work beyond encoding
+and decoding a bounded JPEG. An intermediate run of the same code measured
+1.41 s/file, so the spread looks like runner speed rather than the fixes — but
+it was not isolated, so treat the absolute numbers as machine-dependent.
+`extract` did get genuinely slower (1.29 -> 3.98 s) because it now JPEG-encodes
+each frame; that is still a small fraction of inference.
+
+A first attempt at this re-run lost Flickr30k (`datasets` 5.x refuses the
+`nlphuji/flickr30k` loading script, and the fallback hid the real error). That
+run reported a lossy fold rate of 0.021 — a corpus artifact, since the sampler
+had no Flickr images to draw variants from. `fetch_flickr` now logs the first
+mirror's error, and the table above is the full-corpus run.
 
 ### Still not verified
 
-- **`scripts/benchmark.py` against a full corpus.** Flickr30k needs a
-  `datasets` version that still runs loading scripts, or a mirror that ships
-  Parquet. Until then the caption metrics cannot be re-measured.
 - **PCA-reduced clustering vs full-dimension / CUDA.** Unchanged: no ARI check
   has been run, and the epsilon is applied unchanged in PCA space.
 - **A real shared mount.** Multi-machine tests still simulate machines on one
   disk; NFS and FUSE behaviour is untested.
 - **Scale.** Nothing has been run near 77 k files; `_all_units` memory and
   search latency at that size remain unmeasured.
+- **Master election's remaining 3 misses.** All are blurred copies outscoring
+  their sharp originals on Laplacian variance. Normalising to a fixed frame size
+  before the Laplacian is the fix; it is not done.

@@ -314,21 +314,27 @@ download progress bars before reading. A build checks out a git ref, so
   InsightFace found the face in the reference photo (1 face), RapidOCR read
   "HELLO 2026". The two synthetic ovals correctly yield 0 faces; the script
   asserts on the reference photo instead.
-- **`scripts/benchmark.py` on CNB: passed**, but on an incomplete corpus —
-  `datasets` 5.x refuses the Flickr30k loading script, so 400 images were
-  missing. Numbers and their interpretation are in `BENCHMARK.md`
-  ("Re-run after the 2026-10-19 fixes").
+- **`scripts/benchmark.py` on CNB: passed on the full corpus** (1,182 units,
+  no skipped datasets, captions present). Before/after numbers are in
+  `BENCHMARK.md` ("Re-run after the 2026-10-19 fixes"). Two caveats recorded
+  there: the +5 lossy folds are corpus drift rather than a measured improvement
+  (old and new grouping agree exactly on 200 images), and the inference timing
+  spread looks like runner speed but was not isolated.
 - **Frame bound justified by measurement**: `scripts/frame_bound_check.py`
   (new) shows a 3000 px portrait keeps its face at the same det_score after the
   1024 px bound (0.910 → 0.911) and loses no OCR text.
 
-### The one number that looks like a regression but is not
+### The two numbers that needed chasing
 
-Lossy re-encode fold rate went 0.375 → 0.021. Both the old and new
-`near_duplicates` fold identically on identical inputs (2/6 on six reference
-photos, 2/60 on Face-Age images), so the grouping did not change; the corpus
-did, because the sampler drew its variants from a Flickr-less pool. Do not
-quote 0.021 as a new baseline.
+- A first benchmark run lost Flickr30k and reported a lossy fold rate of 0.021.
+  `fetch_flickr` was swallowing the Parquet mirror's error and re-raising only
+  the fallback's "scripts are no longer supported", so the real failure was
+  invisible. Fixed: the first error is logged. The 0.021 was a corpus artifact.
+- The full run then reported 0.438 against the old 0.375. Checked rather than
+  claimed: old and new `near_duplicates` return identical masters on 200 images
+  (10 folds each), and the old banding only missed ~0.5% of distance-6 pairs, so
+  the delta is corpus drift, not the fix. `BENCHMARK.md` says so.
+
 
 ### What is still open
 
