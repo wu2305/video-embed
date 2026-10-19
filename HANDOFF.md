@@ -13,22 +13,25 @@ to do next, in that order.
 
 ## Start here
 
-All 13 review findings are fixed on `review/2026-10-19` (HEAD `05a5a26`, 12
-commits ahead of `main`, clean tree, pushed). Last verified on that HEAD: 154
-passed / 4 skipped, smoke clean, `ml_check.py` passed, full-corpus benchmark
-passed. **Nothing is committed to `main` yet — that decision is the user's.**
+All 13 review findings are fixed on `review/2026-10-19` (pushed to CNB, clean
+tree). Since then two more things landed on the same branch: **sharpness
+normalisation** (which fixed master election for compressed copies) and
+**`scripts/serve.py`**, a query console you can open over a forwarded port.
+
+Verified on CNB: **181 passed**, smoke clean, full-corpus benchmark passed.
+**Nothing is committed to `main` yet — that decision is the user's.**
 
 Read in this order:
 
 1. `agents.md` — production constraints that must not be broken.
-2. This section 6 — what each finding does now, how it was verified, and the
-   traps (no exec on CNB workspaces; builds only see pushed commits).
-3. Section 2.2 and section 3 — the gaps that are still real.
+2. Section 6 — what each finding does now, how it was verified, and the traps
+   (no exec on CNB workspaces; builds only see pushed commits).
+3. Section 7 — the sharpness fix and the query console.
 4. `BENCHMARK.md` — before/after numbers and which deltas are *not* the fixes.
 
-The highest-value next task is sharpness normalisation for master election
-(section 6, open item 2); the highest-priority decision is how to land the
-branch (open item 1).
+The highest-value next task is a blur-sensitive sharpness metric (section 6,
+open item 2): rescaling fixed compressed copies but not the 3 motion-blur
+misses. The highest-priority decision is still how to land the branch.
 
 
 ---
@@ -388,15 +391,13 @@ download progress bars before reading. A build checks out a git ref, so
    `main` has none of them. One merge, or a replay as one commit per finding
    (findings 1-8 touch mostly disjoint code; `export.py`, `worker.py` and
    `queue.py` are shared). Do not assume the branch is wanted as-is.
-2. **Sharpness-based master election is the weakest remaining behaviour.**
-   Downscale-then-upscale inflates Laplacian variance, so a lossy copy can
-   outscore its original. Two separate measurements: on 60 Face-Age images the
-   lossy copies had median sharpness 275 against 38 for the originals (the
-   compressed copies would win every election), and in the full benchmark 3 of
-   80 blurred bursts elect the blurred copy over the sharp one
-   (`BENCHMARK.md`, `dedup.master_wrong`). Fix: normalise to a fixed size before
-   the Laplacian, then re-measure. This is also why "master election is 0.963"
-   has never been 1.0.
+2. **Sharpness-based master election: half fixed.** Normalising the measurement
+   to a fixed 256 px long edge (`sharpness_edge`) fixed the compressed-copy case
+   completely — lossy fold rate went 0.4375 -> **1.000 (80/80)** — because a
+   half-size copy no longer scores higher than its original. Three motion-blur
+   misses remain and rescaling did **not** touch them; they need a metric that
+   is actually blur-sensitive (variance of Laplacian is not, at this blur
+   strength). See section 7 and `BENCHMARK.md`.
 3. **Section 2.2 items that findings 9-13 did not touch**, all still true:
    `IncrementalCheckpoint.put` is still `INSERT OR REPLACE` (not
    first-writer-wins); durable workers still write one shard per task; no
@@ -435,3 +436,73 @@ download progress bars before reading. A build checks out a git ref, so
 - **Do not re-run `scripts/benchmark.py` casually.** A full run costs ~46 min
   of 8-vCPU time plus ~22 min of dataset download.
 
+
+---
+
+## 7. Sharpness normalisation and the query console (third session)
+
+### Sharpness (`media.sharpness(image, size)`)
+
+The bug: master election compares Laplacian variance between files, and raw
+variance depends on resolution. A half-resolution copy, upscaled by the decoder,
+carries *more* high-frequency energy than the original, so it won the election.
+On 80 LFW faces the original won **0 of 80** against a quality-35 copy.
+
+The fix: `sharpness()` takes a `size` and scales the grayscale image so its long
+edge is that many pixels first. At 256 px the original wins **80 of 80** against
+the compressed copy and **80 of 80** against a 17x17 Gaussian blur. Default is
+`Settings.sharpness_edge = 256`; `0` restores raw behaviour.
+
+Consequences a reader will hit:
+
+- **Records now carry `sharpness_edge`.** `infer` writes it; `collect_units`
+  copies it onto each unit; `export` refuses a corpus that mixes scales
+  (`resolve_sharpness_edge`), because those values are not comparable and the
+  election would be decided by when each file happened to be inferred.
+  Records predating the field are all treated as raw (`0`), so a corpus inferred
+  entirely before this change still exports.
+- **An existing checkpoint cannot be mixed with new work.** Re-infer the whole
+  corpus, or keep `sharpness_edge=0` for the whole run.
+- **Benchmark effect:** lossy fold rate 0.4375 -> **1.000**; every other metric
+  unchanged (blur fold 0.9625, master accuracy 0.9625, recall@1 0.845, purity
+  0.9903, 28/28 persons). Full table in `BENCHMARK.md`.
+
+### Query console (`scripts/serve.py`)
+
+Standard library only — `http.server` + `ThreadingHTTPServer`, no new deps. One
+page: query box, limit, person, min-faces, min-score, non-master toggle; result
+cards with thumbnails; and a strip showing the embed / rank / total timings so
+the PoC's mechanics are visible rather than asserted.
+
+```
+GET /                  the console
+GET /api/info          snapshot, backend, units, matrix shape, persons
+GET /api/search?q=...  ranked hits + timings
+GET /api/thumb?id=N    cached bounded JPEG (video: frame re-read at scene midpoint)
+GET /api/source?id=N   original file, Range-capable
+```
+
+```bash
+python scripts/serve.py --work-dir /opt/benchmark_work --port 8000
+# prints the CNB proxy URL when CNB_VSCODE_PROXY_URI is set
+```
+
+Things that were not obvious and cost time:
+
+- **Browsers will not play a video without `Range` support.** Serving 200 with
+  the whole body produced `MEDIA_ERR_SRC_NOT_SUPPORTED` (error 4) even though
+  `curl` was happy. `_stream()` now returns 206 with `Content-Range`,
+  `Accept-Ranges`, suffix ranges, and 416 for an unsatisfiable range.
+- **Chrome cannot decode `mpeg4`** (the fourcc OpenCV's `mp4v` writer emits).
+  The UI is fine; a test fixture in that codec will always show a broken player.
+  Use H.264 for demo clips.
+- **The server binds `0.0.0.0`** on purpose: CNB port preview requires it, and
+  a `127.0.0.1` bind is unreachable through the proxy.
+- Thumbnails are read only through ids present in the `units` table, so the
+  endpoint cannot be used to read arbitrary container files.
+- It is a demo: no auth, no pagination, one process, `no-store` on responses.
+
+Tests: `tests/test_serve.py` (12) drive the real handler over a loopback socket,
+including range semantics and error codes; `tests/test_sharpness.py` (8) cover
+the metric, the recorded scale and the mixed-scale refusal. Removing the range
+handling makes `test_source_streams_with_range_support` fail, which was checked.

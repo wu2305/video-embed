@@ -130,6 +130,33 @@ it was not isolated, so treat the absolute numbers as machine-dependent.
 `extract` did get genuinely slower (1.29 -> 3.98 s) because it now JPEG-encodes
 each frame; that is still a small fraction of inference.
 
+### Sharpness normalisation (same day, later)
+
+| Metric | Raw variance | Normalised at 256 px |
+|---|---|---|
+| Lossy re-encode fold rate | 0.4375 (35/80) | **1.000 (80/80)** |
+| Motion-blur fold rate | 0.9625 (77/80) | 0.9625 (77/80) |
+| Master election accuracy | 0.9625 (77/80) | 0.9625 (77/80) |
+| Exact-duplicate recall | 1.000 | **1.000** |
+| Caption Recall@1 / MRR | 0.845 / 0.9025 | 0.845 / 0.9023 |
+| Cluster purity / persons | 0.9903 / 28 of 28 | 0.9903 / 28 of 28 |
+
+The compressed variants now fold every time, because a half-size copy no longer
+scores *higher* than its original and steals master election. Measured in
+isolation on 80 LFW faces, raw variance picked the original 0 of 80 times
+against a quality-35 copy; at 256 px it picks it 80 of 80, and 80 of 80 against
+a Gaussian blur.
+
+The three remaining master-election misses are all motion blur, and they are a
+different problem: a 17x17 Gaussian blur at this strength leaves the normalised
+Laplacian ordering unchanged for those three pairs, so sharpness — at any scale
+— is not the signal that separates them. Fixing those needs a metric that is
+actually sensitive to blur, not a rescaling.
+
+Inference took 2,509 s this run against 1,386 s before. The only added work is
+one extra grayscale resize per unit; the earlier note that runner speed varies
+by ~2-3x between builds still applies, and this was not isolated.
+
 A first attempt at this re-run lost Flickr30k (`datasets` 5.x refuses the
 `nlphuji/flickr30k` loading script, and the fallback hid the real error). That
 run reported a lossy fold rate of 0.021 — a corpus artifact, since the sampler
@@ -145,5 +172,5 @@ mirror's error, and the table above is the full-corpus run.
 - **Scale.** Nothing has been run near 77 k files; `_all_units` memory and
   search latency at that size remain unmeasured.
 - **Master election's remaining 3 misses.** All are blurred copies outscoring
-  their sharp originals on Laplacian variance. Normalising to a fixed frame size
-  before the Laplacian is the fix; it is not done.
+  their sharp originals. Rescaling did not fix them, so the next attempt needs a
+  blur-sensitive metric rather than a sharper Laplacian.
