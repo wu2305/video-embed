@@ -196,10 +196,12 @@ class Index:
         if len(scores) > limit:
             # argpartition finds the k best in O(n); only those get a SearchHit.
             top = np.argpartition(-scores, limit - 1)[:limit]
-            # Ties at the k-th score are broken by path and unit index, exactly
-            # as the previous full sort did, so pull every row sharing that score.
+            # Rows tied with the k-th score compete on path and unit index, as
+            # the previous full sort did, so include that tie group before the
+            # final ordering. Their paths are read, but no hit is built for them.
             boundary = float(scores[top].min())
-            top = np.flatnonzero(scores >= boundary) if np.isfinite(boundary) else top
+            if np.isfinite(boundary):
+                top = np.union1d(top, np.flatnonzero(scores == boundary))
         else:
             top = np.arange(len(scores))
 
@@ -211,6 +213,7 @@ class Index:
                 rows[position]["unit_index"],
             )
         )
+        chosen = chosen[:limit]
 
         hits: list[SearchHit] = []
         for position in chosen:

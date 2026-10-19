@@ -235,3 +235,56 @@ def test_legacy_labels_without_keys_still_join_by_position(layout):
         {"labels": [0], "unit_refs": [[1, 0]]},
     )
     assert [u["person_ids"] for u in units] == [[], ["person-0000"]]
+
+
+def test_search_ranks_without_building_a_hit_per_row(layout, settings, monkeypatch):
+    """Regression: every candidate row got a SearchHit, parsed person_ids and
+    lowercased its OCR/ASR text before the top k was taken."""
+    from mmindex.export import export_snapshot
+    from mmindex.search import Index
+
+    dim = 64
+    settings.clip_embedding_dim = dim
+    # One distinct axis per unit, so no two similarities tie.
+    units = []
+    for i in range(dim):
+        unit = _unit(i, dim=dim, text=f"caption {i}")
+        unit["clip_embedding"] = np.eye(dim, dtype=np.float32)[i]
+        units.append(unit)
+    export_snapshot(units, layout, settings)
+    index = Index.open(layout, settings)
+
+    built: list = []
+    original = index.search.__globals__["SearchHit"]
+
+    class Counting(original):
+        def __init__(self, *args, **kwargs):
+            built.append(kwargs.get("unit_id"))
+            super().__init__(*args, **kwargs)
+
+    monkeypatch.setitem(index.search.__globals__, "SearchHit", Counting)
+    query = np.eye(dim, dtype=np.float32)[3]
+    hits = index.search(query, text="caption 3", limit=5)
+
+    assert len(hits) == 5
+    assert len(built) == 5, "a SearchHit was built for a row outside the top k"
+    assert hits[0].path.endswith("file3.jpg")
+    assert hits[0].text_bonus == pytest.approx(settings.text_bonus)
+
+
+def test_search_still_honours_min_score_and_ties(layout, settings):
+    from mmindex.export import export_snapshot
+    from mmindex.search import Index
+
+    settings.clip_embedding_dim = 8
+    # Three units share one vector, so their scores tie exactly.
+    units = [_unit(0), _unit(8), _unit(16), _unit(3)]
+    export_snapshot(units, layout, settings)
+    index = Index.open(layout, settings)
+
+    query = np.eye(8, dtype=np.float32)[0]
+    hits = index.search(query, limit=2)
+    assert [h.path for h in hits] == ["/media/file0.jpg", "/media/file16.jpg"]
+
+    assert index.search(query, limit=0) == []
+    assert all(hit.score >= 0.9 for hit in index.search(query, limit=4, min_score=0.9))

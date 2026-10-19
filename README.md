@@ -72,12 +72,19 @@ queue and search — can be exercised on any machine. Records are tagged
 
 | Stage | What it does | Output |
 |---|---|---|
-| `scan` | Walk the tree, xxhash64 fast-hash, SHA256 exact dedup, canonical timestamps | `manifest.jsonl`, `deduplicated.json` |
-| `prepare` | SceneDetect `ContentDetector` (threshold 27.0) + faster-whisper ASR | checkpoint `prepare` records |
-| `extract` | One midpoint frame per scene, persisted as `.npy` | `frames/*.npy`, checkpoint `extract` records |
-| `infer` | SigLIP 768-d, InsightFace 512-d faces, RapidOCR, dhash, sharpness | checkpoint `infer` records |
+| `scan` | Walk the tree, one read per file for xxhash64 + SHA256 exact dedup, canonical timestamps | `manifest.jsonl`, `deduplicated.json` |
+| `prepare` | SceneDetect `ContentDetector` (threshold 27.0) + faster-whisper ASR with segment timings | checkpoint `prepare` records |
+| `extract` | One midpoint frame per scene, stored as a bounded JPEG (1024 px, quality 90) | `frames/*.jpg`, checkpoint `extract` records |
+| `infer` | SigLIP 768-d, InsightFace 512-d faces, RapidOCR, dhash, sharpness; deletes the frames | checkpoint `infer` records |
 | `cluster` | HDBSCAN over face vectors + KMeans prototypes | `person_catalog.json`, `person_labels.json` |
 | `export` | SQLite + FP16 `.npy` snapshot, atomic manifest swap | `index_snapshots/<id>/`, `index_manifest.json` |
+
+Frames are scratch data: they are written once at a bounded size and removed as
+soon as the infer record is stored, so disk use tracks the corpus rather than
+its resolution. `MMINDEX_KEEP_FRAMES=1` keeps them for inspection.
+
+ASR keeps Whisper's own segment timings, so each scene gets the words actually
+spoken during it rather than a pro-rata slice of the whole transcript.
 
 Search scores are cosine similarity over L2-normalised SigLIP vectors plus a
 `0.15` bonus when the query term appears in the unit's OCR/ASR text.
@@ -140,11 +147,11 @@ use Redis or a managed queue instead if the mount cannot provide POSIX locks.
 index_work/
   checkpoints/
     checkpoint-v2-<namespace>.sqlite
-    shards/shard-000001.json.gz
+    shards/shard-<writer>-<seq>.json.gz
   work_queue.sqlite
   manifest.jsonl
   deduplicated.json
-  frames/
+  frames/                      # bounded JPEGs, removed once infer stores a record
   person_catalog.json
   person_labels.json
   index_snapshots/<timestamp>_<uuid>/
@@ -158,6 +165,11 @@ index_work/
 `verify` re-checks dtype, dimensions, row alignment and manifest validity before
 reporting success, and `export` refuses to publish a snapshot that fails those
 checks.
+
+The production checkpoint namespace and its legacy SQLite file are refused
+outright: `Layout` and `IncrementalCheckpoint` raise `ProtectedPathError` for
+`--namespace 7d928ad0a65d18eab89b` and for `checkpoint-38193eda9da83f4d2192.sqlite`,
+so the "never write to production" rule is enforced rather than remembered.
 
 ## Benchmark against the reference corpus
 
