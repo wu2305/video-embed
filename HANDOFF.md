@@ -197,6 +197,12 @@ Do not treat any of them as settled.
 
 ## 4. Next-step work plan
 
+> **Status:** steps 1-3 are done on `review/2026-10-19` (the branch is committed
+> and pushed; the before/after test check ran with the one caveat in section 6;
+> findings 9-13 are fixed). Step 2's benchmark and ml-check ran on CNB. Steps 4,
+> 5 and 6 are still open — see "What is still open" in section 6 for the
+> current priority order, which supersedes the ordering below.
+
 Ordered. Each step lists what "done" means. Stop and ask the user before steps
 marked **[user]**.
 
