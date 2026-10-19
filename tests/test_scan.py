@@ -58,6 +58,8 @@ def test_canonical_time_falls_back_to_mtime(tmp_path):
 def test_scan_skips_an_unreadable_file_instead_of_aborting(media_tree, layout):
     """Regression: only the collision branch caught OSError, so one unreadable
     unique file aborted the whole scan."""
+    import importlib
+
     from mmindex.hashing import digests
 
     unreadable = media_tree / "locked.png"
@@ -68,7 +70,9 @@ def test_scan_skips_an_unreadable_file_instead_of_aborting(media_tree, layout):
             raise PermissionError(13, "Permission denied", str(path))
         return digests(path)
 
-    import mmindex.scan as scan_module
+    # ``mmindex.scan`` is the function re-exported by the package, so the module
+    # has to be fetched through importlib.
+    scan_module = importlib.import_module("mmindex.scan")
 
     original = scan_module.digests
     scan_module.digests = boom
@@ -84,9 +88,10 @@ def test_scan_skips_an_unreadable_file_instead_of_aborting(media_tree, layout):
 def test_scan_reads_each_file_once(media_tree, layout):
     """Regression: the fast digest was computed twice and SHA256 ran on every
     file, so the xxhash pre-filter saved nothing."""
-    calls: list[str] = []
-    import mmindex.scan as scan_module
+    import importlib
 
+    calls: list[str] = []
+    scan_module = importlib.import_module("mmindex.scan")
     original = scan_module.digests
 
     def counting(path):

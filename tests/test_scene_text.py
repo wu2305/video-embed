@@ -126,6 +126,7 @@ def _entry_and_layout(tmp_path, layout, settings, frame_indices, scenes, segment
         digest="d" * 16,
         fast_digest="f",
         canonical_time=0.0,
+        time_source="mtime",
         mtime=0.0,
     )
     frames = []
