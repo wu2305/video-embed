@@ -7,7 +7,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:lib": "tsc -p tsconfig.build.json && esbuild src/index.ts --bundle --format=esm --jsx=automatic --external:react --external:react-dom --external:react/jsx-runtime --outfile=dist/index.js && cp src/styles.css dist/styles.css"
   },
   "devDependencies": {
     "@storybook/addon-a11y": "^10.6.2",
@@ -23,6 +24,20 @@
     "storybook": "^10.6.2",
     "typescript": "^5.9.3",
     "vite": "^8.3.4",
-    "vitest": "^5.0.5"
-  }
+    "vitest": "^5.0.5",
+    "esbuild": "^0.25.0"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "files": [
+    "dist"
+  ]
 }

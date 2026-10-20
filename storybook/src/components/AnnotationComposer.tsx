@@ -12,15 +12,18 @@ export interface AnnotationComposerProps {
   people?: readonly Person[];
   /** Still media have no time range. */
   still?: boolean;
+  /** Pre-typed values, as after the user has started editing. */
+  initialText?: string;
+  initialTo?: string;
   onSave?: (note: Omit<Annotation, "id" | "author">) => void;
 }
 
 /** Scene 2: attach a typed note to a time range, optionally tied to people in frame. */
-export function AnnotationComposer({ time, scene = null, inFrame = [], people = [], still = false, onSave }: AnnotationComposerProps) {
+export function AnnotationComposer({ time, scene = null, inFrame = [], people = [], still = false, initialText = "", initialTo, onSave }: AnnotationComposerProps) {
   const start = scene?.start ?? time;
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialText);
   const [from, setFrom] = useState(formatTime(start));
-  const [to, setTo] = useState(scene ? formatTime(scene.end) : "");
+  const [to, setTo] = useState(initialTo ?? (scene ? formatTime(scene.end) : ""));
   const [chosen, setChosen] = useState<string[]>([]);
   const textId = useId();
   const fromId = useId();

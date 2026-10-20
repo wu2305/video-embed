@@ -1,5 +1,19 @@
 {
   "projectId": "f747a6b9-d25e-4523-8dae-607c1d2aac40",
   "shape": "storybook",
-  "storybookConfigDir": "storybook/.storybook"
+  "pkg": "mmindex-storybook",
+  "globalName": "Mmindex",
+  "storybookConfigDir": "storybook/.storybook",
+  "storybookStatic": ".design-sync/sb-reference",
+  "buildCmd": "cd storybook && npm run build:lib",
+  "cssEntry": "dist/styles.css",
+  "titleMap": {
+    "Mixedresults": null
+  },
+  "overrides": {
+    "ResultGrid": {
+      "viewport": "1000x760"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
 }

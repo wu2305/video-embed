@@ -1,7 +1,9 @@
 import type { Preview } from "@storybook/react-vite";
+import { createElement } from "react";
 import "../src/styles.css";
 
 const preview: Preview = {
+  decorators: [(Story) => createElement("div", { className: "mm-root" }, createElement(Story))],
   tags: ["autodocs"],
   parameters: {
     layout: "padded",

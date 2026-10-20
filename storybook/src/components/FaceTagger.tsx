@@ -7,14 +7,17 @@ export interface FaceTaggerProps {
   faces: readonly Face[];
   people: readonly Person[];
   /** Called when the user confirms. The caller owns persistence (a future `POST /api/tag`). */
+  /** Start with this face selected (by `face_index`) and this name typed, as after a click. */
+  initialSelected?: number | null;
+  initialName?: string;
   onTag?: (tag: { face_index: number; name: string; scope: TagScope }) => void;
 }
 
 /** Scene 1: click a face box, name it, choose whether the name covers the whole cluster. */
-export function FaceTagger({ src, faces, people, onTag }: FaceTaggerProps) {
-  const [selected, setSelected] = useState<number | null>(null);
-  const [name, setName] = useState("");
-  const [scope, setScope] = useState<TagScope>("cluster");
+export function FaceTagger({ src, faces, people, initialSelected = null, initialName = "", onTag }: FaceTaggerProps) {
+  const [selected, setSelected] = useState<number | null>(initialSelected);
+  const [name, setName] = useState(initialName);
+  const [scope, setScope] = useState<TagScope>(() => (faces.find((f) => f.face_index === initialSelected)?.person_id === null ? "face" : "cluster"));
   const [applied, setApplied] = useState<string | null>(null);
   const listId = useId();
   const nameId = useId();

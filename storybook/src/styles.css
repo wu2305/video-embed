@@ -127,3 +127,6 @@ input[aria-invalid=true] { border-color: var(--bad); }
 @media (max-width: 720px) {
   .mm-tagger, .mm-preview { grid-template-columns: 1fr; }
 }
+
+/* Gives every story the console's dark ground, so the light text is legible outside Storybook's backgrounds addon. */
+.mm-root { background: var(--bg); color: var(--text); min-height: 100%; padding: 1px; }

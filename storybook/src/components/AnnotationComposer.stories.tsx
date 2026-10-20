@@ -30,6 +30,7 @@ export const Default: Story = {
 export const OpenEnded: Story = { args: { scene: null, time: 118 } };
 
 export const InvalidRange: Story = {
+  args: { initialTo: "00:10", initialText: "x" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.clear(canvas.getByLabelText(/^to/));
