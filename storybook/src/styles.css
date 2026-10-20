@@ -54,3 +54,76 @@ button:disabled { opacity: .5; cursor: default; }
 }
 .mm-rank { top: 8px; left: 8px; }
 .mm-score { bottom: 8px; right: 8px; color: var(--good); }
+
+.mm-body { padding: 9px 11px 11px; display: flex; flex-direction: column; gap: 5px; }
+.mm-name { font-size: 12px; word-break: break-all; }
+.mm-text {
+  font-size: 11px; color: var(--warn); border-left: 2px solid var(--warn);
+  padding-left: 7px; display: -webkit-box; -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.mm-text.note { color: var(--accent); border-left-color: var(--accent); }
+.mm-source {
+  position: absolute; top: 8px; right: 8px; font: 11px/1 var(--mono);
+  background: rgba(0,0,0,.72); border-radius: 5px; padding: 4px 6px; color: var(--warn);
+}
+.mm-status { color: var(--muted); margin-bottom: 14px; min-height: 20px; }
+.mm-status.error { color: var(--bad); }
+.mm-empty { color: var(--muted); padding: 30px 0; }
+.mm-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.mm-kbd {
+  display: inline-block; min-width: 18px; padding: 0 4px; margin-left: 4px; text-align: center;
+  font: 11px/16px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 4px;
+}
+
+/* stage with face boxes (scenes 1 and 5) */
+.mm-stage { position: relative; background: #0b0d11; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.mm-stage img, .mm-stage video { display: block; width: 100%; height: auto; }
+.mm-face {
+  position: absolute; padding: 0; background: transparent; border-radius: 4px;
+  border: 2px solid var(--accent); box-shadow: 0 0 0 1px rgba(0,0,0,.6);
+}
+.mm-face.untagged { border-style: dashed; border-color: var(--warn); }
+.mm-face.selected { border-color: var(--good); box-shadow: 0 0 0 2px rgba(89,209,140,.35); }
+.mm-face.static { pointer-events: none; }
+button.mm-face:hover { background: rgba(110,168,254,.12); }
+.mm-face-label {
+  position: absolute; left: -2px; bottom: 100%; margin-bottom: 2px; white-space: nowrap;
+  font: 11px/1 var(--mono); background: rgba(0,0,0,.8); color: #fff; border-radius: 4px; padding: 3px 5px;
+}
+.mm-overlay-note {
+  position: absolute; left: 12px; right: 12px; bottom: 12px; padding: 7px 10px; border-radius: 7px;
+  background: rgba(0,0,0,.78); color: #fff; font-size: 13px;
+}
+
+/* face tagger (scene 1) */
+.mm-tagger { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(240px, 1fr); gap: 16px; align-items: start; }
+.mm-tagger .mm-panel { display: grid; gap: 12px; }
+.mm-radio { display: flex; gap: 8px; align-items: flex-start; }
+.mm-radio input { margin-top: 3px; padding: 0; }
+.mm-radio small { display: block; color: var(--muted); font: 11px/1.45 var(--mono); }
+
+/* notes (scene 2) */
+.mm-note-form { display: grid; gap: 12px; max-width: 460px; }
+.mm-note-form textarea { min-height: 76px; resize: vertical; }
+input[aria-invalid=true] { border-color: var(--bad); }
+.mm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.mm-chip { border-radius: 999px; padding: 3px 11px; color: var(--muted); }
+.mm-chip[aria-pressed=true] { color: #0b0d11; background: var(--accent); border-color: transparent; font-weight: 600; }
+.mm-track { position: relative; height: 34px; background: #12151b; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; cursor: pointer; }
+.mm-track > * { position: absolute; top: 0; bottom: 0; pointer-events: none; }
+.mm-track .scene { border-left: 1px solid var(--line); background: rgba(255,255,255,.03); }
+.mm-track .matched { background: rgba(89,209,140,.25); border-left: 2px solid var(--good); }
+.mm-track .note { top: auto; height: 8px; background: var(--accent); border-radius: 2px; }
+.mm-track .playhead { width: 2px; background: var(--text); }
+.mm-track-legend { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px; }
+
+/* preview (scene 5) */
+.mm-preview { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(240px, 1fr); gap: 18px; align-items: start; }
+.mm-preview aside { display: grid; gap: 10px; }
+.mm-preview h3 { margin: 0; font-size: 15px; word-break: break-all; }
+.mm-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+@media (max-width: 720px) {
+  .mm-tagger, .mm-preview { grid-template-columns: 1fr; }
+}

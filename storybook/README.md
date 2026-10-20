@@ -12,8 +12,12 @@ cd storybook
 npm install
 npm run storybook        # http://localhost:6006
 npm run typecheck
+npm test                 # unit tests + every story's play function in headless Chromium
 npm run build-storybook  # static site in storybook-static/
 ```
+
+`npm test` needs a Chromium. Run `npx playwright install chromium`, or point
+`CHROMIUM_PATH` at an existing binary.
 
 ## Layout
 

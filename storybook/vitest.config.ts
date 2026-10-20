@@ -6,6 +6,7 @@ import { playwright } from "@vitest/browser-playwright";
 export default defineConfig({
   test: {
     projects: [
+      { test: { name: "unit", include: ["src/lib/**/*.test.ts"], environment: "node" } },
       {
         extends: true,
         plugins: [storybookTest({ configDir: ".storybook" })],
@@ -14,7 +15,7 @@ export default defineConfig({
           browser: {
             enabled: true,
             headless: true,
-            provider: playwright({}),
+            provider: playwright({ launchOptions: { executablePath: process.env.CHROMIUM_PATH || undefined } }),
             instances: [{ browser: "chromium" }],
           },
         },
