@@ -21,49 +21,64 @@ from .checkpoint import IncrementalCheckpoint
 from .config import Layout, Settings, media_kind
 from .queue import WorkQueue
 from .scan import ManifestEntry, read_manifest
-from .stages import extract_entry, infer_entry, prepare_entry
+from .stages import discard_frames, extract_entry, infer_entry, prepare_entry
 
 
 class _Heartbeat:
-    """Refresh one task's lease from a background thread while it is processed.
+    """Refresh the lease of the task a worker is processing, from one thread.
 
-    The thread opens its own queue connection: the worker's connection is not
-    safe to share while the main thread is inside a claim transaction.
+    The thread is started on first use and lives as long as the worker, so a
+    stage of tiny tasks does not pay a thread and a SQLite connection per file.
+    It opens its own queue connection: the worker's connection is not safe to
+    share while the main thread is inside a claim transaction.
     """
 
     def __init__(
         self,
         db_path: Path,
-        task_id: str,
         worker_id: str,
         interval: float,
         journal_mode: str = "WAL",
     ) -> None:
         self._db_path = db_path
         self._journal_mode = journal_mode
-        self._task_id = task_id
         self._worker_id = worker_id
         self._interval = interval
         self._stop = threading.Event()
-        self._thread = threading.Thread(target=self._run, name="lease-heartbeat", daemon=True)
+        self._lock = threading.Lock()
+        self._task_id: str | None = None
+        self._thread: threading.Thread | None = None
 
     def _run(self) -> None:
         queue = WorkQueue(self._db_path, journal_mode=self._journal_mode)
         try:
             while not self._stop.wait(self._interval):
-                queue.heartbeat(self._task_id, self._worker_id)
+                # Held across the write, so ``track`` returning means no beat for
+                # the previous task is still in flight.
+                with self._lock:
+                    if self._task_id is not None:
+                        queue.heartbeat(self._task_id, self._worker_id)
         except Exception:  # pragma: no cover - the lease then simply expires
             pass
         finally:
             queue.close()
 
-    def __enter__(self) -> "_Heartbeat":
-        self._thread.start()
-        return self
+    def track(self, task_id: str) -> None:
+        with self._lock:
+            self._task_id = task_id
+        if self._thread is None:
+            self._thread = threading.Thread(target=self._run, name="lease-heartbeat", daemon=True)
+            self._thread.start()
 
-    def __exit__(self, *exc: object) -> None:
+    def untrack(self) -> None:
+        with self._lock:
+            self._task_id = None
+
+    def close(self) -> None:
         self._stop.set()
-        self._thread.join(timeout=self._interval + 5)
+        if self._thread is not None:
+            self._thread.join(timeout=self._interval + 5)
+            self._thread = None
 
 
 # Stage records a stage reads, which another machine may have written.
@@ -107,6 +122,9 @@ class Worker:
         )
         # With a machine-local database, other machines only see this worker's
         # progress through shards, and this worker only sees theirs by importing.
+        self._heartbeat = _Heartbeat(
+            layout.queue_db, self.worker_id, self.heartbeat_every, layout.queue_journal_mode
+        )
         self.durable = layout.local_dir is not None
         if self.durable:
             self.checkpoint.import_shards()
@@ -160,8 +178,15 @@ class Worker:
         elif self.stage == "extract":
             extract_entry(entry, self.layout, self.settings, self.checkpoint)
         elif self.stage == "infer":
+            # A machine-local record is not durable until its shard is synced, so
+            # the frames it was computed from stay until run_once has done that.
             infer_entry(
-                entry, self.layout, self.settings, self.checkpoint, self._ensure_backend()
+                entry,
+                self.layout,
+                self.settings,
+                self.checkpoint,
+                self._ensure_backend(),
+                release_frames=not self.durable,
             )
         else:
             raise ValueError(f"unknown stage: {self.stage}")
@@ -179,20 +204,18 @@ class Worker:
             self.skipped += 1
             return True
 
+        self._heartbeat.track(task.task_id)
         try:
-            with _Heartbeat(
-                self.layout.queue_db,
-                task.task_id,
-                self.worker_id,
-                self.heartbeat_every,
-                self.layout.queue_journal_mode,
-            ):
-                self._process(task)
-                if self.durable:
-                    # A task is only "done" once its record is in a shard the next
-                    # stage's workers can read; otherwise a machine that vanishes
-                    # after marking done would take the record with it.
-                    self.checkpoint.sync()
+            self._process(task)
+            if self.durable:
+                # A task is only "done" once its record is in a shard the next
+                # stage's workers can read; otherwise a machine that vanishes
+                # after marking done would take the record with it.
+                self.checkpoint.sync()
+                if self.stage == "infer":
+                    extracted = self.checkpoint.get(task.file_path, task.digest, stage="extract")
+                    if extracted is not None:
+                        discard_frames(extracted, self.settings)
         except Exception as exc:
             self._settle(
                 self.queue.mark_failed(task.task_id, f"{type(exc).__name__}: {exc}", self.worker_id)
@@ -201,6 +224,8 @@ class Worker:
         else:
             self._settle(self.queue.mark_done(task.task_id, self.worker_id))
             self.processed += 1
+        finally:
+            self._heartbeat.untrack()
         return True
 
     def _settle(self, applied: bool) -> None:
@@ -243,5 +268,6 @@ class Worker:
             self.backend.close()
             self.backend = None
             self._owns_backend = False
+        self._heartbeat.close()
         self.checkpoint.close()
         self.queue.close()

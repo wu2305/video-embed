@@ -205,3 +205,16 @@ def test_many_identical_hashes_form_one_group():
     masters = near_duplicates(units, settings)
     assert masters[1_999] is True  # sharpest wins
     assert sum(masters.values()) < 2_000
+
+
+def test_huge_run_of_identical_hashes_is_not_quadratic():
+    """Regression: a run of identical frames (black, fade) compared every pair."""
+    settings = Settings()
+    units = [_unit("0" * 16, float(i + 1)) for i in range(60_000)]
+    units += [_unit("0000000000000001", 0.5), _unit("ffffffffffffffff", 1.0)]
+    started = time.time()
+    masters = near_duplicates(units, settings)
+    assert time.time() - started < 10
+    assert masters[59_999] is True
+    assert masters[60_000] is False  # one bit from the run, far less sharp
+    assert masters[60_001] is True  # unrelated hash

@@ -119,10 +119,13 @@ def near_duplicates(units: Sequence[dict], settings: Settings) -> dict[int, bool
     values = [int(units[i]["dhash"], 16) for i in indices]
     if any(value >> _DHASH_BITS for value in values):
         raise ValueError(f"dhash wider than {_DHASH_BITS} bits")
-    hashes = np.array(values, dtype=np.uint64)
+    # Identical hashes (a run of black or fade frames, say) are one node: they
+    # are trivially duplicates of each other, and comparing every pair of them
+    # would be quadratic in the size of the run.
+    hashes, inverse = np.unique(np.array(values, dtype=np.uint64), return_inverse=True)
     threshold = settings.near_dup_hamming
 
-    parent = np.arange(len(indices), dtype=np.int64)
+    parent = np.arange(len(hashes), dtype=np.int64)
 
     def find_many(nodes: np.ndarray) -> np.ndarray:
         """Roots of ``nodes``, halving paths as it climbs."""
@@ -132,6 +135,18 @@ def near_duplicates(units: Sequence[dict], settings: Settings) -> dict[int, bool
                 return nodes
             parent[nodes] = parent[up]
             nodes = up
+
+    def union_many(left: np.ndarray, right: np.ndarray) -> None:
+        """Merge the sets of every ``(left[k], right[k])`` pair."""
+        while len(left):
+            a, b = find_many(left), find_many(right)
+            apart = a != b
+            if not apart.any():
+                return
+            left, right, a, b = left[apart], right[apart], a[apart], b[apart]
+            # Several pairs may write the same high root; the survivors are
+            # re-checked next round, so a lost write only costs another pass.
+            parent[np.maximum(a, b)] = np.minimum(a, b)
 
     bands = max(1, min(_DHASH_BITS, threshold + 1))
     for shift, width in _band_layout(bands):
@@ -148,14 +163,12 @@ def near_duplicates(units: Sequence[dict], settings: Settings) -> dict[int, bool
             for start in range(0, size, rows_per_block):
                 block = members[start : start + rows_per_block]
                 close = _popcount(block[:, None] ^ members[None, :]) <= threshold
-                # Every row matches itself; only rows with another match can merge.
-                for row in np.flatnonzero(close.sum(axis=1) > 1):
-                    roots = np.unique(find_many(chunk[np.flatnonzero(close[row])]))
-                    if len(roots) > 1:
-                        parent[roots] = roots[0]
+                rows, cols = np.nonzero(close)
+                union_many(chunk[start + rows], chunk[cols])
 
+    roots = find_many(np.arange(len(hashes)))[inverse]
     grouped: dict[int, list[int]] = {}
-    for position, root in enumerate(find_many(np.arange(len(indices))).tolist()):
+    for position, root in enumerate(roots.tolist()):
         grouped.setdefault(root, []).append(indices[position])
 
     for group in grouped.values():

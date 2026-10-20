@@ -51,6 +51,12 @@ class Server:
         self.settings.backend = backend_name
         self.index = Index.open(layout, settings)
         self.backend = build_backend(settings)
+        try:
+            # Refuse to serve an index with a query tower that cannot rank it.
+            self.index.check_backend(self.backend.name)
+        except ValueError:
+            self.backend.close()
+            raise
         # A text tower is not cheap and not obviously thread-safe; serialise it.
         self._embed_lock = threading.Lock()
         self._thumb_lock = threading.Lock()
@@ -469,6 +475,12 @@ def build_handler(server: Server):
     class Handler(BaseHTTPRequestHandler):
         server_version = "mmindex-console/1.0"
 
+        headers_sent = False
+
+        def end_headers(self) -> None:
+            self.headers_sent = True
+            super().end_headers()
+
         def log_message(self, fmt: str, *args) -> None:
             # Keep the console readable; one line per request is enough.
             sys.stderr.write(f"{self.address_string()} {fmt % args}\n")
@@ -496,6 +508,7 @@ def build_handler(server: Server):
             parsed = urllib.parse.urlparse(self.path)
             path = parsed.path
             query = urllib.parse.parse_qs(parsed.query)
+            self.headers_sent = False
 
             try:
                 if path == "/":
@@ -514,12 +527,19 @@ def build_handler(server: Server):
                     self._source(query)
                     return
                 self._error(HTTPStatus.NOT_FOUND, f"no route {path}")
-            except BrokenPipeError:
-                pass
-            except ValueError as exc:  # a bad query parameter, not a server fault
-                self._error(HTTPStatus.BAD_REQUEST, str(exc))
+            except ConnectionError:
+                # The client went away (a cancelled range request, a closed tab).
+                self.close_connection = True
             except Exception as exc:  # keep the console up on a bad request
-                self._error(HTTPStatus.INTERNAL_SERVER_ERROR, f"{type(exc).__name__}: {exc}")
+                if self.headers_sent:
+                    # A status line and part of a body are already on the wire;
+                    # a JSON error after them would only corrupt the response.
+                    self.close_connection = True
+                    return
+                if isinstance(exc, ValueError):  # a bad query parameter, not a server fault
+                    self._error(HTTPStatus.BAD_REQUEST, str(exc))
+                else:
+                    self._error(HTTPStatus.INTERNAL_SERVER_ERROR, f"{type(exc).__name__}: {exc}")
 
         def _search(self, query: dict) -> None:
             text = (query.get("q") or [""])[0].strip()
@@ -656,6 +676,9 @@ def main() -> int:
 
     try:
         server = Server(layout, settings, args.backend)
+    except ValueError as exc:  # the index was built by a different backend
+        print(f"cannot serve this index: {exc}", file=sys.stderr)
+        return 2
     except FileNotFoundError as exc:
         print(f"no index to serve: {exc}", file=sys.stderr)
         print(

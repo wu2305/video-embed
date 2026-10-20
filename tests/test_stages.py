@@ -172,3 +172,28 @@ def test_pipeline_rerun_skips_completed_work(media_tree, layout, settings):
     assert second["prepare"]["done"] == 0
     assert second["prepare"]["skipped"] == 3
     assert second["infer"]["skipped"] == 3
+
+
+def test_unit_size_is_the_source_resolution_not_the_scratch_jpeg(
+    prepared_tree, layout, settings, backend
+):
+    """Regression: width/height came from the bounded frame, so a 4000 px photo
+    was recorded at the scratch-frame size."""
+    from dataclasses import replace
+
+    small = replace(settings, frame_max_edge=32)
+    stores = {
+        stage: IncrementalCheckpoint(layout.checkpoint_db, stage=stage, auto_sync=False)
+        for stage in ("prepare", "extract", "infer")
+    }
+    try:
+        entry = prepared_tree[0]
+        prepare_entry(entry, layout, small, stores["prepare"], backend)
+        extracted = extract_entry(entry, layout, small, stores["extract"])
+        assert max(extracted["frames"][0]["width"], extracted["frames"][0]["height"]) == 32
+        record = infer_entry(entry, layout, small, stores["infer"], backend)
+        unit = record["units"][0]
+        assert (unit["width"], unit["height"]) == (80, 64)
+    finally:
+        for store in stores.values():
+            store.close(sync=False)

@@ -25,7 +25,7 @@ def save_frame(path: str | Path, image: np.ndarray, max_edge: int, quality: int)
     Frames are scratch data for the infer stage, not deliverables, so they are
     kept small enough that a large corpus fits on one disk. The stored size is
     returned so the extract record states what the infer stage will actually
-    read, rather than the source resolution.
+    read, alongside the ``source_*`` size of the image before it was bounded.
     """
     from PIL import Image
 
@@ -40,7 +40,12 @@ def save_frame(path: str | Path, image: np.ndarray, max_edge: int, quality: int)
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     picture.save(target, format="JPEG", quality=quality, optimize=True)
-    return {"width": picture.size[0], "height": picture.size[1]}
+    return {
+        "width": picture.size[0],
+        "height": picture.size[1],
+        "source_width": width,
+        "source_height": height,
+    }
 
 
 def load_frame(path: str | Path) -> np.ndarray:

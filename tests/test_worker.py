@@ -184,3 +184,21 @@ def test_heartbeat_thread_stops_with_the_task(media_tree, layout, settings):
     leaked = [t for t in threading.enumerate() if t.name == "lease-heartbeat" and t.name not in before]
     assert leaked == []
     assert DONE  # imported for parity with the queue tests
+
+
+def test_one_heartbeat_thread_serves_every_task(media_tree, layout, settings):
+    """Regression: each task used to start a thread and open a new queue connection."""
+    _scan(media_tree, layout, settings)
+    _enqueue(layout, settings, "prepare")
+    worker = Worker("prepare", layout, settings, worker_id="w", heartbeat_every=0.05)
+    seen = set()
+    try:
+        while worker.run_once():
+            seen.update(
+                id(t) for t in threading.enumerate() if t.name == "lease-heartbeat"
+            )
+        assert worker.processed == 3
+        assert len(seen) == 1
+    finally:
+        worker.close()
+    assert not [t for t in threading.enumerate() if t.name == "lease-heartbeat" and t.is_alive()]

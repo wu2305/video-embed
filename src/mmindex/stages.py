@@ -220,8 +220,14 @@ def infer_entry(
     backend: Backend,
     extracted: dict | None = None,
     prepared: dict | None = None,
+    release_frames: bool = True,
 ) -> dict:
-    """Stage 3: embeddings, faces, OCR text and quality signals per unit."""
+    """Stage 3: embeddings, faces, OCR text and quality signals per unit.
+
+    ``release_frames=False`` leaves the scratch frames in place for a caller that
+    only considers the record durable later (a worker whose database is local
+    until its shard is synced); that caller then calls :func:`discard_frames`.
+    """
     existing = checkpoint.get(entry.path, entry.digest)
     if existing is not None:
         return existing
@@ -268,8 +274,11 @@ def infer_entry(
                 "asr_text": _scene_text(prepared, index),
                 "dhash": dhash(image),
                 "sharpness": sharpness(image, settings.sharpness_edge or None),
-                "width": int(image.shape[1]),
-                "height": int(image.shape[0]),
+                # The resolution of the media, not of the bounded scratch JPEG.
+                # Extract records from before ``source_*`` existed only know the
+                # stored size, which is the best remaining answer.
+                "width": int(frame.get("source_width", image.shape[1])),
+                "height": int(frame.get("source_height", image.shape[0])),
             }
         )
 
@@ -286,15 +295,22 @@ def infer_entry(
         "inferred_at": time.time(),
     }
     checkpoint.put(entry.path, entry.digest, record)
-    if not settings.keep_frames:
+    if release_frames:
         # Frames are scratch data. They are removed only after the infer record
         # is stored, so a crash here costs re-extraction, never the record.
-        for frame in frames:
-            try:
-                Path(frame["file"]).unlink()
-            except OSError:
-                pass
+        discard_frames(extracted, settings)
     return record
+
+
+def discard_frames(extracted: dict, settings: Settings) -> None:
+    """Delete the scratch frames an extract record points at, unless kept."""
+    if settings.keep_frames:
+        return
+    for frame in extracted.get("frames", []):
+        try:
+            Path(frame["file"]).unlink()
+        except OSError:
+            pass
 
 
 def _load_prepare_record(

@@ -262,3 +262,72 @@ def test_queue_accepts_delete_journal_mode_for_network_mounts(tmp_path):
         queue.close()
     with pytest.raises(ValueError):
         WorkQueue(tmp_path / "q2.sqlite", journal_mode="truncate")
+
+
+def _local_machine(layout, tmp_path, name):
+    from mmindex.config import Layout
+
+    return Layout(layout.root, local_dir=tmp_path / name)
+
+
+def _run_until_infer_queued(media_tree, layout, settings, tmp_path):
+    machine = _local_machine(layout, tmp_path, "host")
+    pipeline = Pipeline(layout, settings, log=lambda _m: None)
+    try:
+        pipeline.run_scan(media_tree)
+    finally:
+        pipeline.close()
+    coordinator = Coordinator(machine, settings, poll_interval=0.01, log=lambda _m: None)
+    try:
+        for stage in ("prepare", "extract"):
+            coordinator.enqueue_stage(stage)
+            summary = Worker(stage, machine, settings, worker_id=f"w-{stage}").run()
+            assert summary["failed"] == 0
+        coordinator.enqueue_stage("infer")
+    finally:
+        coordinator.close()
+    return machine
+
+
+def test_durable_infer_keeps_frames_until_the_shard_is_synced(
+    media_tree, layout, settings, tmp_path, monkeypatch
+):
+    """Regression: frames were deleted as soon as the record hit the machine-local
+    database, so a machine lost before its sync left a record-less task whose
+    extract output was already gone."""
+    machine = _run_until_infer_queued(media_tree, layout, settings, tmp_path)
+    worker = Worker("infer", machine, settings, worker_id="w")
+    try:
+        def vanish():
+            raise OSError("machine preempted before the shard was written")
+
+        monkeypatch.setattr(worker.checkpoint, "sync", vanish)
+        assert worker.run_once() is True
+        assert worker.failed == 1
+        assert len(list(layout.frames_dir.glob("*.jpg"))) == 3  # nothing deleted
+    finally:
+        worker.close()
+
+
+def test_durable_infer_discards_frames_once_synced(media_tree, layout, settings, tmp_path):
+    machine = _run_until_infer_queued(media_tree, layout, settings, tmp_path)
+    summary = Worker("infer", machine, settings, worker_id="w").run()
+    assert summary["processed"] == 3 and summary["failed"] == 0
+    assert list(layout.frames_dir.glob("*.jpg")) == []
+
+
+def test_pipeline_cluster_and_export_read_machine_local_shards(
+    media_tree, layout, settings, tmp_path
+):
+    """Regression: Pipeline always opened the shared database, so with --local-dir
+    workers cluster/export saw no units."""
+    machine = _run_until_infer_queued(media_tree, layout, settings, tmp_path)
+    Worker("infer", machine, settings, worker_id="w").run()
+    other = _local_machine(layout, tmp_path, "finaliser")
+    pipeline = Pipeline(other, settings, log=lambda _m: None)
+    try:
+        pipeline.run_cluster()
+        manifest = pipeline.run_export()
+    finally:
+        pipeline.close()
+    assert manifest["unit_count"] == 3

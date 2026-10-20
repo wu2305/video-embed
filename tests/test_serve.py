@@ -232,3 +232,61 @@ def test_unknown_route_is_404(served):
     status, _headers, body = _get(base, "/api/nope")
     assert status == 404
     assert b"no route" in body
+
+
+def test_server_refuses_an_index_from_another_backend(tmp_path):
+    """Regression: the console never called Index.check_backend, so a query could
+    be embedded by a different backend than the one that built the index."""
+    serve = _load_serve()
+    media = tmp_path / "media"
+    media.mkdir()
+    Image.fromarray(np.zeros((16, 16, 3), dtype="uint8")).save(media / "a.png")
+    layout = Layout(tmp_path / "work")
+    settings = Settings()
+    settings.backend = "hash"
+    pipeline = Pipeline(layout, settings, log=lambda _m: None)
+    try:
+        pipeline.run_all(media)
+    finally:
+        pipeline.close()
+
+    class _Other:
+        name = "ml"
+
+        def close(self):
+            pass
+
+    import mmindex.backends
+
+    original = mmindex.backends.build_backend
+    mmindex.backends.build_backend = lambda _settings: _Other()
+    try:
+        with pytest.raises(ValueError, match="built with the 'hash' backend"):
+            serve.Server(layout, settings, "auto")
+    finally:
+        mmindex.backends.build_backend = original
+
+
+def test_failure_after_headers_does_not_append_an_error_body(served, monkeypatch):
+    """Regression: an error mid-stream wrote a second status line and JSON body
+    onto the response that was already being sent."""
+    import http.client
+
+    base, media = served
+    serve = sys.modules["mmindex_serve"]
+    # A directory passes the is_file-free stat() and then fails on open(), i.e.
+    # after the 200 and its headers are on the wire.
+    monkeypatch.setattr(serve.Server, "source", lambda self, unit_id: (media, "video/mp4"))
+    host, port = base.removeprefix("http://").split(":")
+    connection = http.client.HTTPConnection(host, int(port), timeout=10)
+    connection.request("GET", "/api/source?id=1")
+    response = connection.getresponse()
+    assert response.status == 200
+    try:
+        body = response.read()
+    except http.client.IncompleteRead as incomplete:
+        body = incomplete.partial
+    assert b"error" not in body.lower()
+    connection.close()
+    # The console is still up.
+    assert _json(base, "/api/info")[0] == 200

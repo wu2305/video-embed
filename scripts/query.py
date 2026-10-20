@@ -84,6 +84,11 @@ def main() -> int:
 
     backend = build_backend(settings)
     try:
+        try:
+            index.check_backend(backend.name)
+        except ValueError as exc:
+            print(f"cannot query this index: {exc}", file=sys.stderr)
+            return 2
         query_vector = backend.embed_text(args.query)
     finally:
         backend.close()
