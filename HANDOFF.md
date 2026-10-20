@@ -1,37 +1,38 @@
-# HANDOFF — code review and fixes, 2026-10-19
+# HANDOFF — code review, fixes and a query console (2026-10-19/20)
 
 For the next agent or person picking this up. Read `agents.md` first for the
-production constraints; this file covers only the 2026-10-19 review session. It
-says what was done, what is **not** solved, what is **not verified**, and what
-to do next, in that order.
+production constraints; this file covers the three sessions on
+`review/2026-10-19` — the code review and its 13 findings, the CNB verification,
+and the sharpness fix plus query console. It says what was done, what is **not**
+solved, what is **not verified**, and what to do next, in that order.
 
-> **Update (later the same day): findings 9-13 are now fixed too.** The work
-> lives on branch `review/2026-10-19` (pushed to CNB), not on `main`. See
-> section 6 for what changed, what was measured, and what is still open. The
-> sections below describe the state when only findings 1-8 were done and are
-> kept for the reasoning and the still-valid gaps.
+Sections 0-5 are the original write-up and are kept for the reasoning, but their
+"state" claims are historical. **Sections 6 and 7 are the current truth.**
 
 ## Start here
 
-All 13 review findings are fixed on `review/2026-10-19` (pushed to CNB, clean
-tree). Since then two more things landed on the same branch: **sharpness
-normalisation** (which fixed master election for compressed copies) and
-**`scripts/serve.py`**, a query console you can open over a forwarded port.
+Everything is on branch `review/2026-10-19` (18 commits, pushed, clean tree);
+`main` has none of it. All 13 review findings are fixed, sharpness is now
+measured at a fixed scale, and `scripts/serve.py` serves a query console over a
+forwarded port.
 
-Verified on CNB: **181 passed**, smoke clean, full-corpus benchmark passed.
-**Nothing is committed to `main` yet — that decision is the user's.**
+Verified on CNB: **181 passed**, smoke clean, `ml_check.py` green against real
+weights, full-corpus benchmark green, console exercised in the container.
+
+**Nothing is committed to `main` — that decision is the user's.**
 
 Read in this order:
 
 1. `agents.md` — production constraints that must not be broken.
 2. Section 6 — what each finding does now, how it was verified, and the traps
    (no exec on CNB workspaces; builds only see pushed commits).
-3. Section 7 — the sharpness fix and the query console.
-4. `BENCHMARK.md` — before/after numbers and which deltas are *not* the fixes.
+3. Section 7 — the sharpness fix, the query console, and how to run it.
+4. Section 6 "State at hand-off" and "What is still open" — current status.
+5. `BENCHMARK.md` — before/after numbers and which deltas are *not* the fixes.
 
-The highest-value next task is a blur-sensitive sharpness metric (section 6,
-open item 2): rescaling fixed compressed copies but not the 3 motion-blur
-misses. The highest-priority decision is still how to land the branch.
+Next task by value: the 3 motion-blur master-election misses need a
+blur-sensitive metric (rescaling did not fix them). Highest-priority decision:
+how to land the branch.
 
 
 ---
@@ -130,7 +131,9 @@ fixing. Priority order within each group.
 - Sharpness is computed at each frame's own resolution, so a downscaled original
   can score lower than its blurred copy; this is the cause of the 3 master
   election misses in `BENCHMARK.md`. Normalise to a fixed size before the
-  Laplacian.
+  Laplacian. **Done** — `sharpness_edge` 256 px, section 7. It fixed the
+  compressed-copy case (fold rate 0.4375 -> 1.000) but *not* the 3 motion-blur
+  misses, which need a different metric.
 
 ---
 
@@ -140,6 +143,12 @@ Things I believe but did not prove, or could not check in this environment.
 Do not treat any of them as settled.
 
 ### 3.1 Not run at all
+
+> **Superseded for the first three bullets:** `ml_check.py` and `benchmark.py`
+> both ran on CNB and `BENCHMARK.md` has been re-measured (twice). See sections
+> 6 and 7. The shared-mount, scale and regression-test bullets were also
+> addressed — regression tests were confirmed to fail on the old source, with
+> the one caveat in section 6.
 
 - **`scripts/ml_check.py` and `scripts/benchmark.py` were not re-run** after the
   fixes. All 145 tests use the `hash` backend or fakes. The real SigLIP /
@@ -183,6 +192,9 @@ Do not treat any of them as settled.
   match per term or per token. Unverified because the notebook is absent.
 - **Size to store frames at (finding 10).** Face detection runs at 640 px and
   OCR may need more; decide the stored size from the models' needs, not a guess.
+  **Answered** by `scripts/frame_bound_check.py`: a 3000 px portrait keeps its
+  face at the same det_score after the 1024 px bound (0.910 -> 0.911) and loses
+  no OCR text, so 1024 px is justified rather than assumed.
 - **Which digest the checkpoint keys use (finding 11).** If the production
   notebook keys checkpoints by full SHA256 of every file, scan cannot skip it.
 - **Review scope.** The review compared the code with `agents.md` and
@@ -338,10 +350,12 @@ download progress bars before reading. A build checks out a git ref, so
 
 ### Verification actually performed
 
-- **Full suite + smoke on CNB: 154 passed, 4 skipped** (158 collected). The
-  skips are environmental: 3 in `test_audio_guard.py` (PyAV absent under the
-  `test` extra) and 1 in `test_ml_retrieval.py` (torch absent). `smoke.sh` ran
-  clean on the same build.
+- **Full suite + smoke on CNB.** At the end of this session (section 7 added
+  `test_sharpness.py` and `test_serve.py`): **181 passed**. Earlier, right after
+  findings 9-13: 154 passed, 4 skipped of 158 collected. The skips are
+  environmental: 3 in `test_audio_guard.py` (PyAV absent under the `test` extra)
+  and 1 in `test_ml_retrieval.py` (torch absent). `smoke.sh` ran clean on both
+  builds.
 - **New tests fail on the old source.** Built a throwaway branch with `main`'s
   source and the new tests, ran with `--continue-on-collection-errors`. 34 of
   the new tests failed there for the expected reasons. Caveat: the four
@@ -375,29 +389,32 @@ download progress bars before reading. A build checks out a git ref, so
   the delta is corpus drift, not the fix. `BENCHMARK.md` says so.
 
 
-### State at hand-off (2026-10-20, end of session)
+### State at hand-off (2026-10-20, end of third session)
 
-- Branch `review/2026-10-19`, HEAD `05a5a26`, 12 commits ahead of `main`,
-  working tree clean, everything pushed. `main` is still `30613c6`.
-- Last verification on that exact HEAD: **154 passed, 4 skipped, smoke clean**
-  (build `cnb-fss-1k5ahru2p`). Nothing has been changed since.
-- The CNB dev workspace was recycled by the platform after its pipeline
-  finished; no workspace is running. Nothing is left running locally either.
-- Only untracked file: `scripts/query.py` (the user's).
+- Branch `review/2026-10-19`, HEAD `1e45293`, **18 commits ahead of `main`**,
+  working tree clean, everything pushed to `origin`. `main` is still `30613c6`
+  and has none of this work.
+- Verified on that branch, on CNB: **181 passed** (was 145 before the review),
+  `smoke.sh` clean, `ml_check.py` passed against real weights, full-corpus
+  benchmark passed, and the query console exercised end-to-end in the container
+  (build `cnb-a2v-1k5av5srh`).
+- No CNB workspace is running; the platform recycled the last one. Nothing is
+  left running locally, and no browser session is open.
+- Only untracked file: `scripts/query.py` (the user's). Everything else,
+  including `scripts/serve.py`, `scripts/frame_bound_check.py` and
+  `scripts/flickr_probe.py`, is committed.
+- Local `.venv` has the test extras only — no torch/InsightFace — so the real
+  ML path must be run on CNB.
 
 ### What is still open, in priority order
 
-1. **[user] Decide how to land this.** 12 commits sit on the review branch and
-   `main` has none of them. One merge, or a replay as one commit per finding
+1. **[user] Decide how to land this.** 18 commits sit on the review branch and
+   `main` has none of them. One merge, or a replay grouped per finding
    (findings 1-8 touch mostly disjoint code; `export.py`, `worker.py` and
    `queue.py` are shared). Do not assume the branch is wanted as-is.
-2. **Sharpness-based master election: half fixed.** Normalising the measurement
-   to a fixed 256 px long edge (`sharpness_edge`) fixed the compressed-copy case
-   completely — lossy fold rate went 0.4375 -> **1.000 (80/80)** — because a
-   half-size copy no longer scores higher than its original. Three motion-blur
-   misses remain and rescaling did **not** touch them; they need a metric that
-   is actually blur-sensitive (variance of Laplacian is not, at this blur
-   strength). See section 7 and `BENCHMARK.md`.
+2. **The 3 motion-blur master-election misses.** Rescaling did not fix them, so
+   the next attempt needs a blur-sensitive metric (a real focus measure, not a
+   sharper Laplacian). This is the only known correctness gap in dedup.
 3. **Section 2.2 items that findings 9-13 did not touch**, all still true:
    `IncrementalCheckpoint.put` is still `INSERT OR REPLACE` (not
    first-writer-wins); durable workers still write one shard per task; no
@@ -420,6 +437,9 @@ download progress bars before reading. A build checks out a git ref, so
   only start/list/stop/delete/detail; there is no exec. Use api-triggered builds
   (see "How to run anything remotely") and remember a build checks out a git
   ref — nothing uncommitted can be tested.
+- **CNB joins a stage's `script:` list with `&&`.** A `- cmd &` line becomes
+  `cmd & && next`, which is a syntax error. Put multi-step shell in one `|`
+  block instead.
 - **`pytest -q` is already in `addopts`**, so `-q -q` hides the summary line and
   makes the pass/skip count look wrong. Use `-o addopts="" -q -rs` when the
   count matters.
@@ -433,8 +453,12 @@ download progress bars before reading. A build checks out a git ref, so
   mirror's failure now, but a silent `skipped` entry in the benchmark report is
   still the signal that the corpus shrank — check `corpus.skipped` before
   quoting any metric.
-- **Do not re-run `scripts/benchmark.py` casually.** A full run costs ~46 min
-  of 8-vCPU time plus ~22 min of dataset download.
+- **Do not re-run `scripts/benchmark.py` casually.** A full run costs ~45-65 min
+  of 8-vCPU time plus ~22 min of dataset download, and inference timing varies
+  ~2-3x between runners, so cross-run timing comparisons are unreliable.
+- **Chrome cannot decode `mpeg4`** (OpenCV's `mp4v` writer). Demo clips for the
+  console must be H.264 or the player shows an error that looks like a server
+  bug.
 
 
 ---
@@ -524,3 +548,129 @@ the endpoint itself had already returned 200.
   full (not LRU). A video thumbnail re-decodes the clip on every miss.
 - No auth. Anything that reaches the port can read every indexed file through
   `/api/source`. Bind it behind a forwarded port, not on a public interface.
+
+---
+
+## 8. Runbook: picking this up cold
+
+Everything below was run in this session; copy-paste it rather than
+reconstructing it. `cnb` is the CNB CLI, authenticated with `cnb login`.
+
+### Verify the branch is still green (cheapest useful check)
+
+```bash
+cd /Users/wuhaocheng/Documents/repos/video-embed
+git status --short          # expect empty
+git log --oneline -1        # expect 1e45293 or later on review/2026-10-19
+.venv/bin/python -m pytest -o addopts="" -q     # expect 181 passed locally
+```
+
+The local venv has no torch/InsightFace, so it exercises the `hash` backend
+only. For the real stack, use CNB.
+
+### Run the suite on CNB (no exec there — this is the way)
+
+Write the config once, then reuse it. `/tmp` does not survive between sessions;
+keep it in the repo scratchpad or recreate it:
+
+```yaml
+# /tmp/cnb-test.yml
+$:
+  api_trigger:
+    - name: review-suite
+      runner: {cpus: 8}
+      docker: {build: {dockerfile: .ide/Dockerfile}}
+      env: {PIP_DISABLE_PIP_VERSION_CHECK: "1"}
+      stages:
+        - name: install
+          timeout: 45m
+          script:
+            - python -m pip install -U pip
+            - python -m pip install -e ".[test]"
+        - name: test
+          timeout: 30m
+          script: python -m pytest -o addopts="" -q -rs
+        - name: smoke
+          script: bash scripts/smoke.sh
+```
+
+```bash
+cnb build start-build --repo wu2305/video-embed --branch review/2026-10-19 \
+  --event api_trigger --config "$(cat /tmp/cnb-test.yml)" --title "suite"
+# then poll and read the stage log:
+cnb build get-build-status --repo wu2305/video-embed --sn <sn>
+cnb build get-build-stage --repo wu2305/video-embed --sn <sn> \
+  --pipelineId <sn>-001 --stageId stage-1
+```
+
+The stage log comes back as a JSON `content` array with ANSI codes and pip
+progress bars inline; strip both before reading. A ready-made reader:
+
+```bash
+python3 -c "
+import sys,re,json
+raw=open(sys.argv[1]).read()
+body=raw[raw.index('content['):].split(':',1)[1]
+for s in re.findall(r'\"((?:[^\"\\\\]|\\\\.)*)\"', body, re.S):
+    print(s.encode().decode('unicode_escape'))
+" stage.log
+```
+
+### Run the query console in the container
+
+```yaml
+        - name: console
+          timeout: 20m
+          script: |
+            set -e
+            python scripts/serve.py --work-dir /opt/benchmark_work --port 8000 &
+            server=$!
+            trap 'kill $server 2>/dev/null || true' EXIT
+            sleep 15
+            curl -sf http://127.0.0.1:8000/api/info | head -c 400
+            curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8000/
+```
+
+Needs an index at `--work-dir` first (`scripts/benchmark.py`, or point it at any
+exported snapshot). For an interactive session instead of a build, start a CNB
+dev workspace, run `serve.py` in its terminal, and open the URL it prints
+(`CNB_VSCODE_PROXY_URI` filled with the port) or forward the port from the
+WebIDE PORTS panel.
+
+### Reproduce the sharpness measurement
+
+```bash
+.venv/bin/python - <<'PY'
+import io, numpy as np, cv2
+from PIL import Image
+from sklearn.datasets import fetch_lfw_people
+from mmindex.media import sharpness
+lfw = fetch_lfw_people(min_faces_per_person=5, resize=1.0, color=True)
+imgs = [(np.clip(im, 0, 1) * 255).astype(np.uint8) for im in lfw.images[:80]]
+def wechat(a):                      # the benchmark's compressed_variants
+    im = Image.fromarray(a); w, h = im.size
+    im = im.resize((max(64, w // 2), max(64, h // 2)))
+    b = io.BytesIO(); im.save(b, "JPEG", quality=35); b.seek(0)
+    return np.asarray(Image.open(b).convert("RGB"), dtype=np.uint8)
+def burst(a):                       # the benchmark's blurry_bursts
+    return cv2.GaussianBlur(a[:, :, ::-1], (17, 17), 6)[:, :, ::-1]
+for size in (None, 256):
+    for name, f in (("wechat", wechat), ("burst", burst)):
+        wins = sum(sharpness(a, size) > sharpness(f(a), size) for a in imgs)
+        print(f"size={size} vs {name}: original sharper {wins}/{len(imgs)}")
+PY
+```
+
+Expected: `size=None` gives 0/80 against wechat and 80/80 against burst;
+`size=256` gives 80/80 for both. If the first line stops being 0/80, the
+resolution artefact is gone and the fix may no longer be needed.
+
+### Files this session added
+
+| Path | Purpose |
+|---|---|
+| `scripts/serve.py` | query console (stdlib only) |
+| `scripts/frame_bound_check.py` | proves 1024 px frames keep detections/OCR |
+| `scripts/flickr_probe.py` | which Flickr30k mirror loads under `datasets` 5.x |
+| `tests/test_sharpness.py` | metric, recorded scale, mixed-scale refusal |
+| `tests/test_serve.py` | routes, filters, thumbnails, range semantics |
