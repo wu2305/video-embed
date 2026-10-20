@@ -9,9 +9,10 @@ const preview: Preview = {
       options: { console: { name: "console", value: "#0f1115" } },
     },
     controls: { expanded: true },
+    a11y: { test: "error" },
     options: {
       storySort: {
-        order: ["Overview", "Atoms", "Molecules", "Organisms", "Scenes"],
+        order: ["Overview", "Foundations", ["Colour", "Type", "Space and shape"], "Atoms", "Molecules", "Organisms", "Templates", "Pages", ["Prototype", "Search", "People", "Clip"], "Scenes"],
       },
     },
   },

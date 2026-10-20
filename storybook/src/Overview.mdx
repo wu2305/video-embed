@@ -9,14 +9,20 @@ The data is mocked, so no index or backend is needed.
 
 ## How the gallery is organised
 
-Atomic design, smallest first:
+Atomic design, smallest first. Start at **Pages/Prototype** for a demo; start at **Foundations** to build.
 
 | Level | Stories | Built from |
 |---|---|---|
-| **Atoms** | `Button`, `Tag`, `Label`, `Chip`, `Kbd` | tokens in `styles.css` |
-| **Molecules** | `Field`, `ParseStep`, `FaceBox`, `ResultCard` | atoms |
-| **Organisms** | `SearchBar`, `ResultGrid`, `FaceOverlay`, `FaceTagger`, `AnnotationTrack`, `AnnotationComposer`, `PreviewPanel` | molecules and atoms |
-| **Scenes** | one per user story in `STORYBOOK.md` | organisms wired with mock state |
+| **Foundations** | Colour, Type, Space and shape | the tokens at the top of `styles.css` |
+| **Atoms** | `Button`, `Tag`, `Label`, `Chip`, `Kbd`, `Panel` | tokens only |
+| **Molecules** | `Field`, `ParseStep`, `FaceBox`, `ResultCard`, `PersonCard`, `NoteItem`, `MetaList` | atoms |
+| **Organisms** | `TopBar`, `SearchBar`, `ResultGrid`, `PeopleGrid`, `FaceOverlay`, `FaceTagger`, `AnnotationTrack`, `AnnotationComposer`, `NoteList`, `PreviewPanel` | molecules and atoms |
+| **Templates** | `AppShell` | top bar, page header, body slot |
+| **Pages** | `Prototype`, `Search`, `People`, `Clip` | organisms in the shell, with mock state |
+| **Scenes** | one per user story in `STORYBOOK.md` | the flow each story describes |
+
+Every story is also a test: `npm test` runs each one in Chromium, including its `play` steps and an
+accessibility check that fails on any axe violation.
 
 Component stories hold the states and the interaction tests; scene stories show the whole flow.
 

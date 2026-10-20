@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import type { Annotation, Face, Hit, Person, Scene } from "../../types";
 import { displayName, formatTime } from "../../lib/format";
 import { Button } from "../atoms/Button";
@@ -25,6 +25,8 @@ export interface PreviewPanelProps {
   onPrev?: () => void;
   onNext?: () => void;
   onClose?: () => void;
+  /** Extra buttons placed before Copy path, such as "Open clip". */
+  actions?: ReactNode;
 }
 
 /**
@@ -34,7 +36,7 @@ export interface PreviewPanelProps {
  */
 export function PreviewPanel({
   hit, position, total, frameSrc, videoSrc, faces = [], people = [], annotations = [],
-  scenes = [], duration = 0, playhead, onSeek, onPrev, onNext, onClose,
+  scenes = [], duration = 0, playhead, onSeek, onPrev, onNext, onClose, actions,
 }: PreviewPanelProps) {
   const video = useRef<HTMLVideoElement>(null);
   const range: Scene | null = hit.scene_start != null && hit.scene_end != null ? { start: hit.scene_start, end: hit.scene_end } : null;
@@ -78,11 +80,11 @@ export function PreviewPanel({
       </div>
       <aside>
         <div className="mm-nav">
-          <Button onClick={onPrev} disabled={position <= 1} aria-label="Previous result">Prev <Kbd>←</Kbd></Button>
+          <Button onClick={onPrev} disabled={position <= 1}>Previous <Kbd>←</Kbd></Button>
           <span className="mm-mono">{position} / {total}</span>
-          <Button onClick={onNext} disabled={position >= total} aria-label="Next result">Next <Kbd>→</Kbd></Button>
+          <Button onClick={onNext} disabled={position >= total}>Next <Kbd>→</Kbd></Button>
         </div>
-        <h3 title={hit.path}>{name}</h3>
+        <h2 title={hit.path}>{name}</h2>
         <div className="mm-mono">
           <Tag>{hit.kind}</Tag>
           {range && <Tag tone="good">{formatTime(range.start)}–{formatTime(range.end)}</Tag>}
@@ -92,6 +94,7 @@ export function PreviewPanel({
         {text && <div className="mm-text">{text}</div>}
         {hit.notes?.map((n) => <div key={n} className="mm-text note">{n}</div>)}
         <div className="mm-row">
+          {actions}
           <Button onClick={() => navigator.clipboard?.writeText(hit.path)}>Copy path</Button>
           <Button variant="ghost" onClick={onClose}>Close <Kbd>Esc</Kbd></Button>
         </div>

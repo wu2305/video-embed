@@ -1,0 +1,37 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundations/Space and shape" />
+
+# Space and shape
+
+| Token | Value | Use |
+|---|---|---|
+| `--space-1` | 4px | Tag spacing, timeline legend |
+| `--space-2` | 8px | Control padding, chip and button gaps |
+| `--space-3` | 10px | Input side padding, form row gap |
+| `--space-4` | 14px | Panel padding, grid gap |
+| `--space-5` | 20px | Page padding, top-bar gutter |
+| `--space-6` | 28px | Reserved for section breaks |
+
+| Token | Value | Use |
+|---|---|---|
+| `--radius-sm` | 4px | Tags, face boxes, key hints |
+| `--radius-chip` | 5px | Rank and score chips over thumbnails |
+| `--radius-md` | 7px | Inputs, buttons, parse steps, timeline |
+| `--radius-lg` | 10px | Panels, cards, stages |
+| `--radius-pill` | 999px | Toggle chips |
+
+<div style={{ display: "flex", gap: 14, alignItems: "flex-end", margin: "16px 0" }}>
+  {[4, 8, 10, 14, 20, 28].map((n) => (
+    <div key={n} style={{ textAlign: "center", font: "11px ui-monospace, monospace", color: "#8b94a7" }}>
+      <div style={{ width: n, height: n, background: "#6ea8fe", margin: "0 auto 6px" }} />{n}
+    </div>
+  ))}
+</div>
+
+## Layout
+
+- Pages use `AppShell`: the top bar, then a column at most `--page-max` (1240px) wide.
+- Detail pages split 2 : 1 (`.mm-split`). Below 760px every split stacks into one column.
+- Grids auto-fill from `--card-min` (212px for hits, 160px for people). Override the variable, not the grid.
+- No shadows, gradients or motion. Depth comes from `bg` → `panel` → `field`.

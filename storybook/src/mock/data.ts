@@ -134,3 +134,17 @@ export const annotations: Annotation[] = [
   { id: "n2", t_start: 72, t_end: 100, text: "Ana is presenting the Q3 budget", author: "mei", person_ids: ["person-0003"] },
   { id: "n3", t_start: 118, t_end: null, text: "Camera shake from here", author: "mei", person_ids: [] },
 ];
+
+/** A face crop per person cluster, for the People page. */
+const portrait = (scenery: Parameters<typeof frame>[0], personId: string) =>
+  frame(scenery, [{ face_index: 0, bbox: [0.36, 0.2, 0.28, 0.36], person_id: personId }]);
+
+export const personSamples: Record<string, string> = {
+  "person-0003": portrait("kitchen", "person-0003"),
+  "person-0007": portrait("office", "person-0007"),
+  "person-0011": portrait("park", "person-0011"),
+  "person-0019": portrait("night", "person-0019"),
+};
+
+/** What the top bar reports about the published snapshot. */
+export const indexInfo = { units: 77_412, snapshot: "2026-10-18" };

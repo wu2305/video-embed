@@ -8,6 +8,8 @@ export interface ResultCardProps {
   people?: readonly Person[];
   selected?: boolean;
   onOpen?: (hit: Hit) => void;
+  /** Thumbnail, name and tags only: for lists where rank and score mean nothing. */
+  compact?: boolean;
 }
 
 const GLYPH: Record<string, string> = { audio: "♪", document: "▤", video: "▶", image: "▣" };
@@ -18,8 +20,11 @@ function thumbSrc(hit: Hit): string | null {
   return null;
 }
 
-/** One search hit. Same layout as the console card, plus scene range, notes and source. */
-export function ResultCard({ hit, rank, people = [], selected = false, onOpen }: ResultCardProps) {
+/**
+ * One search hit. Same layout as the console card, plus scene range, notes and source.
+ * The file name is the button; it stretches over the card, so the whole card is clickable.
+ */
+export function ResultCard({ hit, rank, people = [], selected = false, onOpen, compact = false }: ResultCardProps) {
   const name = hit.path.split("/").pop() ?? hit.path;
   const src = thumbSrc(hit);
   const machineText = (hit.ocr_text || hit.asr_text || "").trim();
@@ -27,22 +32,16 @@ export function ResultCard({ hit, rank, people = [], selected = false, onOpen }:
   const hasRange = hit.scene_start != null && hit.scene_end != null;
 
   return (
-    <button
-      type="button"
-      className={`mm-card${selected ? " selected" : ""}`}
-      aria-label={`Open result ${rank}: ${name}`}
-      aria-pressed={selected}
-      onClick={() => onOpen?.(hit)}
-    >
+    <article className={`mm-card${selected ? " selected" : ""}`} aria-label={`Result ${rank}`}>
       <div className="mm-thumb">
         {src ? <img loading="lazy" src={src} alt="" /> : <span className="mm-glyph" aria-hidden>{GLYPH[hit.kind]}</span>}
-        <span className="mm-rank">{rank}</span>
+        {!compact && <span className="mm-rank">{rank}</span>}
         {hit.source && <span className="mm-source">{hit.source}</span>}
-        <span className="mm-score">{hit.score.toFixed(3)}{bonus}</span>
+        {!compact && <span className="mm-score">{hit.score.toFixed(3)}{bonus}</span>}
       </div>
       <div className="mm-body">
-        <div className="mm-name" title={hit.path}>{name}</div>
-        <div className="mm-mono">sim {hit.similarity.toFixed(3)} · unit {hit.unit_index}</div>
+        <button type="button" className="mm-name mm-card-link" title={hit.path} aria-pressed={selected} onClick={() => onOpen?.(hit)}>{name}</button>
+        {!compact && <div className="mm-mono">sim {hit.similarity.toFixed(3)} · unit {hit.unit_index}</div>}
         <div className="mm-mono">
           <Tag>{hit.kind}</Tag>
           {hasRange && <Tag tone="good">{formatTime(hit.scene_start!)}–{formatTime(hit.scene_end!)}</Tag>}
@@ -53,9 +52,9 @@ export function ResultCard({ hit, rank, people = [], selected = false, onOpen }:
           })}
           {!hit.is_master && <Tag tone="warn">copy</Tag>}
         </div>
-        {hit.notes?.map((note) => <div key={note} className="mm-text note">{note}</div>)}
-        {machineText && <div className="mm-text">{machineText.slice(0, 180)}</div>}
+        {!compact && hit.notes?.map((note) => <div key={note} className="mm-text note">{note}</div>)}
+        {!compact && machineText && <div className="mm-text">{machineText.slice(0, 180)}</div>}
       </div>
-    </button>
+    </article>
   );
 }

@@ -1,0 +1,27 @@
+import { Meta, Typeset } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundations/Type" />
+
+# Type
+
+System faces only: no webfonts to load.
+
+## Sans: `--font-sans`
+
+<Typeset fontFamily='ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif'
+  fontSizes={[22, 16, 14, 12]} fontWeight={400} sampleText="Ana Ruiz is cooking" />
+
+| Token | Size | Use |
+|---|---|---|
+| `--text-xl` | 22px / 1.2, bold | Page title (`h1`) |
+| `--text-lg` | 16px | Preview and dialog headings |
+| `--text-md` | 14px / 1.5 | Body, inputs, buttons; panel headings at 600 |
+| `--text-sm` | 12px | Machine text, parse steps, status line |
+| `--text-xs` | 11px | Labels (uppercase, .6px tracking), tags, metadata |
+
+## Mono: `--mono`
+
+<Typeset fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+  fontSizes={[12, 11]} fontWeight={400} sampleText="sim 0.362 · unit 4 · 00:42–01:11" />
+
+Use mono for anything a machine produced: ids, scores, times, paths. Use sans for anything a person wrote or reads as prose.

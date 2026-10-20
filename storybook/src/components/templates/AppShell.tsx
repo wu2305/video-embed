@@ -1,0 +1,37 @@
+import type { ReactNode } from "react";
+import { TopBar, type PageId } from "../organisms/TopBar";
+
+export interface AppShellProps {
+  current: PageId;
+  title: string;
+  /** One line under the title. */
+  subtitle?: ReactNode;
+  /** Breadcrumb above the title, for detail pages. */
+  crumbs?: ReactNode;
+  /** Buttons at the right of the page header. */
+  actions?: ReactNode;
+  units?: number;
+  snapshot?: string;
+  onNavigate?: (page: PageId) => void;
+  children: ReactNode;
+}
+
+/** Every page: top bar, a centred column with a header, then the page body. */
+export function AppShell({ current, title, subtitle, crumbs, actions, units, snapshot, onNavigate, children }: AppShellProps) {
+  return (
+    <div className="mm-shell">
+      <TopBar current={current} units={units} snapshot={snapshot} onNavigate={onNavigate} />
+      <main className="mm-page">
+        <div className="mm-page-head">
+          <div>
+            {crumbs && <div className="mm-crumbs">{crumbs}</div>}
+            <h1>{title}</h1>
+            {subtitle && <p>{subtitle}</p>}
+          </div>
+          {actions && <div className="mm-toolbar">{actions}</div>}
+        </div>
+        {children}
+      </main>
+    </div>
+  );
+}

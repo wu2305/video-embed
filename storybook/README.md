@@ -19,14 +19,17 @@ npm run build-storybook  # static site in storybook-static/
 
 | Path | Contents |
 |---|---|
-| `src/components/atoms/` | Button, Tag, Label, Chip, Kbd |
-| `src/components/molecules/` | Field, ParseStep, FaceBox, ResultCard |
-| `src/components/organisms/` | SearchBar, ResultGrid, FaceOverlay, FaceTagger, AnnotationTrack, AnnotationComposer, PreviewPanel |
+| `src/foundations/` | Colour, type, space and shape docs (MDX) |
+| `src/components/atoms/` | Button, Tag, Label, Chip, Kbd, Panel |
+| `src/components/molecules/` | Field, ParseStep, FaceBox, ResultCard, PersonCard, NoteItem, MetaList |
+| `src/components/organisms/` | TopBar, SearchBar, ResultGrid, PeopleGrid, FaceOverlay, FaceTagger, AnnotationTrack, AnnotationComposer, NoteList, PreviewPanel |
+| `src/components/templates/` | AppShell |
+| `src/pages/` | Search, People and Clip pages, and a click-through prototype for demos |
 | `src/scenes/` | One story per scene in `../STORYBOOK.md`, composed from organisms |
 | `src/types.ts` | `Hit` mirrors `SearchHit.to_dict()`. Fields under "proposed" do not exist in the Python code yet |
 | `src/lib/parseQuery.ts` | Rule-based "who is what" splitter used by `SearchBar` |
 | `src/mock/` | Fake hits, people, notes and SVG keyframes |
-| `src/styles.css` | Tokens and classes copied from the console page in `scripts/serve.py` |
+| `src/styles.css` | Tokens (top of file) and classes; every rule uses a token, values from the console page in `scripts/serve.py` |
 
 ## Status
 

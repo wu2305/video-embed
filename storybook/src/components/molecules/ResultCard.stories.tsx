@@ -24,3 +24,6 @@ export const Image: Story = { args: { hit: photoHit } };
 export const NonMasterCopy: Story = { args: { hit: copyHit } };
 
 export const Selected: Story = { args: { selected: true } };
+
+/** For "appears in" lists: no rank, score or machine text. */
+export const Compact: Story = { args: { compact: true } };
