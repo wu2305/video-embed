@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 import { ClipPage } from "./ClipPage";
-import { annotations, audioHit, cookingHit, duration, indexInfo, kitchenFaces, kitchenFrame, people, photoHit, scenes } from "../mock/data";
+import { annotations, audioHit, cookingHit, duration, hitFaces, indexInfo, kitchenFaces, kitchenFrame, people, photoHit, scenes } from "../mock/data";
 
 const meta = {
   title: "Pages/Clip",
@@ -32,7 +32,7 @@ export const AddNote: Story = {
 export const NoNotes: Story = { args: { annotations: [] } };
 
 /** A photo: no timeline, notes have no time range. */
-export const Photo: Story = { args: { hit: photoHit, frameSrc: photoHit.thumb_url!, faces: kitchenFaces.slice(0, 3), annotations: [] } };
+export const Photo: Story = { args: { hit: photoHit, frameSrc: photoHit.thumb_url!, faces: hitFaces(photoHit), annotations: [] } };
 
 /** Audio: a timeline but no frame; the transcript carries the match. */
 export const Audio: Story = { args: { hit: audioHit, faces: [], annotations: [] } };

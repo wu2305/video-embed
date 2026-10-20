@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { PreviewPanel } from "../components/organisms/PreviewPanel";
 import { ResultGrid } from "../components/organisms/ResultGrid";
-import { annotations, duration, hits, kitchenFaces, kitchenFrame, people, scenes } from "../mock/data";
+import { annotations, duration, hitFaces, hits, kitchenFrame, people, scenes } from "../mock/data";
 
 const meta = {
   title: "Scenes/5 · Preview",
@@ -21,7 +21,7 @@ export const Flow: Story = {
       <div style={{ padding: 20, display: "grid", gap: 14 }}>
         {hit && index !== null && (
           <PreviewPanel hit={hit} position={index + 1} total={hits.length} frameSrc={hit.thumb_url ?? kitchenFrame}
-            faces={index === 0 ? kitchenFaces.slice(0, 2) : []} people={people} annotations={annotations} scenes={scenes}
+            faces={hitFaces(hit)} people={people} annotations={annotations} scenes={scenes}
             duration={duration} playhead={playhead} onSeek={setPlayhead}
             onPrev={() => setIndex((i) => Math.max(0, (i ?? 0) - 1))} onNext={() => setIndex((i) => Math.min(hits.length - 1, (i ?? 0) + 1))}
             onClose={() => setIndex(null)} />

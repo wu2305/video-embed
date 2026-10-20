@@ -7,7 +7,7 @@ import { PreviewPanel } from "../components/organisms/PreviewPanel";
 import { SearchBar } from "../components/organisms/SearchBar";
 import type { PageId } from "../components/organisms/TopBar";
 import { AppShell } from "../components/templates/AppShell";
-import { annotations, duration, kitchenFaces, kitchenFrame, scenes } from "../mock/data";
+import { annotations, duration, hitFaces, kitchenFrame, scenes } from "../mock/data";
 import { searchMock } from "./search";
 
 export interface SearchPageProps {
@@ -76,7 +76,7 @@ export function SearchPage({
           <PreviewPanel
             hit={hit} position={index + 1} total={results.length}
             frameSrc={hit.thumb_url ?? kitchenFrame}
-            faces={hit.unit_id === 101 ? kitchenFaces.slice(0, 2) : []}
+            faces={hitFaces(hit)}
             people={people} annotations={hit.kind === "video" ? annotations : []} scenes={scenes} duration={duration}
             playhead={playhead} onSeek={setPlayhead}
             onPrev={() => step(-1)} onNext={() => step(1)} onClose={() => setOpen(null)}

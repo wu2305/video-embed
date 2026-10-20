@@ -1,5 +1,5 @@
 import type { Annotation, Face, Hit, Person, Scene } from "../types";
-import { frame } from "./frames";
+import { personSample, sceneFaces, sceneFrame, type Slot } from "./media";
 
 export const people: Person[] = [
   { id: "person-0003", name: "Ana Ruiz", faces: 212 },
@@ -8,14 +8,12 @@ export const people: Person[] = [
   { id: "person-0019", faces: 17 },
 ];
 
-export const kitchenFaces: Face[] = [
-  { face_index: 0, bbox: [0.22, 0.18, 0.15, 0.2], person_id: "person-0003" },
-  { face_index: 1, bbox: [0.6, 0.22, 0.14, 0.19], person_id: "person-0007" },
-  { face_index: 2, bbox: [0.42, 0.3, 0.1, 0.14], person_id: "person-0011" },
-  { face_index: 3, bbox: [0.82, 0.3, 0.09, 0.12], person_id: null },
-];
+/** Ana, Ben, person-0011 and one untagged face, from the kitchen photo (see media.lock.json). */
+export const kitchenFaces: Face[] = sceneFaces("kitchen");
+export const parkFaces: Face[] = sceneFaces("park");
 
-export const kitchenFrame = frame("kitchen", kitchenFaces, "cooking_class_03.mp4 · 00:42");
+export const kitchenFrame = sceneFrame("kitchen", "cooking_class_03.mp4 · 00:42");
+const kitchenPeople = kitchenFaces.flatMap((f) => (f.person_id ? [f.person_id] : []));
 
 const base = {
   text_bonus: 0,
@@ -39,14 +37,14 @@ export const cookingHit = hit(101, {
   similarity: 0.362,
   text_bonus: 0.05,
   note_bonus: 0.05,
-  face_count: 2,
-  person_ids: ["person-0003", "person-0007"],
+  face_count: kitchenFaces.length,
+  person_ids: kitchenPeople,
   unit_index: 4,
   scene_start: 42,
   scene_end: 71,
   asr_text: "now fold the garlic into the butter and let it soften",
   notes: ["Ana demonstrates the garlic butter"],
-  thumb_url: frame("kitchen", kitchenFaces.slice(0, 2), "unit 4"),
+  thumb_url: sceneFrame("kitchen", "unit 4"),
 });
 
 export const presentingHit = hit(102, {
@@ -55,12 +53,12 @@ export const presentingHit = hit(102, {
   score: 0.337,
   similarity: 0.337,
   face_count: 1,
-  person_ids: ["person-0003"],
+  person_ids: ["person-0019"],
   unit_index: 9,
   scene_start: 72,
   scene_end: 100,
   ocr_text: "Q3 BUDGET — headcount and spend",
-  thumb_url: frame("office", [{ face_index: 0, bbox: [0.4, 0.2, 0.16, 0.22], person_id: "person-0003" }], "unit 9"),
+  thumb_url: sceneFrame("office", "unit 9"),
 });
 
 export const photoHit = hit(103, {
@@ -68,11 +66,11 @@ export const photoHit = hit(103, {
   kind: "image",
   score: 0.298,
   similarity: 0.298,
-  face_count: 3,
-  person_ids: ["person-0003", "person-0011"],
+  face_count: parkFaces.length,
+  person_ids: [],
   scene_start: null,
   scene_end: null,
-  thumb_url: frame("park", kitchenFaces.slice(0, 3), "park_picnic.jpg"),
+  thumb_url: sceneFrame("park", "park_picnic.jpg"),
 });
 
 export const copyHit = hit(104, {
@@ -81,11 +79,11 @@ export const copyHit = hit(104, {
   score: 0.41,
   similarity: 0.36,
   is_master: false,
-  face_count: 2,
-  person_ids: ["person-0003", "person-0007"],
+  face_count: kitchenFaces.length,
+  person_ids: kitchenPeople,
   scene_start: 42,
   scene_end: 71,
-  thumb_url: frame("kitchen", kitchenFaces.slice(0, 2), "copy"),
+  thumb_url: sceneFrame("kitchen", "copy"),
 });
 
 export const audioHit = hit(105, {
@@ -117,7 +115,7 @@ export const externalHit = hit(201, {
   source: "ProductSearch",
   scene_start: 5,
   scene_end: 19,
-  thumb_url: frame("night", [], "ProductSearch #8841"),
+  thumb_url: sceneFrame("night", "ProductSearch #8841"),
 });
 
 export const hits: Hit[] = [cookingHit, presentingHit, photoHit, copyHit];
@@ -136,15 +134,20 @@ export const annotations: Annotation[] = [
 ];
 
 /** A face crop per person cluster, for the People page. */
-const portrait = (scenery: Parameters<typeof frame>[0], personId: string) =>
-  frame(scenery, [{ face_index: 0, bbox: [0.36, 0.2, 0.28, 0.36], person_id: personId }]);
-
 export const personSamples: Record<string, string> = {
-  "person-0003": portrait("kitchen", "person-0003"),
-  "person-0007": portrait("office", "person-0007"),
-  "person-0011": portrait("park", "person-0011"),
-  "person-0019": portrait("night", "person-0019"),
+  "person-0003": personSample("person-0003"),
+  "person-0007": personSample("person-0007"),
+  "person-0011": personSample("person-0011"),
+  "person-0019": personSample("person-0019"),
 };
+
+const HIT_SCENES: Record<number, Slot> = { 101: "kitchen", 102: "office", 103: "park", 104: "kitchen", 201: "night" };
+
+/** The detected faces on a hit's keyframe; none for audio and documents. */
+export function hitFaces(hit: Hit): Face[] {
+  const slot = HIT_SCENES[hit.unit_id];
+  return slot ? sceneFaces(slot) : [];
+}
 
 /** What the top bar reports about the published snapshot. */
 export const indexInfo = { units: 77_412, snapshot: "2026-10-18" };

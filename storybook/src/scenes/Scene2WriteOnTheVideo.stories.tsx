@@ -21,7 +21,7 @@ export const Flow: Story = {
     const scene = scenes.find((s) => playhead >= s.start && playhead < s.end) ?? null;
     return (
       <div style={{ display: "grid", gap: 14, maxWidth: 640 }}>
-        <div className="mm-stage"><img src={kitchenFrame} alt="Kitchen keyframe" /><FaceOverlay faces={kitchenFaces.slice(0, 2)} people={people} /></div>
+        <div className="mm-stage"><img src={kitchenFrame} alt="Kitchen keyframe" /><FaceOverlay faces={kitchenFaces} people={people} /></div>
         <AnnotationTrack duration={duration} scenes={scenes} annotations={notes} playhead={playhead} matched={scene} onSeek={setPlayhead} />
         <AnnotationComposer key={scene?.start ?? "none"} time={playhead} scene={scene} inFrame={people.slice(0, 2)} people={people}
           onSave={(n) => setNotes((cur) => [...cur, { ...n, id: `n${cur.length + 1}`, author: "mei" }])} />

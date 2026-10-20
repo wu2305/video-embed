@@ -28,3 +28,5 @@ benchmark_report.json
 # storybook gallery
 storybook/node_modules/
 storybook/storybook-static/
+storybook/src/mock/media/
+storybook/.cache/

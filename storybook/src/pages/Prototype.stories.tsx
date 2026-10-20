@@ -4,7 +4,7 @@ import { ClipPage } from "./ClipPage";
 import { PeoplePage } from "./PeoplePage";
 import { SearchPage } from "./SearchPage";
 import type { PageId } from "../components/organisms/TopBar";
-import { annotations, audioHit, documentHit, duration, hits, indexInfo, kitchenFaces, kitchenFrame, people as seedPeople, personSamples, scenes } from "../mock/data";
+import { annotations, audioHit, documentHit, duration, hitFaces, hits, indexInfo, kitchenFrame, people as seedPeople, personSamples, scenes } from "../mock/data";
 import type { Hit, Person } from "../types";
 
 const meta = {
@@ -31,7 +31,7 @@ export const ClickThrough: Story = {
     if (page === "clip" && clip) {
       return (
         <ClipPage {...shared} key={clip.unit_id} hit={clip} frameSrc={clip.thumb_url ?? kitchenFrame}
-          faces={clip.unit_id === 101 ? kitchenFaces : []} people={people} scenes={scenes} duration={duration}
+          faces={hitFaces(clip)} people={people} scenes={scenes} duration={duration}
           annotations={clip.kind === "video" ? annotations : []} onBack={() => setPage("search")} />
       );
     }

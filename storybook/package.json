@@ -7,7 +7,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "fetch-media": "python3 scripts/fetch_media.py"
   },
   "devDependencies": {
     "@storybook/addon-a11y": "^10.6.2",
