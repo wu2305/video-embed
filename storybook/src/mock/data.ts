@@ -1,5 +1,10 @@
 import type { Annotation, Face, Hit, Person, Scene } from "../types";
-import { frame } from "./frames";
+import kitchenFrame from "../assets/kitchen.jpg";
+import meetingFrame from "../assets/meeting.jpg";
+import picnicFrame from "../assets/picnic.jpg";
+import externalFrame from "../assets/external.jpg";
+
+export { kitchenFrame, meetingFrame, picnicFrame };
 
 export const people: Person[] = [
   { id: "person-0003", name: "Ana Ruiz", faces: 212 },
@@ -8,14 +13,25 @@ export const people: Person[] = [
   { id: "person-0019", faces: 17 },
 ];
 
+/** Boxes are drawn by hand on the photos in `src/assets/`, so overlays line up with real faces. */
 export const kitchenFaces: Face[] = [
-  { face_index: 0, bbox: [0.22, 0.18, 0.15, 0.2], person_id: "person-0003" },
-  { face_index: 1, bbox: [0.6, 0.22, 0.14, 0.19], person_id: "person-0007" },
-  { face_index: 2, bbox: [0.42, 0.3, 0.1, 0.14], person_id: "person-0011" },
-  { face_index: 3, bbox: [0.82, 0.3, 0.09, 0.12], person_id: null },
+  { face_index: 0, bbox: [0.4, 0.26, 0.11, 0.15], person_id: "person-0003" },
+  { face_index: 1, bbox: [0.69, 0.16, 0.08, 0.13], person_id: "person-0007" },
+  { face_index: 2, bbox: [0.28, 0.23, 0.09, 0.13], person_id: "person-0011" },
+  { face_index: 3, bbox: [0.9, 0.27, 0.09, 0.12], person_id: null },
 ];
 
-export const kitchenFrame = frame("kitchen", kitchenFaces, "cooking_class_03.mp4 · 00:42");
+export const meetingFaces: Face[] = [
+  { face_index: 0, bbox: [0.25, 0.07, 0.1, 0.15], person_id: "person-0007" },
+  { face_index: 1, bbox: [0.57, 0.11, 0.1, 0.13], person_id: null },
+  { face_index: 2, bbox: [0.8, 0.06, 0.1, 0.14], person_id: "person-0011" },
+  { face_index: 3, bbox: [0.14, 0.4, 0.13, 0.15], person_id: "person-0003" },
+];
+
+export const picnicFaces: Face[] = [
+  { face_index: 0, bbox: [0.36, 0.48, 0.09, 0.15], person_id: "person-0003" },
+  { face_index: 1, bbox: [0.81, 0.46, 0.07, 0.13], person_id: "person-0011" },
+];
 
 const base = {
   text_bonus: 0,
@@ -39,14 +55,14 @@ export const cookingHit = hit(101, {
   similarity: 0.362,
   text_bonus: 0.05,
   note_bonus: 0.05,
-  face_count: 2,
-  person_ids: ["person-0003", "person-0007"],
+  face_count: 4,
+  person_ids: ["person-0003", "person-0007", "person-0011"],
   unit_index: 4,
   scene_start: 42,
   scene_end: 71,
   asr_text: "now fold the garlic into the butter and let it soften",
   notes: ["Ana demonstrates the garlic butter"],
-  thumb_url: frame("kitchen", kitchenFaces.slice(0, 2), "unit 4"),
+  thumb_url: kitchenFrame,
 });
 
 export const presentingHit = hit(102, {
@@ -54,13 +70,13 @@ export const presentingHit = hit(102, {
   kind: "video",
   score: 0.337,
   similarity: 0.337,
-  face_count: 1,
-  person_ids: ["person-0003"],
+  face_count: 4,
+  person_ids: ["person-0003", "person-0007", "person-0011"],
   unit_index: 9,
   scene_start: 72,
   scene_end: 100,
   ocr_text: "Q3 BUDGET — headcount and spend",
-  thumb_url: frame("office", [{ face_index: 0, bbox: [0.4, 0.2, 0.16, 0.22], person_id: "person-0003" }], "unit 9"),
+  thumb_url: meetingFrame,
 });
 
 export const photoHit = hit(103, {
@@ -68,11 +84,11 @@ export const photoHit = hit(103, {
   kind: "image",
   score: 0.298,
   similarity: 0.298,
-  face_count: 3,
+  face_count: 2,
   person_ids: ["person-0003", "person-0011"],
   scene_start: null,
   scene_end: null,
-  thumb_url: frame("park", kitchenFaces.slice(0, 3), "park_picnic.jpg"),
+  thumb_url: picnicFrame,
 });
 
 export const copyHit = hit(104, {
@@ -81,11 +97,11 @@ export const copyHit = hit(104, {
   score: 0.41,
   similarity: 0.36,
   is_master: false,
-  face_count: 2,
-  person_ids: ["person-0003", "person-0007"],
+  face_count: 4,
+  person_ids: ["person-0003", "person-0007", "person-0011"],
   scene_start: 42,
   scene_end: 71,
-  thumb_url: frame("kitchen", kitchenFaces.slice(0, 2), "copy"),
+  thumb_url: kitchenFrame,
 });
 
 export const audioHit = hit(105, {
@@ -117,8 +133,11 @@ export const externalHit = hit(201, {
   source: "ProductSearch",
   scene_start: 5,
   scene_end: 19,
-  thumb_url: frame("night", [], "ProductSearch #8841"),
+  thumb_url: externalFrame,
 });
+
+/** Faces drawn on each hit's frame, keyed by unit id. */
+export const facesByUnit: Record<number, Face[]> = { 101: kitchenFaces, 102: meetingFaces, 103: picnicFaces, 104: kitchenFaces };
 
 export const hits: Hit[] = [cookingHit, presentingHit, photoHit, copyHit];
 

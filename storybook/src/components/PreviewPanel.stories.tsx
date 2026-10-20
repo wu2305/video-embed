@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { PreviewPanel } from "./PreviewPanel";
-import { annotations, cookingHit, duration, hits, kitchenFaces, kitchenFrame, people, photoHit, scenes } from "../mock/data";
+import { annotations, cookingHit, duration, facesByUnit, hits, kitchenFaces, kitchenFrame, people, photoHit, picnicFaces, scenes } from "../mock/data";
 import type { Hit } from "../types";
 
 const meta = {
@@ -27,7 +27,7 @@ export const Stepping: Story = {
         position={index + 1}
         total={hits.length}
         frameSrc={hit.thumb_url ?? kitchenFrame}
-        faces={index === 0 ? kitchenFaces.slice(0, 2) : []}
+        faces={facesByUnit[hit.unit_id] ?? []}
         people={people}
         annotations={annotations}
         scenes={scenes}
@@ -44,12 +44,12 @@ export const Stepping: Story = {
 /** The note under the playhead is drawn over the frame. */
 export const WithNoteOverlay: Story = {
   args: {
-    hit: cookingHit, position: 1, total: 4, frameSrc: kitchenFrame, faces: kitchenFaces.slice(0, 2),
+    hit: cookingHit, position: 1, total: 4, frameSrc: kitchenFrame, faces: kitchenFaces,
     people, annotations, scenes, duration, playhead: 50,
   },
 };
 
 /** An image has no timeline and no seek. */
 export const Image: Story = {
-  args: { hit: photoHit, position: 3, total: 4, frameSrc: photoHit.thumb_url!, people, faces: kitchenFaces.slice(0, 3) },
+  args: { hit: photoHit, position: 3, total: 4, frameSrc: photoHit.thumb_url!, people, faces: picnicFaces },
 };
