@@ -175,6 +175,10 @@ Do not treat any of them as settled.
   but my attempt to run the new tests against the old source (via `git stash`)
   only produced an import error, so the "test fails before, passes after" check
   was not completed. Do it with a throwaway worktree.
+  **Done in session 2** — 34 of the new tests fail on `main`'s source. Caveat:
+  the four `test_backends` face-detector tests failed there on a missing
+  `onnxruntime` rather than on their assertion, so those four were confirmed by
+  reading only. See section 6.
 
 ### 3.2 Assumptions that need a decision or a check
 
