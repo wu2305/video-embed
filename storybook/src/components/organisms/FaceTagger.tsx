@@ -1,5 +1,9 @@
 import { useId, useState } from "react";
-import type { Face, Person, TagScope } from "../types";
+import type { Face, Person, TagScope } from "../../types";
+import { Button } from "../atoms/Button";
+import { Label } from "../atoms/Label";
+import { Tag } from "../atoms/Tag";
+import { Field } from "../molecules/Field";
 import { FaceOverlay } from "./FaceOverlay";
 
 export interface FaceTaggerProps {
@@ -50,13 +54,12 @@ export function FaceTagger({ src, faces, people, onTag }: FaceTaggerProps) {
           <p className="mm-mono">Select a face box to name it. Dashed boxes have no cluster yet.</p>
         ) : (
           <>
-            <div className="mm-field">
-              <label htmlFor={nameId}>name</label>
+            <Field label="name">
               <input id={nameId} type="text" list={listId} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ana Ruiz" autoComplete="off" />
-              <datalist id={listId}>{known.map((n) => <option key={n} value={n} />)}</datalist>
-            </div>
+            </Field>
+            <datalist id={listId}>{known.map((n) => <option key={n} value={n} />)}</datalist>
             <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: 8 }}>
-              <legend className="mm-label">apply to</legend>
+              <legend><Label as="span">apply to</Label></legend>
               <label className="mm-radio">
                 <input type="radio" name="scope" checked={scope === "cluster"} disabled={!cluster} onChange={() => setScope("cluster")} />
                 <span>All appearances{cluster && <small>{cluster.id} · {cluster.faces} faces</small>}{!cluster && <small>needs a cluster</small>}</span>
@@ -66,9 +69,9 @@ export function FaceTagger({ src, faces, people, onTag }: FaceTaggerProps) {
                 <span>This face only<small>use to correct a wrong cluster</small></span>
               </label>
             </fieldset>
-            {merging && <p className="mm-mono" role="note"><span className="mm-tag warn">merge</span>“{name.trim()}” already names another cluster. Both will become one person.</p>}
-            <button className="mm-primary" type="submit" disabled={!name.trim()}>Apply name</button>
-            {applied && <p className="mm-mono" role="status"><span className="mm-tag good">saved</span>{applied}</p>}
+            {merging && <p className="mm-mono" role="note"><Tag tone="warn">merge</Tag>“{name.trim()}” already names another cluster. Both will become one person.</p>}
+            <Button variant="primary" type="submit" disabled={!name.trim()}>Apply name</Button>
+            {applied && <p className="mm-mono" role="status"><Tag tone="good">saved</Tag>{applied}</p>}
           </>
         )}
       </form>

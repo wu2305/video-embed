@@ -1,5 +1,6 @@
-import type { Hit, Person } from "../types";
-import { displayName, formatTime } from "../lib/format";
+import type { Hit, Person } from "../../types";
+import { displayName, formatTime } from "../../lib/format";
+import { Tag } from "../atoms/Tag";
 
 export interface ResultCardProps {
   hit: Hit;
@@ -43,14 +44,14 @@ export function ResultCard({ hit, rank, people = [], selected = false, onOpen }:
         <div className="mm-name" title={hit.path}>{name}</div>
         <div className="mm-mono">sim {hit.similarity.toFixed(3)} · unit {hit.unit_index}</div>
         <div className="mm-mono">
-          <span className="mm-tag">{hit.kind}</span>
-          {hasRange && <span className="mm-tag good">{formatTime(hit.scene_start!)}–{formatTime(hit.scene_end!)}</span>}
-          {hit.face_count > 0 && <span className="mm-tag">{hit.face_count} face{hit.face_count > 1 ? "s" : ""}</span>}
+          <Tag>{hit.kind}</Tag>
+          {hasRange && <Tag tone="good">{formatTime(hit.scene_start!)}–{formatTime(hit.scene_end!)}</Tag>}
+          {hit.face_count > 0 && <Tag>{hit.face_count} face{hit.face_count > 1 ? "s" : ""}</Tag>}
           {hit.person_ids.map((id) => {
             const label = displayName(id, people);
-            return <span key={id} className={`mm-tag${label !== id ? " accent" : ""}`}>{label}</span>;
+            return <Tag key={id} tone={label !== id ? "accent" : "neutral"}>{label}</Tag>;
           })}
-          {!hit.is_master && <span className="mm-tag warn">copy</span>}
+          {!hit.is_master && <Tag tone="warn">copy</Tag>}
         </div>
         {hit.notes?.map((note) => <div key={note} className="mm-text note">{note}</div>)}
         {machineText && <div className="mm-text">{machineText.slice(0, 180)}</div>}

@@ -7,12 +7,25 @@ import { Meta } from "@storybook/addon-docs/blocks";
 Components for the query console and the scenes in `STORYBOOK.md` at the repo root.
 The data is mocked, so no index or backend is needed.
 
-| Scene | Stories | Status in the repo |
+## How the gallery is organised
+
+Atomic design, smallest first:
+
+| Level | Stories | Built from |
 |---|---|---|
-| 1 · Name a face | `FaceOverlay`, `FaceTagger` | **new.** The index stores no face boxes yet. |
-| 2 · Write on the video | `AnnotationComposer`, `AnnotationTrack` | **new.** Needs a sidecar notes store. |
-| 3 · Who is doing what | `SearchBar`, `ResultCard`, `ResultGrid` | **partial.** The card and grid match the console. The who/what readout is new. |
-| 4 · More media, more APIs | `Mixed results` | **partial.** Images exist. Audio, documents and other APIs are new. |
+| **Atoms** | `Button`, `Tag`, `Label`, `Chip`, `Kbd` | tokens in `styles.css` |
+| **Molecules** | `Field`, `ParseStep`, `FaceBox`, `ResultCard` | atoms |
+| **Organisms** | `SearchBar`, `ResultGrid`, `FaceOverlay`, `FaceTagger`, `AnnotationTrack`, `AnnotationComposer`, `PreviewPanel` | molecules and atoms |
+| **Scenes** | one per user story in `STORYBOOK.md` | organisms wired with mock state |
+
+Component stories hold the states and the interaction tests; scene stories show the whole flow.
+
+| Scene | Organisms | Status in the repo |
+|---|---|---|
+| 1 · Name a face | `FaceTagger` | **new.** The index stores no face boxes yet. |
+| 2 · Write on the video | `AnnotationTrack`, `AnnotationComposer` | **new.** Needs a sidecar notes store. |
+| 3 · Who is doing what | `SearchBar`, `ResultGrid` | **partial.** The card and grid match the console. The who/what readout is new. |
+| 4 · More media, more APIs | `ResultGrid` | **partial.** Images exist. Audio, documents and other APIs are new. |
 | 5 · Preview | `PreviewPanel` | **partial.** The console plays the source file but does not seek to the scene. |
 
 `src/types.ts` marks which `Hit` fields do not exist in `SearchHit.to_dict()` today.

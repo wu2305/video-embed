@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
-import type { Annotation, Face, Hit, Person, Scene } from "../types";
-import { displayName, formatTime } from "../lib/format";
+import type { Annotation, Face, Hit, Person, Scene } from "../../types";
+import { displayName, formatTime } from "../../lib/format";
+import { Button } from "../atoms/Button";
+import { Kbd } from "../atoms/Kbd";
+import { Tag } from "../atoms/Tag";
 import { AnnotationTrack } from "./AnnotationTrack";
 import { FaceOverlay } from "./FaceOverlay";
 
@@ -75,22 +78,22 @@ export function PreviewPanel({
       </div>
       <aside>
         <div className="mm-nav">
-          <button type="button" onClick={onPrev} disabled={position <= 1} aria-label="Previous result">Prev <span className="mm-kbd">←</span></button>
+          <Button onClick={onPrev} disabled={position <= 1} aria-label="Previous result">Prev <Kbd>←</Kbd></Button>
           <span className="mm-mono">{position} / {total}</span>
-          <button type="button" onClick={onNext} disabled={position >= total} aria-label="Next result">Next <span className="mm-kbd">→</span></button>
+          <Button onClick={onNext} disabled={position >= total} aria-label="Next result">Next <Kbd>→</Kbd></Button>
         </div>
         <h3 title={hit.path}>{name}</h3>
         <div className="mm-mono">
-          <span className="mm-tag">{hit.kind}</span>
-          {range && <span className="mm-tag good">{formatTime(range.start)}–{formatTime(range.end)}</span>}
-          {hit.person_ids.map((id) => <span key={id} className="mm-tag accent">{displayName(id, people)}</span>)}
+          <Tag>{hit.kind}</Tag>
+          {range && <Tag tone="good">{formatTime(range.start)}–{formatTime(range.end)}</Tag>}
+          {hit.person_ids.map((id) => <Tag key={id} tone="accent">{displayName(id, people)}</Tag>)}
         </div>
         <div className="mm-mono">score {hit.score.toFixed(3)} = sim {hit.similarity.toFixed(3)} + text {hit.text_bonus.toFixed(2)}{hit.note_bonus ? ` + note ${hit.note_bonus.toFixed(2)}` : ""}</div>
         {text && <div className="mm-text">{text}</div>}
         {hit.notes?.map((n) => <div key={n} className="mm-text note">{n}</div>)}
         <div className="mm-row">
-          <button type="button" onClick={() => navigator.clipboard?.writeText(hit.path)}>Copy path</button>
-          <button type="button" className="mm-ghost" onClick={onClose}>Close <span className="mm-kbd">Esc</span></button>
+          <Button onClick={() => navigator.clipboard?.writeText(hit.path)}>Copy path</Button>
+          <Button variant="ghost" onClick={onClose}>Close <Kbd>Esc</Kbd></Button>
         </div>
       </aside>
     </div>

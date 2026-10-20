@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
-import type { ParsedQuery, Person } from "../types";
-import { parseQuery } from "../lib/parseQuery";
+import type { ParsedQuery, Person } from "../../types";
+import { parseQuery } from "../../lib/parseQuery";
+import { Button } from "../atoms/Button";
+import { Field } from "../molecules/Field";
+import { ParseStep } from "../molecules/ParseStep";
 
 export interface SearchParams {
   query: string;
@@ -38,34 +41,30 @@ export function SearchBar({ people, initialQuery = "", busy = false, onSearch }:
   return (
     <form className="mm-panel" onSubmit={submit} role="search" aria-label="Search the index">
       <div className="mm-search">
-        <div className="mm-field mm-grow">
-          <label htmlFor="mm-q">query</label>
-          <input id="mm-q" type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ana Ruiz is cooking" autoComplete="off" />
-        </div>
-        <div className="mm-field">
-          <label htmlFor="mm-limit">limit</label>
-          <input id="mm-limit" type="number" min={1} max={60} value={limit} onChange={(e) => setLimit(Number(e.target.value))} style={{ width: 80 }} />
-        </div>
-        <div className="mm-field">
-          <label htmlFor="mm-person">person</label>
-          <select id="mm-person" value={person} onChange={(e) => setPerson(e.target.value)} style={{ minWidth: 150 }} disabled={parsed.person_ids.length > 0}>
+        <Field label="query" grow>
+          <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ana Ruiz is cooking" autoComplete="off" />
+        </Field>
+        <Field label="limit">
+          <input type="number" min={1} max={60} value={limit} onChange={(e) => setLimit(Number(e.target.value))} style={{ width: 80 }} />
+        </Field>
+        <Field label="person">
+          <select value={person} onChange={(e) => setPerson(e.target.value)} style={{ minWidth: 150 }} disabled={parsed.person_ids.length > 0}>
             <option value="">{parsed.person_ids.length ? "from query" : "any"}</option>
             {people.map((p) => <option key={p.id} value={p.id}>{p.name ?? p.id} ({p.faces})</option>)}
           </select>
-        </div>
-        <div className="mm-field">
-          <label htmlFor="mm-faces">min faces</label>
-          <input id="mm-faces" type="number" min={0} max={20} value={minFaces} onChange={(e) => setMinFaces(Number(e.target.value))} style={{ width: 90 }} />
-        </div>
-        <button className="mm-primary" type="submit" disabled={busy || !query.trim() || parsed.unresolved.length > 0}>
+        </Field>
+        <Field label="min faces">
+          <input type="number" min={0} max={20} value={minFaces} onChange={(e) => setMinFaces(Number(e.target.value))} style={{ width: 90 }} />
+        </Field>
+        <Button variant="primary" type="submit" disabled={busy || !query.trim() || parsed.unresolved.length > 0}>
           {busy ? "searching…" : "search"}
-        </button>
+        </Button>
       </div>
       {hasWho && (
         <div className="mm-parse" aria-live="polite">
-          {parsed.who.map((name, i) => <span key={name} className="mm-step accent">who <b>{name}</b> → {parsed.person_ids[i]}</span>)}
-          {parsed.unresolved.map((name) => <span key={name} className="mm-step bad">no such person <b>{name}</b></span>)}
-          {parsed.unresolved.length === 0 && <span className="mm-step">what <b>{parsed.what}</b></span>}
+          {parsed.who.map((name, i) => <ParseStep key={name} tone="accent">who <b>{name}</b> → {parsed.person_ids[i]}</ParseStep>)}
+          {parsed.unresolved.map((name) => <ParseStep key={name} tone="bad">no such person <b>{name}</b></ParseStep>)}
+          {parsed.unresolved.length === 0 && <ParseStep>what <b>{parsed.what}</b></ParseStep>}
         </div>
       )}
     </form>

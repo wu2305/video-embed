@@ -19,7 +19,10 @@ npm run build-storybook  # static site in storybook-static/
 
 | Path | Contents |
 |---|---|
-| `src/components/` | One component and its stories per file |
+| `src/components/atoms/` | Button, Tag, Label, Chip, Kbd |
+| `src/components/molecules/` | Field, ParseStep, FaceBox, ResultCard |
+| `src/components/organisms/` | SearchBar, ResultGrid, FaceOverlay, FaceTagger, AnnotationTrack, AnnotationComposer, PreviewPanel |
+| `src/scenes/` | One story per scene in `../STORYBOOK.md`, composed from organisms |
 | `src/types.ts` | `Hit` mirrors `SearchHit.to_dict()`. Fields under "proposed" do not exist in the Python code yet |
 | `src/lib/parseQuery.ts` | Rule-based "who is what" splitter used by `SearchBar` |
 | `src/mock/` | Fake hits, people, notes and SVG keyframes |

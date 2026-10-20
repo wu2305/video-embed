@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { ResultGrid } from "./ResultGrid";
-import { hits, people } from "../mock/data";
-import type { Hit } from "../types";
+import { hits, people } from "../../mock/data";
+import type { Hit } from "../../types";
 
 const meta = {
-  title: "Scene 3 · Who is doing what/ResultGrid",
+  title: "Organisms/ResultGrid",
   component: ResultGrid,
   args: { hits, people, query: "Ana Ruiz is cooking" },
   render: (args) => {

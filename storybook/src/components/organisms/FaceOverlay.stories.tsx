@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { FaceOverlay } from "./FaceOverlay";
-import { kitchenFaces, kitchenFrame, people } from "../mock/data";
+import { kitchenFaces, kitchenFrame, people } from "../../mock/data";
 
 const meta = {
-  title: "Scene 1 · Name a face/FaceOverlay",
+  title: "Organisms/FaceOverlay",
   component: FaceOverlay,
   args: { faces: kitchenFaces, people },
   render: (args) => (

@@ -11,7 +11,7 @@ const preview: Preview = {
     controls: { expanded: true },
     options: {
       storySort: {
-        order: ["Overview", "Scene 1 · Name a face", "Scene 2 · Write on the video", "Scene 3 · Who is doing what", "Scene 4 · More media, more APIs", "Scene 5 · Preview"],
+        order: ["Overview", "Atoms", "Molecules", "Organisms", "Scenes"],
       },
     },
   },

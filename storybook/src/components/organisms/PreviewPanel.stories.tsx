@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { PreviewPanel } from "./PreviewPanel";
-import { annotations, cookingHit, duration, hits, kitchenFaces, kitchenFrame, people, photoHit, scenes } from "../mock/data";
-import type { Hit } from "../types";
+import { annotations, cookingHit, duration, hits, kitchenFaces, kitchenFrame, people, photoHit, scenes } from "../../mock/data";
+import type { Hit } from "../../types";
 
 const meta = {
-  title: "Scene 5 · Preview/PreviewPanel",
+  title: "Organisms/PreviewPanel",
   component: PreviewPanel,
   parameters: { layout: "fullscreen" },
   decorators: [(Story) => <div style={{ padding: 20 }}><Story /></div>],

@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 import { SearchBar } from "./SearchBar";
-import { people } from "../mock/data";
+import { people } from "../../mock/data";
 
 const meta = {
-  title: "Scene 3 · Who is doing what/SearchBar",
+  title: "Organisms/SearchBar",
   component: SearchBar,
   args: { people, onSearch: fn() },
 } satisfies Meta<typeof SearchBar>;

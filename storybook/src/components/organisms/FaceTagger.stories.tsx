@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 import { FaceTagger } from "./FaceTagger";
-import { kitchenFaces, kitchenFrame, people } from "../mock/data";
+import { kitchenFaces, kitchenFrame, people } from "../../mock/data";
 
 const meta = {
-  title: "Scene 1 · Name a face/FaceTagger",
+  title: "Organisms/FaceTagger",
   component: FaceTagger,
   args: { src: kitchenFrame, faces: kitchenFaces, people, onTag: fn() },
 } satisfies Meta<typeof FaceTagger>;

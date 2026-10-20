@@ -1,10 +1,10 @@
 import type { Meta } from "@storybook/react-vite";
 import type { StoryObj } from "@storybook/react-vite";
-import { ResultGrid } from "./ResultGrid";
+import { ResultGrid } from "../components/organisms/ResultGrid";
 import { audioHit, cookingHit, documentHit, externalHit, people, photoHit } from "../mock/data";
 
 const meta = {
-  title: "Scene 4 · More media, more APIs/Mixed results",
+  title: "Scenes/4 · More media, more APIs",
   component: ResultGrid,
   args: { people, query: "Ana Ruiz is cooking" },
 } satisfies Meta<typeof ResultGrid>;

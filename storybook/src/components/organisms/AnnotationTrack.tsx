@@ -1,5 +1,5 @@
-import type { Annotation, Scene } from "../types";
-import { formatTime } from "../lib/format";
+import type { Annotation, Scene } from "../../types";
+import { formatTime } from "../../lib/format";
 
 export interface AnnotationTrackProps {
   duration: number;

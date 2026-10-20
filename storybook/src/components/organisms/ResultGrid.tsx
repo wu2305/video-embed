@@ -1,5 +1,5 @@
-import type { Hit, Person } from "../types";
-import { ResultCard } from "./ResultCard";
+import type { Hit, Person } from "../../types";
+import { ResultCard } from "../molecules/ResultCard";
 
 export interface ResultGridProps {
   hits: readonly Hit[];

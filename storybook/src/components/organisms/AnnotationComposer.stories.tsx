@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 import { AnnotationComposer } from "./AnnotationComposer";
-import { people } from "../mock/data";
+import { people } from "../../mock/data";
 
 const meta = {
-  title: "Scene 2 · Write on the video/AnnotationComposer",
+  title: "Organisms/AnnotationComposer",
   component: AnnotationComposer,
   args: { time: 44, scene: { start: 42, end: 71 }, inFrame: people.slice(0, 2), people, onSave: fn() },
   decorators: [(Story) => <div style={{ maxWidth: 420 }}><Story /></div>],

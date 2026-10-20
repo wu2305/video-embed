@@ -1,6 +1,11 @@
 import { useId, useState } from "react";
-import type { Annotation, Person, Scene } from "../types";
-import { displayName, formatTime, parseTime } from "../lib/format";
+import type { Annotation, Person, Scene } from "../../types";
+import { displayName, formatTime, parseTime } from "../../lib/format";
+import { Button } from "../atoms/Button";
+import { Chip } from "../atoms/Chip";
+import { Label } from "../atoms/Label";
+import { Tag } from "../atoms/Tag";
+import { Field } from "../molecules/Field";
 
 export interface AnnotationComposerProps {
   /** Playhead position in seconds. */
@@ -44,36 +49,33 @@ export function AnnotationComposer({ time, scene = null, inFrame = [], people = 
 
   return (
     <form className="mm-panel mm-note-form" onSubmit={submit} aria-label="Add note">
-      <div className="mm-field">
-        <label htmlFor={textId}>note</label>
+      <Field label="note">
         <textarea id={textId} value={text} onChange={(e) => setText(e.target.value)} placeholder="Ana is presenting the Q3 budget" />
-      </div>
+      </Field>
       {!still && (
         <div className="mm-row">
-          <div className="mm-field">
-            <label htmlFor={fromId}>from</label>
+          <Field label="from">
             <input id={fromId} type="text" value={from} onChange={(e) => setFrom(e.target.value)} style={{ width: 90 }} aria-invalid={rangeError !== null} />
-          </div>
-          <div className="mm-field">
-            <label htmlFor={toId}>to (blank = open-ended)</label>
+          </Field>
+          <Field label="to (blank = open-ended)">
             <input id={toId} type="text" value={to} onChange={(e) => setTo(e.target.value)} style={{ width: 90 }} aria-invalid={rangeError !== null} />
-          </div>
+          </Field>
         </div>
       )}
-      {rangeError && <p className="mm-mono" role="alert"><span className="mm-tag bad">range</span>{rangeError}</p>}
+      {rangeError && <p className="mm-mono" role="alert"><Tag tone="bad">range</Tag>{rangeError}</p>}
       {inFrame.length > 0 && (
         <div className="mm-field">
-          <span className="mm-label">people in frame</span>
+          <Label as="span">people in frame</Label>
           <div className="mm-chips">
             {inFrame.map((p) => (
-              <button key={p.id} type="button" className="mm-chip" aria-pressed={chosen.includes(p.id)} onClick={() => setChosen((c) => (c.includes(p.id) ? c.filter((x) => x !== p.id) : [...c, p.id]))}>
+              <Chip key={p.id} pressed={chosen.includes(p.id)} onClick={() => setChosen((c) => (c.includes(p.id) ? c.filter((x) => x !== p.id) : [...c, p.id]))}>
                 {displayName(p.id, people.length ? people : inFrame)}
-              </button>
+              </Chip>
             ))}
           </div>
         </div>
       )}
-      <div><button className="mm-primary" type="submit" disabled={!canSave}>Save note</button></div>
+      <div><Button variant="primary" type="submit" disabled={!canSave}>Save note</Button></div>
     </form>
   );
 }

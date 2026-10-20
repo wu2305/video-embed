@@ -54,3 +54,48 @@ button:disabled { opacity: .5; cursor: default; }
 }
 .mm-rank { top: 8px; left: 8px; }
 .mm-score { bottom: 8px; right: 8px; color: var(--good); }
+
+/* result card body */
+.mm-body { padding: 10px 12px 12px; display: grid; gap: 6px; }
+.mm-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-text { font-size: 12px; color: var(--muted); }
+.mm-text.note { color: var(--accent); }
+.mm-source { position: absolute; top: 8px; right: 8px; font: 11px/1 var(--mono); background: rgba(0,0,0,.72); border-radius: 5px; padding: 4px 6px; color: var(--warn); }
+.mm-status { font: 12px/1.4 var(--mono); color: var(--muted); margin: 0 0 10px; min-height: 17px; }
+.mm-status.error { color: var(--bad); }
+.mm-empty { color: var(--muted); padding: 16px 0; }
+
+/* atoms: chip, key hint */
+.mm-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.mm-chip { border-radius: 999px; padding: 4px 12px; color: var(--muted); }
+.mm-chip[aria-pressed=true] { border-color: var(--accent); color: var(--accent); }
+.mm-kbd { display: inline-block; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font: 11px/1.5 var(--mono); color: var(--muted); }
+.mm-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.mm-radio { display: flex; gap: 8px; align-items: flex-start; }
+.mm-radio small { display: block; color: var(--muted); }
+
+/* stage, face boxes */
+.mm-stage { position: relative; background: #0b0d11; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.mm-stage img, .mm-stage video { display: block; width: 100%; height: auto; }
+.mm-face { position: absolute; padding: 0; background: transparent; border: 2px solid var(--accent); border-radius: 4px; }
+.mm-face.untagged { border-style: dashed; border-color: var(--warn); }
+.mm-face.selected { border-color: var(--good); box-shadow: 0 0 0 2px rgba(89,209,140,.35); }
+.mm-face.static { pointer-events: none; }
+.mm-face-label { position: absolute; left: -2px; bottom: 100%; margin-bottom: 2px; background: rgba(0,0,0,.72); color: #fff; font: 11px/1 var(--mono); padding: 3px 5px; border-radius: 4px; white-space: nowrap; }
+.mm-overlay-note { position: absolute; left: 12px; right: 12px; bottom: 12px; background: rgba(0,0,0,.78); color: #fff; padding: 6px 10px; border-radius: 7px; font-size: 13px; }
+
+/* scene layouts */
+.mm-tagger { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(240px, 1fr); gap: 14px; align-items: start; }
+.mm-note-form { display: grid; gap: 12px; }
+.mm-preview { display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); gap: 16px; align-items: start; }
+.mm-preview aside { display: grid; gap: 10px; }
+.mm-preview h3 { margin: 0; font-size: 16px; overflow-wrap: anywhere; }
+.mm-nav { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+
+/* timeline */
+.mm-track { position: relative; height: 28px; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; cursor: pointer; overflow: hidden; }
+.mm-track .scene { position: absolute; top: 0; bottom: 0; border-right: 1px solid var(--line); }
+.mm-track .matched { position: absolute; top: 0; bottom: 0; background: rgba(89,209,140,.28); }
+.mm-track .note { position: absolute; bottom: 3px; height: 6px; background: var(--warn); border-radius: 3px; min-width: 4px; }
+.mm-track .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); }
+.mm-track-legend { display: flex; justify-content: space-between; margin-top: 4px; }

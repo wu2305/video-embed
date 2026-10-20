@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { AnnotationTrack } from "./AnnotationTrack";
-import { annotations, duration, scenes } from "../mock/data";
+import { annotations, duration, scenes } from "../../mock/data";
 
 const meta = {
-  title: "Scene 2 · Write on the video/AnnotationTrack",
+  title: "Organisms/AnnotationTrack",
   component: AnnotationTrack,
   args: { duration, scenes, annotations, playhead: 50 },
   render: (args) => {

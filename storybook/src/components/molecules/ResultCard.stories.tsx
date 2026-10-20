@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 import { ResultCard } from "./ResultCard";
-import { copyHit, cookingHit, people, photoHit, presentingHit } from "../mock/data";
+import { copyHit, cookingHit, people, photoHit, presentingHit } from "../../mock/data";
 
 const meta = {
-  title: "Scene 3 · Who is doing what/ResultCard",
+  title: "Molecules/ResultCard",
   component: ResultCard,
   args: { hit: cookingHit, rank: 1, people, onOpen: fn() },
   decorators: [(Story) => <div style={{ width: 240 }}><Story /></div>],
