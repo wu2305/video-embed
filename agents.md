@@ -201,8 +201,9 @@ CUDA path from the production notebook and is out of scope for this package.
 3. **Product direction**: the final aim is the Unified Search Gateway in
    `docs/UNIFIED_SEARCH_DESIGN.md`; this package is its NAS pipeline. The
    design's open items (IdP type, Archive vendor API contracts, WeCom pruning
-   sign-off) are waiting on the client. The one in-repo gap is storing
-   keyframes as ≤1024 px JPEG instead of `.npy`.
+   sign-off) are waiting on the client. The one in-repo spec deviation is
+   keyframe storage: full-size frames are fine for inference, but what gets
+   stored should be a compressed preview (e.g. WebP), not raw `.npy`.
 
 4. **Remaining future work**: validate the PCA-reduced clustering path against
    the CUDA result on a held-out subset (ARI), and add a CUDA clustering

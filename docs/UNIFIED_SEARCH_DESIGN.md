@@ -74,14 +74,15 @@ pipeline that extracts multimodal features.
 | Stage | Design | `mmindex` implementation |
 |---|---|---|
 | 1. Ingestion and cleansing | Fast hash + SHA-256 secondary validation for dedup. Normalize shooting time from EXIF, filesystem timestamps and filename conventions. | `scan` — xxhash64 candidate hash, SHA256 confirmation, canonical time EXIF → filename → mtime (`scan.py`, `hashing.py`) |
-| 2. Feature extraction | **Video:** scene boundary detection; timestamped transcription with `faster-whisper`; one keyframe per scene, longest side capped at 1024 px (JPEG) to cut temporary I/O. **Vision:** SigLIP 768-d image vectors, InsightFace face detection + 512-d face vectors, RapidOCR on-screen text, perceptual hash, sharpness score. | `prepare`, `extract`, `infer` (`stages.py`, `backends.py`, `media.py`) |
+| 2. Feature extraction | **Video:** scene boundary detection; timestamped transcription with `faster-whisper`; one keyframe per scene. Inference may run on the full-size frame; what is stored is a compressed preview image (e.g. WebP), longest side capped at 1024 px, to keep storage and I/O small. **Vision:** SigLIP 768-d image vectors, InsightFace face detection + 512-d face vectors, RapidOCR on-screen text, perceptual hash, sharpness score. | `prepare`, `extract`, `infer` (`stages.py`, `backends.py`, `media.py`) |
 | 3. Clustering and dimensionality guardrail | Person-level clustering with HDBSCAN. Above 20,000 faces in a batch, reduce to 64 dimensions first to prevent OOM. | `cluster` — `pca_threshold=20_000`, `pca_components=64` (`clustering.py`, `config.py`) |
 | 4. Snapshot and atomic release | Persist to a unified snapshot (SQLite, FP16 vector matrix, person catalog). Run consistency checks, keep the sharpest duplicate as the primary version, switch atomically through a manifest with zero downtime. | `export` + `verify` (`export.py`) |
 | 5. Hybrid search | Cosine similarity for base recall; `+0.15` when the query hits OCR or ASR text. Hard filters by person and by minimum face count. | `search` (`search.py`) |
 
-**Known gap against the design:** `extract` currently persists each keyframe
-as a full-resolution `.npy` array. The design calls for a JPEG capped at
-1024 px on the longest side.
+**Spec deviation:** `extract` currently persists each keyframe as a
+full-resolution `.npy` array. Using full-size frames for inference is
+acceptable, but the artifact the index keeps should be a compressed preview
+image (e.g. WebP, ≤1024 px longest side), not the raw frame.
 
 See [`ARCHITECTURE.md`](../ARCHITECTURE.md) for the pipeline internals, the
 CPU port and the distributed spot-worker design, and
@@ -134,5 +135,5 @@ cost.
 | Identity passthrough spec | Archive vendor | §3.2 federated search |
 | Deep-link URL schema | Archive vendor | §3.2 result redirects |
 | Sign-off on WeCom pruning ADR | Business side | §3.3 scope closure |
-| Keyframes as ≤1024 px JPEG instead of `.npy` | This repo | §3.1.2 stage 2 conformance |
+| Store keyframes as compressed previews (e.g. WebP) instead of raw `.npy` | This repo | §3.1.2 stage 2 spec deviation |
 | Document (Word/PDF) parsing on NAS | Not yet designed | §2 heterogeneous data, §3.3 archived WeCom docs |
