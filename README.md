@@ -11,6 +11,17 @@ hybrid semantic/text search.
 The package is the "local CPU port" from section 3 plus the distributed spot
 architecture from section 4 of the architecture document.
 
+## Final aim
+
+`mmindex` is the multimedia search pipeline for the intranet NAS inside a
+larger **Unified Search Gateway**: one search entry point across the Archive
+System (federated metadata search over vendor APIs), the Synology NAS
+(this pipeline, behind centralized AD/LDAP identity) and WeCom (whose static
+material is archived to NAS rather than indexed live). The full design,
+including the IAM strategy, the integration contracts and the open
+questions, is in
+[`docs/UNIFIED_SEARCH_DESIGN.md`](./docs/UNIFIED_SEARCH_DESIGN.md).
+
 ## Install
 
 ```bash

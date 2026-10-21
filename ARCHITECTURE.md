@@ -5,6 +5,10 @@
 
 ---
 
+> This document covers the NAS multimedia pipeline only (§3.1.2 of
+> [`docs/UNIFIED_SEARCH_DESIGN.md`](./docs/UNIFIED_SEARCH_DESIGN.md)). The
+> gateway, IAM and the Archive System / WeCom integrations are described there.
+
 ## 1. What the pipeline does
 
 The pipeline consumes a flat tree of image and video files and produces a
