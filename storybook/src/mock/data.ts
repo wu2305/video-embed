@@ -12,7 +12,7 @@ export const people: Person[] = [
 export const kitchenFaces: Face[] = sceneFaces("kitchen");
 export const parkFaces: Face[] = sceneFaces("park");
 
-export const kitchenFrame = sceneFrame("kitchen", "cooking_class_03.mp4 · 00:42");
+export const kitchenFrame = sceneFrame("kitchen");
 const kitchenPeople = kitchenFaces.flatMap((f) => (f.person_id ? [f.person_id] : []));
 
 const base = {

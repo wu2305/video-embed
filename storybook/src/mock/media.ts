@@ -9,7 +9,9 @@ import type { Face } from "../types";
  * not the photos are present; without them each scene falls back to a drawn
  * frame with the same boxes.
  */
-const photos = import.meta.glob<string>("./media/*.jpg", { eager: true, query: "?url", import: "default" });
+const fetched = import.meta.glob<string>("./media/*.jpg", { eager: true, query: "?url", import: "default" });
+// VITE_MOCK_PHOTOS=off forces the drawn frames, e.g. for exports that must not carry the photos.
+const photos: Record<string, string> = import.meta.env.VITE_MOCK_PHOTOS === "off" ? {} : fetched;
 
 export type Slot = keyof typeof lock.scenes;
 type Box = [number, number, number, number];
