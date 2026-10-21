@@ -2,16 +2,38 @@
  * Tokens and base rules lifted from the console page in scripts/serve.py.
  * Every value below the token block is a token reference; add a token before
  * adding a literal. Names match the published "mmindex Console" design system.
+ *
+ * Themes: each colour is light-dark(<light>, <dark>). A page follows the OS
+ * setting; data-theme="light" or "dark" on any element pins that subtree, so
+ * both themes can render side by side. The dark values are the console's own.
  */
-:root {
+:root { color-scheme: light dark; }
+[data-theme="light"] { color-scheme: light; }
+[data-theme="dark"] { color-scheme: dark; }
+
+/* Declared on every [data-theme] element too: light-dark() in a custom
+   property resolves where the property is declared, so a nested theme needs
+   its own declaration to flip. */
+:root, [data-theme] {
   /* colour: surfaces */
-  --bg: #0f1115; --panel: #171a21; --field: #12151b; --thumb: #0b0d11; --line: #262b36;
-  /* colour: text and signal */
-  --text: #e6e9ef; --muted: #8b94a7; --accent: #6ea8fe; --on-accent: #0b0d11;
-  --good: #59d18c; --warn: #e5c07b; --bad: #ff8b8b;
-  /* colour: overlays on imagery */
+  --bg: light-dark(#f5f6f8, #0f1115);
+  --panel: light-dark(#ffffff, #171a21);
+  --field: light-dark(#f2f4f7, #12151b);
+  --thumb: light-dark(#e3e6eb, #0b0d11);
+  --line: light-dark(#d5dae2, #262b36);
+  /* colour: text and signal (each at least 4.5:1 on bg, panel and field) */
+  --text: light-dark(#171b23, #e6e9ef);
+  --muted: light-dark(#586174, #8b94a7);
+  --accent: light-dark(#1d5bd6, #6ea8fe);
+  --on-accent: light-dark(#ffffff, #0b0d11);
+  --good: light-dark(#127a48, #59d18c);
+  --warn: light-dark(#8f5d00, #e5c07b);
+  --bad: light-dark(#c42b2b, #ff8b8b);
+  --good-wash: light-dark(rgba(18, 122, 72, .18), rgba(89, 209, 140, .28));
+  --backdrop: light-dark(rgba(23, 27, 35, .45), rgba(5, 6, 9, .72));
+  /* colour: on photos and video, the same in both themes */
   --scrim: rgba(0, 0, 0, .72); --scrim-strong: rgba(0, 0, 0, .78); --on-scrim: #fff;
-  --good-wash: rgba(89, 209, 140, .28); --good-ring: rgba(89, 209, 140, .35); --backdrop: rgba(5, 6, 9, .72);
+  --image-accent: #6ea8fe; --image-good: #59d18c; --image-warn: #e5c07b; --image-ring: rgba(89, 209, 140, .35);
 
   /* type */
   --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -93,8 +115,8 @@ button:disabled { opacity: .5; cursor: default; }
   border-radius: var(--radius-chip); padding: var(--space-1) 6px; color: var(--on-scrim);
 }
 .mm-rank { top: var(--space-2); left: var(--space-2); }
-.mm-score { bottom: var(--space-2); right: var(--space-2); color: var(--good); }
-.mm-source { top: var(--space-2); right: var(--space-2); color: var(--warn); }
+.mm-score { bottom: var(--space-2); right: var(--space-2); color: var(--image-good); }
+.mm-source { top: var(--space-2); right: var(--space-2); color: var(--image-warn); }
 .mm-body { padding: var(--space-3) 12px 12px; display: grid; gap: 6px; }
 .mm-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mm-text { font-size: var(--text-sm); color: var(--muted); }
@@ -106,10 +128,11 @@ button:disabled { opacity: .5; cursor: default; }
 /* stage and face boxes (scene 1) */
 .mm-stage { position: relative; background: var(--thumb); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
 .mm-stage img, .mm-stage video { display: block; width: 100%; height: auto; }
-.mm-face { position: absolute; padding: 0; background: transparent; border: 2px solid var(--accent); border-radius: var(--radius-sm); }
-.mm-face.untagged { border-style: dashed; border-color: var(--warn); }
-.mm-face.selected { border-color: var(--good); box-shadow: 0 0 0 2px var(--good-ring); }
+.mm-face { position: absolute; padding: 0; background: transparent; border: 2px solid var(--image-accent); border-radius: var(--radius-sm); }
+.mm-face.untagged { border-style: dashed; border-color: var(--image-warn); }
+.mm-face.selected { border-color: var(--image-good); box-shadow: 0 0 0 2px var(--image-ring); }
 .mm-face.static { pointer-events: none; }
+.mm-face.label-below .mm-face-label { bottom: auto; top: 100%; margin: 2px 0 0; }
 .mm-face-label { position: absolute; left: -2px; bottom: 100%; margin-bottom: 2px; background: var(--scrim); color: var(--on-scrim); font: var(--text-xs)/1 var(--mono); padding: 3px 5px; border-radius: var(--radius-sm); white-space: nowrap; }
 .mm-overlay-note { position: absolute; left: 12px; right: 12px; bottom: 12px; background: var(--scrim-strong); color: var(--on-scrim); padding: 6px var(--space-3); border-radius: var(--radius-md); font-size: 13px; }
 

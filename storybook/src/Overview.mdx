@@ -9,7 +9,10 @@ The data is mocked, so no index or backend is needed.
 
 ## How the gallery is organised
 
-Atomic design, smallest first. Start at **Pages/Prototype** for a demo; start at **Foundations** to build.
+Atomic design, smallest first. Start at **Pages/Overview** to see every page at a glance, **Pages/Prototype**
+for a demo, and **Foundations** to build.
+
+Every story renders in a dark and a light theme. Switch with the **Theme** toolbar, or pick **Side by side**.
 
 | Level | Stories | Built from |
 |---|---|---|
@@ -18,11 +21,11 @@ Atomic design, smallest first. Start at **Pages/Prototype** for a demo; start at
 | **Molecules** | `Field`, `ParseStep`, `FaceBox`, `ResultCard`, `PersonCard`, `NoteItem`, `MetaList` | atoms |
 | **Organisms** | `TopBar`, `SearchBar`, `ResultGrid`, `PeopleGrid`, `FaceOverlay`, `FaceTagger`, `AnnotationTrack`, `AnnotationComposer`, `NoteList`, `PreviewPanel` | molecules and atoms |
 | **Templates** | `AppShell` | top bar, page header, body slot |
-| **Pages** | `Prototype`, `Search`, `People`, `Clip` | organisms in the shell, with mock state |
+| **Pages** | `Overview` (live previews), `Prototype`, `Search`, `People`, `Clip` | organisms in the shell, with mock state |
 | **Scenes** | one per user story in `STORYBOOK.md` | the flow each story describes |
 
-Every story is also a test: `npm test` runs each one in Chromium, including its `play` steps and an
-accessibility check that fails on any axe violation.
+Every story is also a test: `npm test` runs each one in Chromium, once per theme, including its `play`
+steps and an accessibility check that fails on any axe violation (colour contrast included).
 
 Component stories hold the states and the interaction tests; scene stories show the whole flow.
 

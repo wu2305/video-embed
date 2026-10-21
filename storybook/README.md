@@ -12,8 +12,18 @@ cd storybook
 npm install
 npm run storybook        # http://localhost:6006
 npm run typecheck
+npm test                 # every story, in dark then light
 npm run build-storybook  # static site in storybook-static/
 ```
+
+## Themes
+
+Every colour token has a light and a dark value (`light-dark()` in `src/styles.css`). A page follows the
+OS setting; `data-theme="light"` or `"dark"` on any element pins that subtree. In Storybook, the
+**Theme** toolbar switches between Dark, Light and Side by side. `npm test` runs every story in both
+themes, so a contrast regression in either fails the run.
+
+**Pages/Overview** shows every page as a live preview, in both themes, at desktop and phone size.
 
 ## Real photos
 

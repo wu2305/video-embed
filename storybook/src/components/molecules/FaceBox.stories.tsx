@@ -20,3 +20,6 @@ type Story = StoryObj<typeof meta>;
 export const Named: Story = {};
 export const Untagged: Story = { args: { face: kitchenFaces[3]!, label: "untagged" } };
 export const Selected: Story = { args: { selected: true, onSelect: () => {} } };
+
+/** When another label would cover this one, it goes under the box. */
+export const LabelBelow: Story = { args: { labelBelow: true } };

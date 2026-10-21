@@ -1,0 +1,40 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { PageGallery } from "./gallery/PageGallery";
+
+<Meta title="Pages/Overview" />
+
+# Page previews
+
+Every page, live, in both themes. Each preview is the real story, so it changes when the components do.
+Click a preview to open it full size; use the Theme toolbar there to switch, or pick **Side by side**.
+Some previews end in an interaction state because their story plays one, such as a typed name or an
+open dialog.
+
+<PageGallery groups={[
+  { title: "Start here", pages: [
+    { id: "pages-prototype--click-through", title: "Prototype", note: "All three pages wired together for demos" },
+  ] },
+  { title: "Search", pages: [
+    { id: "pages-search--results", title: "Results", note: "A name plus an action" },
+    { id: "pages-search--preview-open", title: "Preview", note: "The matched scene, faces named" },
+    { id: "pages-search--mixed-media", title: "Mixed media", note: "Video, photo, audio and documents" },
+    { id: "pages-search--federated-sources", title: "Federated sources", note: "Another search API merged in" },
+    { id: "pages-search--no-hits", title: "No hits" },
+    { id: "pages-search--server-error", title: "Server error" },
+  ] },
+  { title: "People", pages: [
+    { id: "pages-people--directory", title: "Directory", note: "Every face cluster, largest first" },
+    { id: "pages-people--named-person", title: "Named person", note: "Where they appear" },
+    { id: "pages-people--merge-warning", title: "Merge warning", note: "Reusing a name merges clusters" },
+  ] },
+  { title: "Clip", pages: [
+    { id: "pages-clip--video", title: "Video", note: "Matched scene, faces, notes, timeline" },
+    { id: "pages-clip--photo", title: "Photo", note: "No timeline; notes have no range" },
+    { id: "pages-clip--audio", title: "Audio", note: "Transcript carries the match" },
+  ] },
+  { title: "On a phone", device: { width: 390, height: 844 }, pages: [
+    { id: "pages-search--results", title: "Search" },
+    { id: "pages-people--directory", title: "People" },
+    { id: "pages-clip--video", title: "Clip" },
+  ] },
+]} />
