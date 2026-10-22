@@ -17,6 +17,7 @@ export const Idle: Story = {};
 
 /** An unnamed cluster: naming it covers every appearance. */
 export const NameACluster: Story = {
+  args: { initialSelected: 2, initialName: "Chidi Eze" },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: /Face 3: person-0011/ }));
@@ -29,6 +30,7 @@ export const NameACluster: Story = {
 
 /** A face with no cluster can only be named on its own. */
 export const UntaggedFace: Story = {
+  args: { initialSelected: 3 },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: /Face 4: untagged/ }));
@@ -39,6 +41,7 @@ export const UntaggedFace: Story = {
 
 /** Reusing an existing name warns that two clusters will merge. */
 export const MergeWarning: Story = {
+  args: { initialSelected: 2, initialName: "Ana Ruiz" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: /Face 3: person-0011/ }));
