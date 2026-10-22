@@ -170,8 +170,10 @@ parser.
 
 - Name resolution: `Ana`, `Ana Ruiz` and an alias all map to one person; an
   unknown name returns "no such person" rather than silently searching text.
-- A small query parser (`<name> is/are <what>`, `<what> with <name>`, plus a
-  `--person` fallback). Start with rules; do not call an LLM on the hot path.
+- A small query parser (`<name> is/are <what>`, `<what> with <name>`). Start
+  with rules; do not call an LLM on the hot path. People are only ever named in
+  the query; the console has no person-id picker, since a query can name
+  several people and users never see cluster ids.
 - Multiple people: `Ana and Ben are cooking` requires both
   (`person_ids ⊇ {Ana, Ben}`); `Ana or Ben` is the union.
 - A prompt template so the *what* embeds well ("a photo of someone cooking").

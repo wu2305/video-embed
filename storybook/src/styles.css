@@ -130,7 +130,8 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-text { font-size: var(--text-xs); color: var(--muted); }
 .mm-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mm-text.note { color: var(--accent); }
-.mm-status { font: var(--text-xs)/1.4 var(--mono); color: var(--muted); margin: 0 0 var(--space-3); min-height: 17px; }
+/* The answer to "what did I get": sans at body size, louder than the filter chips. */
+.mm-status { font: var(--text-sm)/1.4 var(--font-sans); color: var(--muted); margin: 0 0 var(--space-3); min-height: 20px; }
 .mm-status.error { color: var(--bad); }
 .mm-empty { color: var(--muted); padding: var(--space-4) 0; }
 .mm-notice { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--field); padding: var(--space-2) var(--space-3); margin: 0 0 var(--space-3); font-size: var(--text-xs); }
