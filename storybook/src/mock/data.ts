@@ -1,10 +1,5 @@
-import type { Annotation, Face, Hit, Person, Scene } from "../types";
-import kitchenFrame from "../assets/kitchen.jpg";
-import meetingFrame from "../assets/meeting.jpg";
-import picnicFrame from "../assets/picnic.jpg";
-import externalFrame from "../assets/external.jpg";
-
-export { kitchenFrame, meetingFrame, picnicFrame };
+import type { Annotation, ArchiveRecord, Face, Hit, IndexInfo, Person, Scene, Viewer } from "../types";
+import { personSample, sceneFaces, sceneFrame, type Slot } from "./media";
 
 export const people: Person[] = [
   { id: "person-0003", name: "Ana Ruiz", faces: 212 },
@@ -13,25 +8,12 @@ export const people: Person[] = [
   { id: "person-0019", faces: 17 },
 ];
 
-/** Boxes are drawn by hand on the photos in `src/assets/`, so overlays line up with real faces. */
-export const kitchenFaces: Face[] = [
-  { face_index: 0, bbox: [0.4, 0.26, 0.11, 0.15], person_id: "person-0003" },
-  { face_index: 1, bbox: [0.69, 0.16, 0.08, 0.13], person_id: "person-0007" },
-  { face_index: 2, bbox: [0.28, 0.23, 0.09, 0.13], person_id: "person-0011" },
-  { face_index: 3, bbox: [0.9, 0.27, 0.09, 0.12], person_id: null },
-];
+/** Ana, Ben, person-0011 and one untagged face, from the kitchen photo (see media.lock.json). */
+export const kitchenFaces: Face[] = sceneFaces("kitchen");
+export const parkFaces: Face[] = sceneFaces("park");
 
-export const meetingFaces: Face[] = [
-  { face_index: 0, bbox: [0.25, 0.07, 0.1, 0.15], person_id: "person-0007" },
-  { face_index: 1, bbox: [0.57, 0.11, 0.1, 0.13], person_id: null },
-  { face_index: 2, bbox: [0.8, 0.06, 0.1, 0.14], person_id: "person-0011" },
-  { face_index: 3, bbox: [0.14, 0.4, 0.13, 0.15], person_id: "person-0003" },
-];
-
-export const picnicFaces: Face[] = [
-  { face_index: 0, bbox: [0.36, 0.48, 0.09, 0.15], person_id: "person-0003" },
-  { face_index: 1, bbox: [0.81, 0.46, 0.07, 0.13], person_id: "person-0011" },
-];
+export const kitchenFrame = sceneFrame("kitchen");
+const kitchenPeople = kitchenFaces.flatMap((f) => (f.person_id ? [f.person_id] : []));
 
 const base = {
   text_bonus: 0,
@@ -55,14 +37,14 @@ export const cookingHit = hit(101, {
   similarity: 0.362,
   text_bonus: 0.05,
   note_bonus: 0.05,
-  face_count: 4,
-  person_ids: ["person-0003", "person-0007", "person-0011"],
+  face_count: kitchenFaces.length,
+  person_ids: kitchenPeople,
   unit_index: 4,
   scene_start: 42,
   scene_end: 71,
   asr_text: "now fold the garlic into the butter and let it soften",
   notes: ["Ana demonstrates the garlic butter"],
-  thumb_url: kitchenFrame,
+  thumb_url: sceneFrame("kitchen", "unit 4"),
 });
 
 export const presentingHit = hit(102, {
@@ -70,13 +52,13 @@ export const presentingHit = hit(102, {
   kind: "video",
   score: 0.337,
   similarity: 0.337,
-  face_count: 4,
-  person_ids: ["person-0003", "person-0007", "person-0011"],
+  face_count: 1,
+  person_ids: ["person-0019"],
   unit_index: 9,
   scene_start: 72,
   scene_end: 100,
   ocr_text: "Q3 BUDGET — headcount and spend",
-  thumb_url: meetingFrame,
+  thumb_url: sceneFrame("office", "unit 9"),
 });
 
 export const photoHit = hit(103, {
@@ -84,11 +66,11 @@ export const photoHit = hit(103, {
   kind: "image",
   score: 0.298,
   similarity: 0.298,
-  face_count: 2,
-  person_ids: ["person-0003", "person-0011"],
+  face_count: parkFaces.length,
+  person_ids: [],
   scene_start: null,
   scene_end: null,
-  thumb_url: picnicFrame,
+  thumb_url: sceneFrame("park", "park_picnic.jpg"),
 });
 
 export const copyHit = hit(104, {
@@ -97,11 +79,11 @@ export const copyHit = hit(104, {
   score: 0.41,
   similarity: 0.36,
   is_master: false,
-  face_count: 4,
-  person_ids: ["person-0003", "person-0007", "person-0011"],
+  face_count: kitchenFaces.length,
+  person_ids: kitchenPeople,
   scene_start: 42,
   scene_end: 71,
-  thumb_url: kitchenFrame,
+  thumb_url: sceneFrame("kitchen", "copy"),
 });
 
 export const audioHit = hit(105, {
@@ -125,19 +107,40 @@ export const documentHit = hit(106, {
   ocr_text: "Garlic butter: 4 cloves, 80 g butter, rest 10 min",
 });
 
-export const externalHit = hit(201, {
-  path: "https://catalog.example.com/assets/8841",
-  kind: "video",
-  score: 0.88,
-  similarity: 0.88,
-  source: "ProductSearch",
-  scene_start: 5,
-  scene_end: 19,
-  thumb_url: externalFrame,
-});
+/** Local time, so "today" and "tonight" read the same in every time zone. */
+function at(y: number, m: number, d: number, h: number, min = 0): number {
+  return Math.floor(new Date(y, m - 1, d, h, min).getTime() / 1000);
+}
 
-/** Faces drawn on each hit's frame, keyed by unit id. */
-export const facesByUnit: Record<number, Face[]> = { 101: kitchenFaces, 102: meetingFaces, 103: picnicFaces, 104: kitchenFaces };
+/** "Now" for every story: mid-morning, after last night's cycle published. */
+export const now = at(2026, 10, 22, 9, 30);
+
+/** Records the Archive System returns for "cooking" and "budget" (design doc §3.2). */
+export const archiveRecords: ArchiveRecord[] = [
+  {
+    source: "archive", record_id: "CT-2025-0412", vendor_rank: 1,
+    title: "Catering services agreement — cooking class series 2025",
+    doc_type: "Contract", archived_at: at(2025, 3, 18, 10), department: "Marketing",
+    summary: "Counterparty: Lumen Kitchen Studio · term 2025-04 to 2025-12 · status: active",
+    deep_link: "https://archive.example.internal/records/CT-2025-0412",
+  },
+  {
+    source: "archive", record_id: "MN-2025-1187", vendor_rank: 2,
+    title: "Q3 budget review — approved minutes",
+    doc_type: "Board minutes", archived_at: at(2025, 10, 2, 16), department: "Finance",
+    summary: "Approved by the finance committee · 14 pages · retention: 10 years",
+    deep_link: "https://archive.example.internal/records/MN-2025-1187",
+  },
+  {
+    source: "archive", record_id: "PO-2024-2290", vendor_rank: 3,
+    title: "Purchase order — kitchen equipment for the cooking studio",
+    doc_type: "Purchase order", archived_at: at(2024, 11, 5, 9), department: "Facilities",
+    deep_link: "https://archive.example.internal/records/PO-2024-2290",
+  },
+];
+
+/** The signed-in user. Groups come from the IdP on every query. */
+export const viewer: Viewer = { name: "Mei Chen", groups: ["Marketing", "Media-Library"] };
 
 export const hits: Hit[] = [cookingHit, presentingHit, photoHit, copyHit];
 
@@ -153,3 +156,32 @@ export const annotations: Annotation[] = [
   { id: "n2", t_start: 72, t_end: 100, text: "Ana is presenting the Q3 budget", author: "mei", person_ids: ["person-0003"] },
   { id: "n3", t_start: 118, t_end: null, text: "Camera shake from here", author: "mei", person_ids: [] },
 ];
+
+/** A face crop per person cluster, for the People page. */
+export const personSamples: Record<string, string> = {
+  "person-0003": personSample("person-0003"),
+  "person-0007": personSample("person-0007"),
+  "person-0011": personSample("person-0011"),
+  "person-0019": personSample("person-0019"),
+};
+
+const HIT_SCENES: Record<number, Slot> = { 101: "kitchen", 102: "office", 103: "park", 104: "kitchen" };
+
+/** The detected faces on a hit's keyframe; none for audio and documents. */
+export function hitFaces(hit: Hit): Face[] {
+  const slot = HIT_SCENES[hit.unit_id];
+  return slot ? sceneFaces(slot) : [];
+}
+
+/** What the top bar reports about the published NAS snapshot: last night's cycle. */
+export const indexInfo: IndexInfo = {
+  units: 77_412, snapshot: "2026-10-22", published_at: at(2026, 10, 22, 2, 40), next_run: at(2026, 10, 23, 1),
+};
+
+/** No snapshot for three nights: the cycle is failing `verify` or not running. */
+export const staleIndexInfo: IndexInfo = {
+  ...indexInfo, snapshot: "2026-10-19", published_at: at(2026, 10, 19, 2, 40), stale: true,
+};
+
+/** Faces from recent nights that matched no person yet; they wait for the next full regroup. */
+export const pendingFaces = 38;

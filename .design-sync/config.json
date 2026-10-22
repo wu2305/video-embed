@@ -7,9 +7,7 @@
   "storybookStatic": ".design-sync/sb-reference",
   "buildCmd": "cd storybook && npm run build:lib",
   "cssEntry": "dist/styles.css",
-  "titleMap": {
-    "Mixedresults": null
-  },
+  "titleMap": {},
   "overrides": {
     "ResultGrid": {
       "viewport": "1000x760"

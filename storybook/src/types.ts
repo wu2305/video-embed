@@ -24,16 +24,87 @@ export interface Hit {
   note_bonus?: number;
   /** Notes that overlap the scene. */
   notes?: string[];
-  /** Which search API produced the hit. Absent means this index. */
-  source?: string;
-  /** Overrides `/api/thumb?id=` for hits from another API. */
+  /** NAS hits come from this index. Absent means "nas". */
+  source?: "nas";
+  /** Overrides `/api/thumb?id=`, which serves the stored WebP preview (≤1024 px). */
   thumb_url?: string;
 }
+
+/**
+ * One record from the Archive System's federated search (design doc §3.2).
+ * The gateway never sees the raw document, only cleansed metadata, and the
+ * vendor has already filtered it for the caller (§5.2). All proposed: the
+ * vendor's response shape and deep-link schema are still to be confirmed.
+ */
+export interface ArchiveRecord {
+  source: "archive";
+  record_id: string;
+  title: string;
+  /** Vendor record type, e.g. "Contract". */
+  doc_type: string;
+  /** Archive date, epoch seconds. */
+  archived_at: number;
+  department?: string;
+  /** Short metadata summary the vendor returns. Never document text. */
+  summary?: string;
+  /** Opens the record's detail page in the Archive System. */
+  deep_link: string;
+  /** Position in the vendor's own ranking. Its scores are not comparable to ours. */
+  vendor_rank: number;
+}
+
+/** One row of a gateway result list. */
+export type Result = Hit | ArchiveRecord;
+
+export type SourceId = "nas" | "archive";
+
+export function sourceOf(result: Result): SourceId {
+  return result.source ?? "nas";
+}
+
+export function isArchive(result: Result): result is ArchiveRecord {
+  return result.source === "archive";
+}
+
+/** A stable key across sources: unit ids and record ids can collide. */
+export function resultKey(result: Result): string {
+  return isArchive(result) ? `archive:${result.record_id}` : `nas:${result.unit_id}`;
+}
+
+/** How each source answered one query. */
+export interface SourceStatus {
+  source: SourceId;
+  state: "ok" | "unavailable";
+  count: number;
+}
+
+/** The signed-in user, as the gateway resolves them from the IdP (design doc §3.1.1, §5). */
+export interface Viewer {
+  name: string;
+  /** Directory groups, resolved live on each query; shown for "why can't I see it" questions. */
+  groups: string[];
+}
+
+/** What the gateway reports about the published NAS snapshot (design doc §4.2). */
+export interface IndexInfo {
+  units: number;
+  snapshot: string;
+  /** When the snapshot was published, epoch seconds. */
+  published_at: number;
+  /** When the next nightly cycle starts, epoch seconds. */
+  next_run: number;
+  /** True when nothing was published for longer than the nightly cadence. */
+  stale?: boolean;
+}
+
+/** Why a NAS hit cannot be previewed although the snapshot lists it. */
+export type Unavailable = "forbidden" | "gone";
 
 /** A person cluster, optionally named by a user (scene 1). */
 export interface Person {
   id: string;
   name?: string;
+  /** Appearances in files the viewer can open, not in the whole index. */
   faces: number;
 }
 

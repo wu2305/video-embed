@@ -7,7 +7,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run && VITE_SB_THEME=light vitest run",
+    "fetch-media": "python3 scripts/fetch_media.py",
     "build:lib": "tsc -p tsconfig.build.json && esbuild src/index.ts --bundle --format=esm --jsx=automatic --external:react --external:react-dom --external:react/jsx-runtime --outfile=dist/index.js && cp src/styles.css dist/styles.css"
   },
   "devDependencies": {
@@ -18,14 +19,14 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitest/browser-playwright": "^5.0.5",
+    "esbuild": "^0.25.12",
     "playwright": "^1.64.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "storybook": "^10.6.2",
     "typescript": "^5.9.3",
     "vite": "^8.3.4",
-    "vitest": "^5.0.5",
-    "esbuild": "^0.25.0"
+    "vitest": "^5.0.5"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.js",

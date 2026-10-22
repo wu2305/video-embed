@@ -28,6 +28,9 @@ benchmark_report.json
 # storybook gallery
 storybook/node_modules/
 storybook/storybook-static/
+storybook/dist/
+storybook/src/mock/media/
+storybook/.cache/
 
 # design-sync
 .design-sync/sb-reference/

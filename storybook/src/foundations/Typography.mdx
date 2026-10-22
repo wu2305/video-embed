@@ -1,0 +1,42 @@
+import { Meta, Typeset } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundations/Type" />
+
+# Type
+
+System faces only: no webfonts to load. Sizes are in `rem`, so the reader's text-size setting scales
+the whole console; the pixel values below are at the default 16px root. Each step is at least 1.17× the
+one below it, so five tokens read as five sizes.
+
+## Sans: `--font-sans`
+
+<Typeset fontFamily='ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif'
+  fontSizes={[30, 22, 17, 14, 12]} fontWeight={400} sampleText="Ana Ruiz is cooking" />
+
+| Token | Size | Use |
+|---|---|---|
+| `--text-xl` | 1.875rem (30px) / 1.2, bold | Page title (`h1`) |
+| `--text-lg` | 1.375rem (22px) / 1.25 | Preview and dialog headings |
+| `--text-md` | 1.0625rem (17px) / 1.3, 600 | Panel headings |
+| `--text-sm` | .875rem (14px) / 1.5 | Body, inputs, buttons, the result count and query line |
+| `--text-xs` | .75rem (12px) | Labels (uppercase, .6px tracking), tags, metadata, machine text |
+| `--text-overlay` | .6875rem (11px) | Only on scrims over media: rank, score and source chips, face labels |
+
+Below 640px wide, inputs, selects and textareas are at least 16px, so iOS does not zoom the page when one
+takes focus.
+
+## Mono: `--mono`
+
+<Typeset fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+  fontSizes={[12, 11]} fontWeight={400} sampleText="sim 0.362 · unit 4 · 00:42–01:11" />
+
+Use mono for anything a machine produced: ids, scores, times, paths, and OCR and ASR text (`.mm-transcript`).
+Use sans for anything a person wrote or reads as prose: help lines, notices and notes (`.mm-hint` for the small
+muted ones, at `--text-xs`). A sentence is never mono, even when it sits next to an id.
+
+## Measure and wrapping
+
+- Prose is capped at `--measure` (65ch): the page subtitle, `.mm-hint`, and the empty state.
+- Headings use `text-wrap: balance`, and paragraphs use `text-wrap: pretty`.
+- `--text-glyph` (2.375rem) is the media-kind glyph on cards with no frame. It is decorative and sits outside the
+  type scale. There is no `px` font size anywhere in `styles.css`.

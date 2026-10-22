@@ -1,132 +1,380 @@
-/* Tokens and base rules lifted from the console page in scripts/serve.py. */
-:root {
-  --bg: #0f1115; --panel: #171a21; --line: #262b36; --text: #e6e9ef;
-  --muted: #8b94a7; --accent: #6ea8fe; --good: #59d18c; --warn: #e5c07b; --bad: #ff8b8b;
+/*
+ * Tokens and base rules lifted from the console page in scripts/serve.py.
+ * Every value below the token block is a token reference; add a token before
+ * adding a literal. Names match the published "mmindex Console" design system.
+ *
+ * Themes: each colour is light-dark(<light>, <dark>). A page follows the OS
+ * setting; data-theme="light" or "dark" on any element pins that subtree, so
+ * both themes can render side by side. The dark values are the console's own.
+ */
+:root { color-scheme: light dark; }
+[data-theme="light"] { color-scheme: light; }
+[data-theme="dark"] { color-scheme: dark; }
+
+/* Declared on every [data-theme] element too: light-dark() in a custom
+   property resolves where the property is declared, so a nested theme needs
+   its own declaration to flip. */
+:root, [data-theme] {
+  /* colour: surfaces */
+  --bg: light-dark(#f5f6f8, #0f1115);
+  --panel: light-dark(#ffffff, #171a21);
+  --field: light-dark(#f2f4f7, #12151b);
+  --thumb: light-dark(#e3e6eb, #0b0d11);
+  --line: light-dark(#d5dae2, #262b36);
+  /* colour: text and signal (each at least 4.5:1 on bg, panel and field) */
+  --text: light-dark(#171b23, #e6e9ef);
+  --muted: light-dark(#586174, #8b94a7);
+  --accent: light-dark(#1d5bd6, #6ea8fe);
+  --accent-strong: light-dark(#1747a8, #a3c7ff);
+  --on-accent: light-dark(#ffffff, #0b0d11);
+  --good: light-dark(#127a48, #59d18c);
+  --warn: light-dark(#8f5d00, #e5c07b);
+  --bad: light-dark(#c42b2b, #ff8b8b);
+  --good-wash: light-dark(rgba(18, 122, 72, .18), rgba(89, 209, 140, .28));
+  --backdrop: light-dark(rgba(23, 27, 35, .45), rgba(5, 6, 9, .72));
+  /* colour: on photos and video, the same in both themes */
+  --scrim: rgba(0, 0, 0, .72); --scrim-strong: rgba(0, 0, 0, .78); --on-scrim: #fff;
+  --image-accent: #6ea8fe; --image-good: #59d18c; --image-warn: #e5c07b; --image-ring: rgba(89, 209, 140, .35);
+
+  /* type */
+  --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* A committed scale in rem, so the reader's text-size setting scales the
+     console: 12 / 14 / 17 / 22 / 30 px at the default 16px root. Each step is
+     at least 1.17x the last. --text-overlay is for scrims on media only. */
+  --text-overlay: .6875rem;
+  --text-xs: .75rem; --text-sm: .875rem; --text-md: 1.0625rem; --text-lg: 1.375rem; --text-xl: 1.875rem;
+  /* Decorative only: the media-kind glyph in a card with no frame. */
+  --text-glyph: 2.375rem;
+  /* Longest line of prose, inside the 60–75 character readable band. */
+  --measure: 65ch;
+
+  /* space and shape */
+  --space-1: 4px; --space-2: 8px; --space-3: 10px; --space-4: 14px; --space-5: 20px; --space-6: 28px;
+  --radius-sm: 4px; --radius-chip: 5px; --radius-md: 7px; --radius-lg: 10px; --radius-pill: 999px;
+  --control-min: 38px; --touch-min: 44px; --track-h: 28px; --card-min: 212px; --page-max: 1240px;
+
+  /* motion. Static is the default; the transitions live in the
+     prefers-reduced-motion: no-preference block at the end of this file, so
+     turning motion off needs no override. --dur-2 is the baseline: faster
+     reads twitchy, slower reads laggy. */
+  --dur-1: 100ms; --dur-2: 150ms; --dur-3: 200ms; --dur-4: 250ms;
+  --ease-out: cubic-bezier(.2, 0, 0, 1); --ease-in: cubic-bezier(.4, 0, 1, 1);
 }
+
 * { box-sizing: border-box; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
-  font: 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: var(--text-sm)/1.5 var(--font-sans);
 }
 input, select, textarea, button {
-  font: inherit; color: var(--text); background: #12151b;
-  border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px;
+  font: inherit; color: var(--text); background: var(--field);
+  border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3);
 }
-input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input:focus, select:focus, textarea:focus, button:focus-visible, [role=slider]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input[aria-invalid=true] { border-color: var(--bad); }
+textarea { min-height: 72px; resize: vertical; }
 button { cursor: pointer; }
-button:disabled { opacity: .5; cursor: default; }
-.mm-primary { background: var(--accent); color: #0b0d11; border-color: transparent; font-weight: 600; padding: 8px 18px; min-height: 38px; }
+button:disabled, button[aria-disabled=true] { opacity: .5; cursor: default; }
+/* Taps act at once instead of waiting out double-tap zoom. */
+a, button, input, select, textarea, summary, [role=slider] { touch-action: manipulation; }
+.mm-sr-only { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* atoms */
+.mm-button { background: var(--panel); border-color: var(--line); font-weight: 500; min-height: var(--control-min); }
+.mm-button:hover:not(:disabled) { border-color: var(--muted); }
+.mm-primary { background: var(--accent); color: var(--on-accent); border-color: transparent; font-weight: 600; padding: var(--space-2) 18px; min-height: var(--control-min); }
 .mm-ghost { background: transparent; color: var(--muted); }
+/* Feedback is a colour change only: no transitions (see Layout). */
+.mm-primary:hover:not(:disabled, [aria-disabled=true]) { background: var(--accent-strong); }
+.mm-primary:active:not(:disabled, [aria-disabled=true]) { background: var(--accent-strong); border-color: var(--text); }
+.mm-danger { background: var(--panel); color: var(--bad); border-color: var(--bad); font-weight: 600; min-height: var(--control-min); }
+.mm-danger:hover:not(:disabled) { background: var(--field); }
+.mm-danger:active:not(:disabled) { border-color: var(--text); }
+.mm-confirm { display: grid; gap: var(--space-3); border: 1px solid var(--bad); border-radius: var(--radius-md); background: var(--field); padding: var(--space-3); }
 .mm-field { display: flex; flex-direction: column; gap: 5px; }
-.mm-field > label, .mm-label { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
-.mm-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
-.mm-mono { font: 11px/1.45 var(--mono); color: var(--muted); }
+.mm-field > label, .mm-label { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+.mm-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); }
+.mm-panel > h2, .mm-panel > h3 { margin: 0 0 var(--space-3); font-size: var(--text-md); line-height: 1.3; }
+/* Mono is for what a machine produced (ids, scores, times, paths, OCR and ASR
+   text); a sentence a person reads is sans, as .mm-hint. */
+.mm-mono { font: var(--text-xs)/1.45 var(--mono); color: var(--muted); }
+.mm-hint { font-size: var(--text-xs); line-height: 1.5; color: var(--muted); max-width: var(--measure); text-wrap: pretty; }
+.mm-transcript { font-family: var(--mono); }
 .mm-tag {
-  display: inline-block; border: 1px solid var(--line); border-radius: 4px;
-  padding: 1px 5px; margin-right: 4px; font: 11px/1.45 var(--mono); color: var(--muted);
+  display: inline-block; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 1px 5px; margin-inline-end: var(--space-1); font: var(--text-xs)/1.45 var(--mono); color: var(--muted);
 }
 .mm-tag.warn { color: var(--warn); }
 .mm-tag.accent { color: var(--accent); border-color: var(--accent); }
 .mm-tag.good { color: var(--good); }
 .mm-tag.bad { color: var(--bad); border-color: var(--bad); }
+.mm-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.mm-chip { border-radius: var(--radius-pill); padding: var(--space-1) 12px; color: var(--muted); }
+.mm-chip[aria-pressed=true] { border-color: var(--accent); color: var(--accent); }
+.mm-kbd { display: inline-block; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0 5px; font: var(--text-xs)/1.5 var(--mono); color: var(--muted); }
+.mm-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; }
+.mm-radio { display: flex; gap: var(--space-2); align-items: flex-start; }
+.mm-radio small { display: block; color: var(--muted); }
 
 /* search bar (scene 3) */
-.mm-search { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.mm-search { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; }
 .mm-search .mm-grow { flex: 1; min-width: 260px; }
 .mm-search input[type=text] { width: 100%; }
-.mm-parse { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; min-height: 28px; }
-.mm-parse .mm-step { background: #12151b; border: 1px solid var(--line); border-radius: 7px; padding: 4px 9px; font: 12px/1.4 var(--mono); color: var(--muted); }
+.mm-parse { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-top: var(--space-3); min-height: 28px; }
+.mm-parse .mm-step { background: var(--field); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-1) 9px; font: var(--text-xs)/1.4 var(--mono); color: var(--muted); }
 .mm-parse .mm-step b { color: var(--text); font-weight: 600; }
 .mm-parse .mm-step.accent b { color: var(--accent); }
 .mm-parse .mm-step.bad b { color: var(--bad); }
 
 /* result card and grid */
-.mm-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(212px, 1fr)); }
-.mm-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; text-align: left; padding: 0; color: inherit; }
+.mm-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr)); }
+.mm-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; text-align: start; padding: 0; color: inherit; container-type: inline-size; }
 .mm-card.selected { border-color: var(--accent); }
-.mm-thumb { position: relative; background: #0b0d11; aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+/* The card's one button stretches over the whole card; focus shows on the card. */
+.mm-card, .mm-note { position: relative; }
+.mm-card-link { all: unset; display: block; cursor: pointer; }
+.mm-card-link::after { content: ""; position: absolute; inset: 0; }
+.mm-card-link:focus-visible { outline: none; }
+.mm-card:has(.mm-card-link:focus-visible), .mm-note:has(.mm-card-link:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+.mm-card:hover, .mm-note:hover { border-color: var(--muted); }
+.mm-card.selected:hover { border-color: var(--accent); }
+.mm-thumb { position: relative; background: var(--thumb); aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .mm-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.mm-glyph { font-size: 38px; color: var(--muted); }
-.mm-rank, .mm-score {
-  position: absolute; font: 11px/1 var(--mono); background: rgba(0,0,0,.72);
-  border-radius: 5px; padding: 4px 6px; color: #fff;
+.mm-glyph { font-size: var(--text-glyph); color: var(--muted); }
+.mm-rank, .mm-score, .mm-source {
+  position: absolute; font: var(--text-overlay)/1 var(--mono); background: var(--scrim);
+  border-radius: var(--radius-chip); padding: var(--space-1) 6px; color: var(--on-scrim);
 }
-.mm-rank { top: 8px; left: 8px; }
-.mm-score { bottom: 8px; right: 8px; color: var(--good); }
-
-.mm-body { padding: 9px 11px 11px; display: flex; flex-direction: column; gap: 5px; }
-.mm-name { font-size: 12px; word-break: break-all; }
-.mm-text {
-  font-size: 11px; color: var(--warn); border-left: 2px solid var(--warn);
-  padding-left: 7px; display: -webkit-box; -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical; overflow: hidden;
-}
-.mm-text.note { color: var(--accent); border-left-color: var(--accent); }
-.mm-source {
-  position: absolute; top: 8px; right: 8px; font: 11px/1 var(--mono);
-  background: rgba(0,0,0,.72); border-radius: 5px; padding: 4px 6px; color: var(--warn);
-}
-.mm-status { color: var(--muted); margin-bottom: 14px; min-height: 20px; }
+.mm-rank { top: var(--space-2); inset-inline-start: var(--space-2); }
+.mm-score { bottom: var(--space-2); inset-inline-end: var(--space-2); color: var(--image-good); }
+.mm-source { top: var(--space-2); inset-inline-end: var(--space-2); color: var(--image-warn); }
+.mm-body { padding: var(--space-3) 12px 12px; display: grid; gap: 6px; }
+.mm-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-text { font-size: var(--text-xs); color: var(--muted); }
+.mm-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-text.note { color: var(--accent); }
+/* The answer to "what did I get": sans at body size, louder than the filter chips. */
+.mm-status { font: var(--text-sm)/1.4 var(--font-sans); color: var(--muted); margin: 0 0 var(--space-3); min-height: 20px; }
 .mm-status.error { color: var(--bad); }
-.mm-empty { color: var(--muted); padding: 30px 0; }
-.mm-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
-.mm-kbd {
-  display: inline-block; min-width: 18px; padding: 0 4px; margin-left: 4px; text-align: center;
-  font: 11px/16px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 4px;
-}
+.mm-empty { color: var(--muted); padding: var(--space-4) 0; max-width: var(--measure); text-wrap: pretty; }
+.mm-notice { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--field); padding: var(--space-2) var(--space-3); margin: 0 0 var(--space-3); font-size: var(--text-xs); }
+.mm-notice.warn { border-color: var(--warn); }
+.mm-notice.bad { border-color: var(--bad); }
+.mm-notice code { overflow-wrap: anywhere; }
+.mm-why { margin: var(--space-2) 0 0; }
+.mm-skeleton .mm-body span { display: block; height: .75rem; border-radius: var(--radius-sm); background: var(--field); }
+.mm-skeleton .mm-body span:last-child { width: 60%; }
+.mm-archive .mm-body { padding-top: 12px; }
+.mm-archive .mm-name { white-space: normal; }
+.mm-archive-head { display: flex; gap: var(--space-2); align-items: baseline; }
+.mm-archive-head .mm-source-name { color: var(--warn); }
+.mm-unavailable { aspect-ratio: 4 / 3; display: grid; place-content: center; gap: var(--space-2); padding: var(--space-5); text-align: center; color: var(--muted); }
+.mm-unavailable strong { color: var(--text); }
+.mm-viewer { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-xs); }
+.mm-avatar { width: 24px; height: 24px; border-radius: var(--radius-pill); background: var(--field); border: 1px solid var(--line); display: grid; place-items: center; font: var(--text-xs)/1 var(--mono); color: var(--text); }
+.mm-sources { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); }
+.mm-sources li { display: grid; grid-template-columns: 10rem 1fr; gap: var(--space-3); }
+.mm-sources b { font-weight: 600; }
 
-/* stage with face boxes (scenes 1 and 5) */
-.mm-stage { position: relative; background: #0b0d11; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+/* stage and face boxes (scene 1) */
+.mm-stage { position: relative; background: var(--thumb); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
 .mm-stage img, .mm-stage video { display: block; width: 100%; height: auto; }
-.mm-face {
-  position: absolute; padding: 0; background: transparent; border-radius: 4px;
-  border: 2px solid var(--accent); box-shadow: 0 0 0 1px rgba(0,0,0,.6);
-}
-.mm-face.untagged { border-style: dashed; border-color: var(--warn); }
-.mm-face.selected { border-color: var(--good); box-shadow: 0 0 0 2px rgba(89,209,140,.35); }
+.mm-faces { position: absolute; inset: 0; pointer-events: none; }
+.mm-face { position: absolute; pointer-events: auto; padding: 0; background: transparent; border: 2px solid var(--image-accent); border-radius: var(--radius-sm); }
+.mm-face.untagged { border-style: dashed; border-color: var(--image-warn); }
+.mm-face.selected { border-color: var(--image-good); box-shadow: 0 0 0 2px var(--image-ring); }
 .mm-face.static { pointer-events: none; }
-button.mm-face:hover { background: rgba(110,168,254,.12); }
-.mm-face-label {
-  position: absolute; left: -2px; bottom: 100%; margin-bottom: 2px; white-space: nowrap;
-  font: 11px/1 var(--mono); background: rgba(0,0,0,.8); color: #fff; border-radius: 4px; padding: 3px 5px;
+.mm-face.label-below .mm-face-label { bottom: auto; top: 100%; margin: 2px 0 0; }
+.mm-face.label-end .mm-face-label { left: auto; right: -2px; }
+.mm-face-label { position: absolute; left: -2px; bottom: 100%; margin-bottom: 2px; background: var(--scrim); color: var(--on-scrim); font: var(--text-overlay)/1 var(--mono); padding: 3px 5px; border-radius: var(--radius-sm); white-space: nowrap; }
+.mm-overlay-note { position: absolute; left: 12px; right: 12px; bottom: 12px; background: var(--scrim-strong); color: var(--on-scrim); padding: 6px var(--space-3); border-radius: var(--radius-md); font-size: var(--text-sm); }
+
+/* scene layouts */
+.mm-tagger { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(240px, 1fr); gap: var(--space-4); align-items: start; }
+.mm-note-form { display: grid; gap: 12px; }
+.mm-preview { display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); gap: 16px; align-items: start; }
+.mm-preview aside { display: grid; gap: var(--space-3); }
+.mm-preview h2 { margin: 0; font-size: var(--text-lg); line-height: 1.25; overflow-wrap: anywhere; }
+.mm-nav { display: flex; gap: var(--space-3); align-items: center; justify-content: space-between; }
+
+/* timeline (scene 2). .mm-scrub is the slider; on touch it is a 44px band
+   with the 28px track centred inside it. */
+.mm-scrub { cursor: pointer; border-radius: var(--radius-md); }
+.mm-track { position: relative; height: var(--track-h); background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); cursor: pointer; overflow: hidden; }
+.mm-track .scene { position: absolute; top: 0; bottom: 0; border-right: 1px solid var(--line); }
+.mm-track .matched { position: absolute; top: 0; bottom: 0; background: var(--good-wash); }
+.mm-track .note { position: absolute; bottom: 3px; height: 6px; background: var(--warn); border-radius: 3px; min-width: var(--space-1); }
+.mm-track .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); }
+.mm-track-legend { display: flex; justify-content: space-between; margin-top: var(--space-1); }
+
+/* molecules: person card, note item, meta list */
+.mm-person .mm-thumb { aspect-ratio: 1; }
+.mm-person .mm-body { gap: var(--space-1); }
+.mm-person.unnamed .mm-name { color: var(--muted); font-family: var(--mono); font-weight: 400; }
+.mm-notes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.mm-note { display: grid; grid-template-columns: auto 1fr; gap: var(--space-1) var(--space-3); align-items: start; background: var(--field); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); }
+.mm-note[aria-current=true] { border-color: var(--accent); }
+.mm-note .mm-note-text { grid-column: 2; }
+.mm-note .mm-note-meta { grid-column: 2; }
+.mm-meta { display: grid; grid-template-columns: max-content 1fr; gap: 6px var(--space-4); margin: 0; font-size: var(--text-xs); }
+.mm-meta dt { color: var(--muted); }
+.mm-meta dd { margin: 0; overflow-wrap: anywhere; }
+
+/* organisms: top bar */
+.mm-topbar { display: flex; align-items: center; gap: var(--space-5); padding: 0 var(--space-5); height: 52px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.mm-brand { font-weight: 700; letter-spacing: -.2px; display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; white-space: nowrap; }
+.mm-brand-mark { display: block; width: 18px; height: 18px; color: var(--accent); }
+.mm-links { display: flex; gap: var(--space-1); }
+.mm-links a { display: inline-flex; align-items: center; color: var(--muted); text-decoration: none; padding: 6px var(--space-3); border-radius: var(--radius-md); }
+.mm-links a:hover { color: var(--text); }
+.mm-links a[aria-current=page] { color: var(--text); background: var(--field); }
+.mm-links a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.mm-topbar .mm-mono { margin-inline-start: auto; }
+.mm-topbar .mm-viewer { margin-inline-start: auto; }
+.mm-topbar .mm-mono + .mm-viewer { margin-inline-start: 0; }
+
+/* templates: app shell and page header */
+.mm-shell { min-height: 100vh; display: flex; flex-direction: column; }
+.mm-page { width: 100%; max-width: var(--page-max); margin: 0 auto; padding: var(--space-5); display: grid; gap: var(--space-4); align-content: start; }
+.mm-page-head { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; justify-content: space-between; }
+.mm-page-head > div { min-width: 0; }
+/* Clip titles are file names with no break points; let them break anywhere. */
+.mm-page-head h1 { margin: 0; font-size: var(--text-xl); line-height: 1.2; overflow-wrap: anywhere; }
+.mm-page-head p { margin: var(--space-1) 0 0; color: var(--muted); max-width: var(--measure); text-wrap: pretty; }
+.mm-split { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: var(--space-4); align-items: start; }
+.mm-split > aside { display: grid; gap: var(--space-4); }
+.mm-crumbs { font: var(--text-xs)/1.4 var(--mono); color: var(--muted); }
+.mm-crumbs a, .mm-mono a, .mm-hint a { color: var(--accent); text-decoration: none; }
+.mm-toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.mm-toolbar .mm-mono { margin-inline-start: auto; }
+
+/* search home: the first visit, before any query. Centred, nothing but the
+   brand, one large field, a few examples and one line on scope and freshness. */
+.mm-home { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-5); padding: 18vh var(--space-5) var(--space-6); text-align: center; }
+.mm-home-page .mm-topbar { background: transparent; border-bottom-color: transparent; }
+.mm-home-brand { display: flex; align-items: center; gap: var(--space-3); margin: 0; font-size: var(--text-xl); line-height: 1.2; }
+.mm-home-brand .mm-brand-mark { width: 1.1em; height: 1.1em; }
+.mm-home-search { width: min(100%, 40rem); }
+.mm-home-field { display: flex; gap: var(--space-2); }
+.mm-home-field input { flex: 1; min-width: 0; min-height: var(--touch-min); padding: var(--space-2) var(--space-5); border-radius: var(--radius-pill); font-size: var(--text-md); }
+.mm-home-field .mm-primary { border-radius: var(--radius-pill); min-height: var(--touch-min); }
+.mm-home .mm-parse { justify-content: center; }
+.mm-home-examples { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: var(--space-1) var(--space-2); color: var(--muted); font-size: var(--text-xs); }
+.mm-link { background: none; border: 0; padding: var(--space-1) var(--space-2); color: var(--accent); font-size: var(--text-sm); }
+.mm-link:hover { text-decoration: underline; }
+.mm-home-foot { margin-top: auto; padding-top: var(--space-6); display: grid; justify-items: center; gap: var(--space-2); }
+.mm-home-foot p { margin: 0; }
+.mm-home-foot details { text-align: start; }
+.mm-home-foot summary { cursor: pointer; text-align: center; }
+.mm-home-foot .mm-sources { margin-top: var(--space-3); }
+
+/* dialog layer */
+.mm-backdrop { position: fixed; inset: 0; background: var(--backdrop); display: grid; place-items: center; padding: var(--space-5); z-index: 10; }
+.mm-backdrop > * { width: min(100%, 980px); max-height: 100%; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); }
+
+/* Cards respond to their own width, not the page's: a narrow grid cell gets a
+   tighter body and clamps the longer text. */
+@container (max-width: 180px) {
+  .mm-body { padding: var(--space-2) var(--space-2) var(--space-3); gap: var(--space-1); }
+  .mm-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  .mm-rank, .mm-score, .mm-source { padding: 3px 5px; }
 }
-.mm-overlay-note {
-  position: absolute; left: 12px; right: 12px; bottom: 12px; padding: 7px 10px; border-radius: 7px;
-  background: rgba(0,0,0,.78); color: #fff; font-size: 13px;
+
+/* Below 400px the top bar keeps only the brand mark; the name stays for screen readers. */
+@media (max-width: 400px) {
+  .mm-brand-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
 
-/* face tagger (scene 1) */
-.mm-tagger { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(240px, 1fr); gap: 16px; align-items: start; }
-.mm-tagger .mm-panel { display: grid; gap: 12px; }
-.mm-radio { display: flex; gap: 8px; align-items: flex-start; }
-.mm-radio input { margin-top: 3px; padding: 0; }
-.mm-radio small { display: block; color: var(--muted); font: 11px/1.45 var(--mono); }
-
-/* notes (scene 2) */
-.mm-note-form { display: grid; gap: 12px; max-width: 460px; }
-.mm-note-form textarea { min-height: 76px; resize: vertical; }
-input[aria-invalid=true] { border-color: var(--bad); }
-.mm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.mm-chip { border-radius: 999px; padding: 3px 11px; color: var(--muted); }
-.mm-chip[aria-pressed=true] { color: #0b0d11; background: var(--accent); border-color: transparent; font-weight: 600; }
-.mm-track { position: relative; height: 34px; background: #12151b; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; cursor: pointer; }
-.mm-track > * { position: absolute; top: 0; bottom: 0; pointer-events: none; }
-.mm-track .scene { border-left: 1px solid var(--line); background: rgba(255,255,255,.03); }
-.mm-track .matched { background: rgba(89,209,140,.25); border-left: 2px solid var(--good); }
-.mm-track .note { top: auto; height: 8px; background: var(--accent); border-radius: 2px; }
-.mm-track .playhead { width: 2px; background: var(--text); }
-.mm-track-legend { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px; }
-
-/* preview (scene 5) */
-.mm-preview { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(240px, 1fr); gap: 18px; align-items: start; }
-.mm-preview aside { display: grid; gap: 10px; }
-.mm-preview h3 { margin: 0; font-size: 15px; word-break: break-all; }
-.mm-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-
-@media (max-width: 720px) {
-  .mm-tagger, .mm-preview { grid-template-columns: 1fr; }
+@media (max-width: 760px) {
+  .mm-tagger, .mm-preview, .mm-split { grid-template-columns: 1fr; }
+  .mm-topbar { gap: var(--space-3); padding: 0 var(--space-4); overflow-x: auto; }
+  .mm-topbar .mm-mono { display: none; }
+  .mm-viewer .mm-viewer-name { display: none; }
+  .mm-sources li { grid-template-columns: 1fr; gap: 0; }
+  .mm-page { padding: var(--space-4); }
+  .mm-grid { --card-min: 150px; }
 }
 
-/* Gives every story the console's dark ground, so the light text is legible outside Storybook's backgrounds addon. */
-.mm-root { background: var(--bg); color: var(--text); min-height: 100%; padding: 1px; }
+/* iOS zooms the page when a focused control is under 16px. */
+@media (max-width: 640px) {
+  input, select, textarea { font-size: max(1rem, 16px); }
+}
+
+/* Touch: every control is at least 44px tall, and so is the timeline band. */
+@media (pointer: coarse) {
+  button, input, select, .mm-links a, .mm-button, .mm-primary, .mm-ghost, .mm-danger { min-height: var(--touch-min); }
+  .mm-chip { min-height: var(--touch-min); padding-inline: var(--space-4); }
+  .mm-scrub { padding: calc((var(--touch-min) - var(--track-h)) / 2) 0; }
+  /* A card link is stretched over its card, so the card is the target; a face box keeps its drawn size. */
+  .mm-card-link, .mm-face { min-height: 0; }
+}
+
+/* Motion is opt-in: the rules above are the whole interface when the reader
+   asks for less movement. Everything here explains a state change, a press, or
+   where a surface came from. Nothing runs on its own except the loading pulse,
+   which is the system saying it is still working. */
+@media (prefers-reduced-motion: no-preference) {
+  /* Tactile. Every control answers a pointer within one frame of intent. */
+  button, input, select, textarea, .mm-links a, .mm-card, .mm-note,
+  .mm-tag, .mm-scrub, .mm-track .matched, .mm-face {
+    transition-property: background-color, border-color, color, opacity, scale, translate;
+    transition-duration: var(--dur-2);
+    transition-timing-function: var(--ease-out);
+  }
+
+  /* Press reads as physical: the control gives slightly, then returns. */
+  button:active:not(:disabled), .mm-links a:active {
+    scale: .97;
+    transition-duration: var(--dur-1);
+  }
+
+  /* A card lifts toward the pointer by a single pixel. It never jumps. */
+  .mm-card:hover, .mm-note:hover { translate: 0 -1px; }
+  .mm-card:active, .mm-note:active { translate: 0 0; scale: .995; transition-duration: var(--dur-1); }
+
+  /* A selected face box settles rather than snapping. */
+  .mm-face.selected { transition-duration: var(--dur-1); }
+
+  /* The preview arrives from the page it covers: a short fade plus a small
+     rise. @starting-style animates the element as it mounts, so no script is
+     involved. Closing is immediate, because the user already knows the surface
+     by then and a delayed exit would hold the page hostage. */
+  .mm-backdrop {
+    transition: opacity var(--dur-4) var(--ease-out), background-color var(--dur-4) var(--ease-out);
+  }
+  .mm-backdrop > * {
+    transition: opacity var(--dur-4) var(--ease-out), scale var(--dur-4) var(--ease-out),
+      translate var(--dur-4) var(--ease-out);
+  }
+  @starting-style {
+    .mm-backdrop { opacity: 0; }
+    .mm-backdrop > * { opacity: 0; scale: .97; translate: 0 10px; }
+  }
+
+  /* The merge confirmation mounts in place, so it reveals in place: it belongs
+     to the form above it, and sliding it in from off-screen would say it came
+     from somewhere it did not. */
+  .mm-confirm { animation: mm-reveal var(--dur-3) var(--ease-out) both; }
+
+  /* A saved or merged message appears after the write. It rises from the button
+     that caused it. */
+  .mm-saved { animation: mm-reveal var(--dur-3) var(--ease-out) both; }
+
+  /* Loading. Placeholders replace the old results while a search runs, and the
+     status line pulses so the wait has a heartbeat. The pulse is state, not
+     decoration, and it stops the moment the search resolves. */
+  [aria-busy="true"] .mm-status { animation: mm-pulse 1.2s var(--ease-out) infinite; }
+
+  @keyframes mm-reveal {
+    from { opacity: 0; translate: 0 -6px; }
+    to { opacity: 1; translate: 0 0; }
+  }
+
+  @keyframes mm-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .55; }
+  }
+}

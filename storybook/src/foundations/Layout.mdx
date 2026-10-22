@@ -1,0 +1,89 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundations/Space and shape" />
+
+# Space and shape
+
+| Token | Value | Use |
+|---|---|---|
+| `--space-1` | 4px | Tag spacing, timeline legend |
+| `--space-2` | 8px | Control padding, chip and button gaps |
+| `--space-3` | 10px | Input side padding, form row gap |
+| `--space-4` | 14px | Panel padding, grid gap |
+| `--space-5` | 20px | Page padding, top-bar gutter |
+| `--space-6` | 28px | Reserved for section breaks |
+
+| Token | Value | Use |
+|---|---|---|
+| `--radius-sm` | 4px | Tags, face boxes, key hints |
+| `--radius-chip` | 5px | Rank and score chips over thumbnails |
+| `--radius-md` | 7px | Inputs, buttons, parse steps, timeline |
+| `--radius-lg` | 10px | Panels, cards, stages |
+| `--radius-pill` | 999px | Toggle chips |
+
+<div style={{ display: "flex", gap: 14, alignItems: "flex-end", margin: "16px 0" }}>
+  {[4, 8, 10, 14, 20, 28].map((n) => (
+    <div key={n} style={{ textAlign: "center", font: "12px ui-monospace, monospace", color: "#8b94a7" }}>
+      <div style={{ width: n, height: n, background: "#6ea8fe", margin: "0 auto 6px" }} />{n}
+    </div>
+  ))}
+</div>
+
+## Layout
+
+- Pages use `AppShell`: the top bar, then a column at most `--page-max` (1240px) wide.
+- Detail pages split 2 : 1 (`.mm-split`). Below 760px every split stacks into one column.
+- Grids auto-fill from `--card-min` (212px for hits, 160px for people). Override the variable, not the grid.
+- No shadows and no gradients. Depth comes from `bg` → `panel` → `field`.
+- Motion is opt-in and explains state. Static is the default: every transition lives inside
+  `@media (prefers-reduced-motion: no-preference)`, so a reader who asks for less movement gets the
+  whole interface with no override. Nothing animates on its own except the loading pulse.
+- Cards are size containers (`container-type: inline-size`). Below 180px a card tightens its body and clamps
+  long text to three lines, whatever the page width.
+- Use logical properties (`margin-inline-start`, `inset-inline-end`, `text-align: start`) so the console mirrors
+  under `dir="rtl"`. Positions over media stay physical: frames and timelines do not mirror.
+- Below 400px the top bar shows only the brand mark; the name stays for screen readers.
+- A heading that can hold a file name (`.mm-page-head h1`, the preview `h2`) uses `overflow-wrap: anywhere`, so a
+  name with no break points never widens the page.
+
+## Motion
+
+| Token | Value | Use |
+|---|---|---|
+| `--dur-1` | 100ms | Press feedback (`scale: .97`) |
+| `--dur-2` | 150ms | The baseline: hover, focus, colour and border changes |
+| `--dur-3` | 200ms | A revealed message or confirmation |
+| `--dur-4` | 250ms | The preview dialog arriving |
+| `--ease-out` | `cubic-bezier(.2, 0, 0, 1)` | Everything entering or settling |
+
+- Only `background-color`, `border-color`, `color`, `opacity`, `scale` and `translate` transition. No
+  `all`, and no width, height or margin, which jank.
+- A press gives (`scale: .97`); a card lifts one pixel toward the pointer.
+- The preview dialog enters with `@starting-style` (fade plus a 10px rise) and leaves immediately. The
+  user already knows the surface by then, and a held exit keeps the page waiting.
+- The merge confirmation and the saved message reveal in place with `mm-reveal`, because both belong to
+  the form above them rather than arriving from off-screen.
+- While a search runs, the grid section carries `aria-busy`, placeholders replace the old results so nothing
+  stale reads as live, and the status line pulses.
+
+## Controls and touch
+
+| Token | Value | Use |
+|---|---|---|
+| `--control-min` | 38px | Button height with a fine pointer |
+| `--touch-min` | 44px | Every button, input, select, chip and top-bar link with a coarse pointer (`pointer: coarse`) |
+| `--track-h` | 28px | Timeline track; on touch it sits centred in a 44px band, and the whole band seeks |
+
+- Buttons come in four variants. `default` has the panel fill and a resting edge, so it never reads as a
+  text field (inputs use `field`). `primary` is the one submit action of a form. `ghost` is for dismissals.
+  `danger` is for an action other people will see and that needs a confirm step, such as merging two people.
+- A submit that cannot run yet stays focusable (`aria-disabled`, not `disabled`) and names its reason through
+  `aria-describedby`; pressing it shows the reason. While a search runs, placeholders replace the old results.
+- Every control sets `touch-action: manipulation`, so taps don't wait for double-tap zoom. The timeline takes
+  ←/→ (5s), Page Up/Down (30s) and Home/End.
+- A card's one link is stretched over the card, so on touch the card is the target, not the line of text.
+- The preview is a modal dialog. It takes focus when it opens, keeps Tab inside, closes on Esc, makes the
+  page behind it inert and stops it scrolling, and on close returns focus to the card of the hit last shown.
+- Face labels sit above their box. When that would cover another label or face, or leave the frame, the
+  label moves below the box or to its right edge. Placement is measured on the rendered stage and re-run
+  when it resizes, so a phone-width preview is handled too.
