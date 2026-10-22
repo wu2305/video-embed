@@ -1,37 +1,45 @@
 # mmindex console: conventions
 
-Dark, dense, monospace-accented UI for a media search console. No CSS-in-JS, no provider, no theme prop: components are styled by plain classes from `styles.css` plus CSS variables.
+A dense media-search console with monospace accents, in light and dark themes. Styling is plain classes from `styles.css` plus CSS variables. There is no CSS-in-JS, no provider and no theme prop.
 
 ## Setup
-- Link `styles.css` (it imports `_ds_bundle.css`, which holds the tokens, base element rules and every class below) and load `_ds_bundle.js` after React. Components live at `window.Mmindex.*`.
-- Wrap your page or screen in `<div className="mm-root">`. It sets the console ground (`var(--bg)`) and text colour. Without it the light text sits on the host page's default background and is unreadable.
-- Components take data as props only (no fetching). Callbacks (`onOpen`, `onSearch`, `onTag`, `onSave`, `onSeek`, `onPrev`, `onNext`, `onClose`) are optional.
+- Link `styles.css`, then load `_ds_bundle.js` after React. `styles.css` imports `_ds_bundle.css`, which holds the tokens, the base element rules and every class below. The components are at `window.Mmindex.*`.
+- Theme: every colour is `light-dark(<light>, <dark>)`, so a page follows the OS setting. To pin a subtree, put `data-theme="light"` or `data-theme="dark"` on any element. `body` already gets `var(--bg)` and `var(--text)`, so no wrapper class is needed.
+- Motion is opt-in. Transitions only run under `prefers-reduced-motion: no-preference`.
+- Components take data as props only; they do no fetching. Every callback is optional: `onSearch`, `onOpen`, `onSelect`, `onTag`, `onSave`, `onSeek`, `onPrev`, `onNext`, `onClose`, `onRetry`, `onNavigate`.
 
-## Tokens (CSS variables, use these, never hex)
-`--bg` page, `--panel` raised surface, `--line` borders, `--text`, `--muted` secondary text, `--accent` links/primary, `--good`, `--warn`, `--bad` status, `--mono` monospace stack.
+## Tokens (CSS variables: always use these, never hex)
+- Surfaces: `--bg` page, `--panel` raised surface, `--field` inputs, `--thumb` media well, `--line` borders.
+- Text and signal: `--text`, `--muted`, `--accent` (links and primary), `--accent-strong`, `--on-accent`, `--good`, `--warn`, `--bad`.
+- On photos and video: `--scrim`, `--on-scrim`, `--image-accent`, `--image-good`, `--image-warn`.
+- Type: `--font-sans`, `--mono`, and the sizes `--text-xs` / `--text-sm` / `--text-md` / `--text-lg` / `--text-xl`. `--measure` caps the width of prose.
+- Space and shape: `--space-1` to `--space-6`, `--radius-sm` / `--radius-md` / `--radius-lg` / `--radius-pill`, `--control-min`, `--touch-min`.
 
-## Classes for your own layout glue
-- Surfaces and text: `mm-panel` (bordered card), `mm-mono` (small muted monospace), `mm-label` (uppercase caption), `mm-text` (amber excerpt; `mm-text note` = blue user note).
-- Controls: `mm-primary` (filled accent button), `mm-ghost` (quiet button), `mm-field` (label stacked over an input), `mm-row` (wrapping flex row), `mm-chips` / `mm-chip` (toggle pills; set `aria-pressed`).
-- Badges: `mm-tag` plus `warn`, `accent`, `good` or `bad`.
-- Media: `mm-stage` (position:relative frame for an image or video with face boxes on top), `mm-grid` (auto-fill card grid).
-Raw `input`, `select`, `textarea` and `button` are already styled by the base rules. Do not invent new class names or colours.
+## Prefer components, then classes
+- Use `Button` (`variant` is `default`, `primary`, `ghost` or `danger`), `Tag` (`tone` is `neutral`, `good`, `accent`, `warn` or `bad`), `Chip` (`pressed`), `Panel` and `Field`. Don't hand-write their markup.
+- For your own layout glue:
+  - Surfaces and text: `mm-panel` (bordered card), `mm-mono` (small muted monospace), `mm-hint` (muted prose capped at `--measure`), `mm-label` (uppercase caption), `mm-text` (muted excerpt; `mm-text note` is an accent user note).
+  - Layout: `mm-row` (wrapping flex row), `mm-grid` (auto-fill card grid), `mm-stage` (a `position: relative` frame for an image or video with face boxes on top).
+  - Messages: `mm-notice`, plus `warn` or `bad`, for an inline message.
+  - Screen readers: `mm-sr-only` for text that only they should read.
+
+Raw `input`, `select`, `textarea` and `button` already get the base rules. Don't invent new class names or colours.
 
 ## Where to read
-`styles.css` and its `_ds_bundle.css` import are the source of truth for every class and variable. Per component: `components/<group>/<Name>/<Name>.prompt.md` and `<Name>.d.ts`. Data types (`Hit`, `Person`, `Face`, `Annotation`, `Scene`) are in the `.d.ts` files.
+`styles.css` and the `_ds_bundle.css` it imports are the source of truth for every class and variable. For each component, read `components/<group>/<Name>/<Name>.prompt.md` and `<Name>.d.ts`. The data types (`Hit`, `Result`, `ArchiveRecord`, `Person`, `Face`, `Annotation`, `Scene`, `SourceStatus`, `Viewer`) are in the `.d.ts` files.
 
 ## Build snippet
 ```jsx
-const { SearchBar, ResultGrid } = window.Mmindex;
-function Console({ people, hits }) {
+const { SearchBar, ResultGrid, Panel, Tag, Button } = window.Mmindex;
+function Console({ people, results }) {
   return (
-    <div className="mm-root" style={{ padding: 16, display: "grid", gap: 14 }}>
+    <div style={{ padding: 16, display: "grid", gap: 14 }}>
       <SearchBar people={people} onSearch={(p) => console.log(p.parsed)} />
-      <ResultGrid hits={hits} query="Ana is cooking" people={people} />
-      <div className="mm-panel mm-row">
-        <span className="mm-tag good">4 hits</span>
-        <button className="mm-ghost">Export</button>
-      </div>
+      <ResultGrid results={results} query="Ana is cooking" people={people} />
+      <Panel className="mm-row">
+        <Tag tone="good">{results.length} hits</Tag>
+        <Button variant="ghost">Export</Button>
+      </Panel>
     </div>
   );
 }
