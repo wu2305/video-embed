@@ -28,7 +28,18 @@ export const NamedPerson: Story = {
   },
 };
 
-export const TwoPeople: Story = { args: { initialQuery: "Ana and Ben are cooking" } };
+/** People are named in the query, several at once; there is no person-id picker. */
+export const TwoPeople: Story = {
+  args: { initialQuery: "Ana and Ben are cooking" },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.queryByLabelText("person")).toBeNull();
+    await userEvent.click(canvas.getByRole("button", { name: "search" }));
+    await expect(args.onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ parsed: expect.objectContaining({ person_ids: ["person-0003", "person-0007"], what: "cooking" }) }),
+    );
+  },
+};
 
 /** A capitalised name nobody owns blocks the search instead of silently falling back to text. */
 export const UnknownPerson: Story = {

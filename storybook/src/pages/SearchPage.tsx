@@ -41,7 +41,7 @@ export function SearchPage({
   people, corpus, archive = [], archiveDown = false, unavailable = {}, initialQuery, openId = null, loading = false, error = null,
   index: indexInfo, now, viewer, onNavigate, onOpenClip,
 }: SearchPageProps) {
-  const runSearch = (q: string, extra: { person?: string; min_faces?: number; limit?: number } = {}) =>
+  const runSearch = (q: string, extra: { min_faces?: number; limit?: number } = {}) =>
     searchGateway(corpus, archive, people, { query: q, ...extra }, archiveDown);
   const [query, setQuery] = useState(initialQuery ?? "");
   const [found, setFound] = useState<{ results: Result[]; sources: SourceStatus[] }>(() =>
@@ -55,7 +55,7 @@ export function SearchPage({
   const position = open === null ? -1 : previewable.findIndex((h) => h.unit_id === open);
   const hit = position >= 0 ? previewable[position]! : null;
 
-  function run(q: string, extra: { person?: string; min_faces?: number; limit?: number } = {}) {
+  function run(q: string, extra: { min_faces?: number; limit?: number } = {}) {
     setQuery(q);
     setFound(runSearch(q, extra));
     setOpen(null);
@@ -97,7 +97,7 @@ export function SearchPage({
       <AppShell current="search" title="Search" subtitle="One search over the NAS media library and the Archive System. Name a person and say what they are doing."
         index={indexInfo} now={now} viewer={viewer} onNavigate={onNavigate} inert={isOpen}>
         <SearchBar key={runKey} people={people} initialQuery={query} busy={loading}
-          onSearch={(p) => run(p.query, { person: p.person || undefined, min_faces: p.min_faces, limit: p.limit })} />
+          onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
   
         {!query && !loading && !error ? (
           <>
