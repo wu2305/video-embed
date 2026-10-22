@@ -56,6 +56,9 @@ export function PreviewPanel({
   scenes = [], duration = 0, playhead, onSeek, onPrev, onNext, onClose, actions, unavailable,
 }: PreviewPanelProps) {
   const video = useRef<HTMLVideoElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   const range: Scene | null = hit.scene_start != null && hit.scene_end != null ? { start: hit.scene_start, end: hit.scene_end } : null;
   const now = playhead ?? range?.start ?? 0;
   const activeNote = annotations.find((a) => now >= a.t_start && (a.t_end === null || now <= a.t_end));
@@ -68,6 +71,50 @@ export function PreviewPanel({
   function loop() {
     if (video.current && range && video.current.currentTime >= range.end) video.current.currentTime = range.start;
   }
+
+  // Focus management: move focus into the dialog on mount, trap Tab inside,
+  // and close on Escape wherever focus sits.
+  useEffect(() => {
+    const node = dialog.current;
+    if (!node) return;
+    const root: HTMLDivElement = node;
+    root.focus({ preventScroll: true });
+
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        closeRef.current?.();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusables = Array.from(
+        root.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), video[controls], audio[controls]',
+        ),
+      );
+      if (focusables.length === 0) {
+        event.preventDefault();
+        root.focus();
+        return;
+      }
+      const first = focusables[0]!;
+      const last = focusables[focusables.length - 1]!;
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || active === root)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("keydown", onKey, true);
+    };
+  }, []);
 
   function keys(event: React.KeyboardEvent) {
     if ((event.target as HTMLElement).closest("input, textarea, [role=slider]")) return;
@@ -82,7 +129,7 @@ export function PreviewPanel({
   const text = (hit.ocr_text || hit.asr_text).trim();
 
   return (
-    <div className="mm-preview" role="dialog" aria-label={`Preview ${name}`} tabIndex={-1} onKeyDown={keys}>
+    <div ref={dialog} className="mm-preview" role="dialog" aria-modal="true" aria-label={`Preview ${name}`} tabIndex={-1} onKeyDown={keys}>
       <div>
         <div className="mm-stage">
           {unavailable ? (

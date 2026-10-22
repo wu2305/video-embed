@@ -38,6 +38,28 @@ export const PreviewOpen: Story = {
   },
 };
 
+/** Keyboard: Enter on a card opens, focus moves inside, Tab stays inside, Esc closes and focus returns. */
+export const PreviewKeyboard: Story = {
+  args: { initialQuery: "Ana is cooking" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const opener = canvas.getByRole("button", { name: "cooking_class_03.mp4" });
+    opener.focus();
+    await userEvent.keyboard("{Enter}");
+    const dialog = await canvas.findByRole("dialog");
+    await expect(dialog).toHaveAttribute("aria-modal", "true");
+    await expect(dialog.contains(document.activeElement)).toBe(true);
+    await expect(document.body.style.overflow).toBe("hidden");
+    await userEvent.tab();
+    await expect(dialog.contains(document.activeElement)).toBe(true);
+    await userEvent.tab({ shift: true });
+    await expect(dialog.contains(document.activeElement)).toBe(true);
+    await userEvent.keyboard("{Escape}");
+    await expect(canvas.queryByRole("dialog")).not.toBeInTheDocument();
+    await expect(document.activeElement).toBe(opener);
+  },
+};
+
 /** Video, photo, audio and documents in one list; things without a frame show a glyph. */
 export const MixedMedia: Story = { args: { initialQuery: "cooking", archive: [] } };
 

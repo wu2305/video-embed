@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isArchive, type ArchiveRecord, type Hit, type IndexInfo, type Person, type Result, type SourceStatus, type Unavailable, type Viewer } from "../types";
 import { Button } from "../components/atoms/Button";
 import { Panel } from "../components/atoms/Panel";
@@ -49,6 +49,7 @@ export function SearchPage({
   const [open, setOpen] = useState<number | null>(openId);
   const [playhead, setPlayhead] = useState<number | undefined>(undefined);
   const [runKey, setRunKey] = useState(0);
+  const opener = useRef<HTMLElement | null>(null);
 
   // Only NAS hits preview; Archive records open in the Archive System.
   const previewable = found.results.filter((r): r is Hit => !isArchive(r));
@@ -61,16 +62,47 @@ export function SearchPage({
     setOpen(null);
   }
 
+  function openHit(h: Hit) {
+    if (document.activeElement instanceof HTMLElement) opener.current = document.activeElement;
+    setOpen(h.unit_id);
+    setPlayhead(undefined);
+  }
+
+  function closeHit() {
+    setOpen(null);
+  }
+
   function step(delta: number) {
     const next = previewable[Math.min(previewable.length - 1, Math.max(0, position + delta))];
     if (next) { setOpen(next.unit_id); setPlayhead(undefined); }
   }
 
   const gone = hit ? unavailable[hit.unit_id] : undefined;
+  const dialogOpen = hit !== null;
+
+  // Lock body scroll while the preview is open.
+  useEffect(() => {
+    if (!dialogOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [dialogOpen]);
+
+  // Return focus to the card that opened the preview.
+  useEffect(() => {
+    if (dialogOpen) return;
+    const target = opener.current;
+    opener.current = null;
+    if (target && document.contains(target)) target.focus();
+  }, [dialogOpen]);
 
   return (
-    <AppShell current="search" title="Search" subtitle="One search over the NAS media library and the Archive System. Name a person and say what they are doing."
-      index={indexInfo} now={now} viewer={viewer} onNavigate={onNavigate}>
+    <>
+      <div inert={dialogOpen ? true : undefined}>
+        <AppShell current="search" title="Search" subtitle="One search over the NAS media library and the Archive System. Name a person and say what they are doing."
+          index={indexInfo} now={now} viewer={viewer} onNavigate={onNavigate}>
       <SearchBar key={runKey} people={people} initialQuery={query} busy={loading}
         onSearch={(p) => run(p.query, { person: p.person || undefined, min_faces: p.min_faces, limit: p.limit })} />
 
@@ -100,23 +132,25 @@ export function SearchPage({
         <>
           {indexInfo?.stale && <Freshness index={indexInfo} now={now} long />}
           <ResultGrid results={found.results} sources={found.sources} query={query} people={people} loading={loading} error={error}
-            selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }} />
+            selectedId={open} onOpen={openHit} />
         </>
       )}
+        </AppShell>
+      </div>
 
       {hit && (
-        <div className="mm-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setOpen(null); }}>
+        <div className="mm-backdrop" onClick={(e) => { if (e.target === e.currentTarget) closeHit(); }}>
           <PreviewPanel
             hit={hit} position={position + 1} total={previewable.length}
             frameSrc={hit.thumb_url ?? kitchenFrame}
             faces={hitFaces(hit)} unavailable={gone}
             people={people} annotations={hit.kind === "video" ? annotations : []} scenes={scenes} duration={duration}
             playhead={playhead} onSeek={setPlayhead}
-            onPrev={() => step(-1)} onNext={() => step(1)} onClose={() => setOpen(null)}
+            onPrev={() => step(-1)} onNext={() => step(1)} onClose={closeHit}
             actions={onOpenClip && hit.kind !== "document" ? <Button variant="primary" onClick={() => onOpenClip(hit)}>Open clip</Button> : undefined}
           />
         </div>
       )}
-    </AppShell>
+    </>
   );
 }

@@ -204,6 +204,12 @@ button:disabled { opacity: .5; cursor: default; }
 /* dialog layer */
 .mm-backdrop { position: fixed; inset: 0; background: var(--backdrop); display: grid; place-items: center; padding: var(--space-5); z-index: 10; }
 .mm-backdrop > * { width: min(100%, 980px); max-height: 100%; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); }
+/* The card's file path: visible without hover so copies tell apart. */
+.mm-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Lock page scroll while the preview dialog is open (JS also sets body overflow). */
+body:has(.mm-backdrop) { overflow: hidden; }
+.mm-preview:focus { outline: none; }
+.mm-preview:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (max-width: 760px) {
   .mm-tagger, .mm-preview, .mm-split { grid-template-columns: 1fr; }
