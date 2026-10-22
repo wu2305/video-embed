@@ -38,18 +38,22 @@
   /* type */
   --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --text-xs: 11px; --text-sm: 12px; --text-md: 14px; --text-lg: 16px; --text-xl: 22px;
+  /* A committed scale in rem, so the reader's text-size setting scales the
+     console: 12 / 14 / 17 / 22 / 30 px at the default 16px root. Each step is
+     at least 1.17x the last. --text-overlay is for scrims on media only. */
+  --text-overlay: .6875rem;
+  --text-xs: .75rem; --text-sm: .875rem; --text-md: 1.0625rem; --text-lg: 1.375rem; --text-xl: 1.875rem;
 
   /* space and shape */
   --space-1: 4px; --space-2: 8px; --space-3: 10px; --space-4: 14px; --space-5: 20px; --space-6: 28px;
   --radius-sm: 4px; --radius-chip: 5px; --radius-md: 7px; --radius-lg: 10px; --radius-pill: 999px;
-  --control-min: 38px; --card-min: 212px; --page-max: 1240px;
+  --control-min: 38px; --touch-min: 44px; --track-h: 28px; --card-min: 212px; --page-max: 1240px;
 }
 
 * { box-sizing: border-box; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
-  font: var(--text-md)/1.5 var(--font-sans);
+  font: var(--text-sm)/1.5 var(--font-sans);
 }
 input, select, textarea, button {
   font: inherit; color: var(--text); background: var(--field);
@@ -62,12 +66,16 @@ button { cursor: pointer; }
 button:disabled { opacity: .5; cursor: default; }
 
 /* atoms */
+.mm-button { background: var(--panel); border-color: var(--line); font-weight: 500; min-height: var(--control-min); }
+.mm-button:hover:not(:disabled) { border-color: var(--muted); }
 .mm-primary { background: var(--accent); color: var(--on-accent); border-color: transparent; font-weight: 600; padding: var(--space-2) 18px; min-height: var(--control-min); }
 .mm-ghost { background: transparent; color: var(--muted); }
+.mm-danger { background: var(--panel); color: var(--bad); border-color: var(--bad); font-weight: 600; min-height: var(--control-min); }
+.mm-confirm { display: grid; gap: var(--space-3); border: 1px solid var(--bad); border-radius: var(--radius-md); background: var(--field); padding: var(--space-3); }
 .mm-field { display: flex; flex-direction: column; gap: 5px; }
 .mm-field > label, .mm-label { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
 .mm-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); }
-.mm-panel > h2, .mm-panel > h3 { margin: 0 0 var(--space-3); font-size: var(--text-md); }
+.mm-panel > h2, .mm-panel > h3 { margin: 0 0 var(--space-3); font-size: var(--text-md); line-height: 1.3; }
 .mm-mono { font: var(--text-xs)/1.45 var(--mono); color: var(--muted); }
 .mm-tag {
   display: inline-block; border: 1px solid var(--line); border-radius: var(--radius-sm);
@@ -90,7 +98,7 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-search .mm-grow { flex: 1; min-width: 260px; }
 .mm-search input[type=text] { width: 100%; }
 .mm-parse { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-top: var(--space-3); min-height: 28px; }
-.mm-parse .mm-step { background: var(--field); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-1) 9px; font: var(--text-sm)/1.4 var(--mono); color: var(--muted); }
+.mm-parse .mm-step { background: var(--field); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-1) 9px; font: var(--text-xs)/1.4 var(--mono); color: var(--muted); }
 .mm-parse .mm-step b { color: var(--text); font-weight: 600; }
 .mm-parse .mm-step.accent b { color: var(--accent); }
 .mm-parse .mm-step.bad b { color: var(--bad); }
@@ -111,7 +119,7 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .mm-glyph { font-size: 38px; color: var(--muted); }
 .mm-rank, .mm-score, .mm-source {
-  position: absolute; font: var(--text-xs)/1 var(--mono); background: var(--scrim);
+  position: absolute; font: var(--text-overlay)/1 var(--mono); background: var(--scrim);
   border-radius: var(--radius-chip); padding: var(--space-1) 6px; color: var(--on-scrim);
 }
 .mm-rank { top: var(--space-2); left: var(--space-2); }
@@ -119,17 +127,21 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-source { top: var(--space-2); right: var(--space-2); color: var(--image-warn); }
 .mm-body { padding: var(--space-3) 12px 12px; display: grid; gap: 6px; }
 .mm-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mm-text { font-size: var(--text-sm); color: var(--muted); }
+.mm-text { font-size: var(--text-xs); color: var(--muted); }
+.mm-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mm-text.note { color: var(--accent); }
-.mm-status { font: var(--text-sm)/1.4 var(--mono); color: var(--muted); margin: 0 0 var(--space-3); min-height: 17px; }
+.mm-status { font: var(--text-xs)/1.4 var(--mono); color: var(--muted); margin: 0 0 var(--space-3); min-height: 17px; }
 .mm-status.error { color: var(--bad); }
 .mm-empty { color: var(--muted); padding: var(--space-4) 0; }
-.mm-notice { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--field); padding: var(--space-2) var(--space-3); margin: 0 0 var(--space-3); font-size: var(--text-sm); }
+.mm-notice { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--field); padding: var(--space-2) var(--space-3); margin: 0 0 var(--space-3); font-size: var(--text-xs); }
 .mm-notice.warn { border-color: var(--warn); }
+.mm-archive .mm-body { padding-top: 12px; }
 .mm-archive .mm-name { white-space: normal; }
+.mm-archive-head { display: flex; gap: var(--space-2); align-items: baseline; }
+.mm-archive-head .mm-source-name { color: var(--warn); }
 .mm-unavailable { aspect-ratio: 4 / 3; display: grid; place-content: center; gap: var(--space-2); padding: var(--space-5); text-align: center; color: var(--muted); }
 .mm-unavailable strong { color: var(--text); }
-.mm-viewer { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); }
+.mm-viewer { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-xs); }
 .mm-avatar { width: 24px; height: 24px; border-radius: var(--radius-pill); background: var(--field); border: 1px solid var(--line); display: grid; place-items: center; font: var(--text-xs)/1 var(--mono); color: var(--text); }
 .mm-sources { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); }
 .mm-sources li { display: grid; grid-template-columns: 10rem 1fr; gap: var(--space-3); }
@@ -138,24 +150,28 @@ button:disabled { opacity: .5; cursor: default; }
 /* stage and face boxes (scene 1) */
 .mm-stage { position: relative; background: var(--thumb); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
 .mm-stage img, .mm-stage video { display: block; width: 100%; height: auto; }
-.mm-face { position: absolute; padding: 0; background: transparent; border: 2px solid var(--image-accent); border-radius: var(--radius-sm); }
+.mm-faces { position: absolute; inset: 0; pointer-events: none; }
+.mm-face { position: absolute; pointer-events: auto; padding: 0; background: transparent; border: 2px solid var(--image-accent); border-radius: var(--radius-sm); }
 .mm-face.untagged { border-style: dashed; border-color: var(--image-warn); }
 .mm-face.selected { border-color: var(--image-good); box-shadow: 0 0 0 2px var(--image-ring); }
 .mm-face.static { pointer-events: none; }
 .mm-face.label-below .mm-face-label { bottom: auto; top: 100%; margin: 2px 0 0; }
-.mm-face-label { position: absolute; left: -2px; bottom: 100%; margin-bottom: 2px; background: var(--scrim); color: var(--on-scrim); font: var(--text-xs)/1 var(--mono); padding: 3px 5px; border-radius: var(--radius-sm); white-space: nowrap; }
-.mm-overlay-note { position: absolute; left: 12px; right: 12px; bottom: 12px; background: var(--scrim-strong); color: var(--on-scrim); padding: 6px var(--space-3); border-radius: var(--radius-md); font-size: 13px; }
+.mm-face.label-end .mm-face-label { left: auto; right: -2px; }
+.mm-face-label { position: absolute; left: -2px; bottom: 100%; margin-bottom: 2px; background: var(--scrim); color: var(--on-scrim); font: var(--text-overlay)/1 var(--mono); padding: 3px 5px; border-radius: var(--radius-sm); white-space: nowrap; }
+.mm-overlay-note { position: absolute; left: 12px; right: 12px; bottom: 12px; background: var(--scrim-strong); color: var(--on-scrim); padding: 6px var(--space-3); border-radius: var(--radius-md); font-size: var(--text-sm); }
 
 /* scene layouts */
 .mm-tagger { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(240px, 1fr); gap: var(--space-4); align-items: start; }
 .mm-note-form { display: grid; gap: 12px; }
 .mm-preview { display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); gap: 16px; align-items: start; }
 .mm-preview aside { display: grid; gap: var(--space-3); }
-.mm-preview h2 { margin: 0; font-size: var(--text-lg); overflow-wrap: anywhere; }
+.mm-preview h2 { margin: 0; font-size: var(--text-lg); line-height: 1.25; overflow-wrap: anywhere; }
 .mm-nav { display: flex; gap: var(--space-3); align-items: center; justify-content: space-between; }
 
-/* timeline (scene 2) */
-.mm-track { position: relative; height: 28px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); cursor: pointer; overflow: hidden; }
+/* timeline (scene 2). .mm-scrub is the slider; on touch it is a 44px band
+   with the 28px track centred inside it. */
+.mm-scrub { cursor: pointer; border-radius: var(--radius-md); }
+.mm-track { position: relative; height: var(--track-h); background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); cursor: pointer; overflow: hidden; }
 .mm-track .scene { position: absolute; top: 0; bottom: 0; border-right: 1px solid var(--line); }
 .mm-track .matched { position: absolute; top: 0; bottom: 0; background: var(--good-wash); }
 .mm-track .note { position: absolute; bottom: 3px; height: 6px; background: var(--warn); border-radius: 3px; min-width: var(--space-1); }
@@ -171,16 +187,16 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-note[aria-current=true] { border-color: var(--accent); }
 .mm-note .mm-note-text { grid-column: 2; }
 .mm-note .mm-note-meta { grid-column: 2; }
-.mm-meta { display: grid; grid-template-columns: max-content 1fr; gap: 6px var(--space-4); margin: 0; font-size: var(--text-sm); }
+.mm-meta { display: grid; grid-template-columns: max-content 1fr; gap: 6px var(--space-4); margin: 0; font-size: var(--text-xs); }
 .mm-meta dt { color: var(--muted); }
 .mm-meta dd { margin: 0; overflow-wrap: anywhere; }
 
 /* organisms: top bar */
 .mm-topbar { display: flex; align-items: center; gap: var(--space-5); padding: 0 var(--space-5); height: 52px; border-bottom: 1px solid var(--line); background: var(--panel); }
 .mm-brand { font-weight: 700; letter-spacing: -.2px; display: flex; align-items: center; gap: var(--space-2); }
-.mm-brand-mark { width: 14px; height: 14px; border-radius: var(--radius-sm); background: var(--accent); }
+.mm-brand-mark { display: block; width: 18px; height: 18px; color: var(--accent); }
 .mm-links { display: flex; gap: var(--space-1); }
-.mm-links a { color: var(--muted); text-decoration: none; padding: 6px var(--space-3); border-radius: var(--radius-md); }
+.mm-links a { display: inline-flex; align-items: center; color: var(--muted); text-decoration: none; padding: 6px var(--space-3); border-radius: var(--radius-md); }
 .mm-links a:hover { color: var(--text); }
 .mm-links a[aria-current=page] { color: var(--text); background: var(--field); }
 .mm-links a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -196,7 +212,7 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-page-head p { margin: var(--space-1) 0 0; color: var(--muted); }
 .mm-split { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: var(--space-4); align-items: start; }
 .mm-split > aside { display: grid; gap: var(--space-4); }
-.mm-crumbs { font: var(--text-sm)/1.4 var(--mono); color: var(--muted); }
+.mm-crumbs { font: var(--text-xs)/1.4 var(--mono); color: var(--muted); }
 .mm-crumbs a, .mm-mono a { color: var(--accent); text-decoration: none; }
 .mm-toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
 .mm-toolbar .mm-mono { margin-left: auto; }
@@ -213,4 +229,18 @@ button:disabled { opacity: .5; cursor: default; }
   .mm-sources li { grid-template-columns: 1fr; gap: 0; }
   .mm-page { padding: var(--space-4); }
   .mm-grid { --card-min: 150px; }
+}
+
+/* iOS zooms the page when a focused control is under 16px. */
+@media (max-width: 640px) {
+  input, select, textarea { font-size: max(1rem, 16px); }
+}
+
+/* Touch: every control is at least 44px tall, and so is the timeline band. */
+@media (pointer: coarse) {
+  button, input, select, .mm-links a, .mm-button, .mm-primary, .mm-ghost, .mm-danger { min-height: var(--touch-min); }
+  .mm-chip { min-height: var(--touch-min); padding-inline: var(--space-4); }
+  .mm-scrub { padding: calc((var(--touch-min) - var(--track-h)) / 2) 0; }
+  /* A card link is stretched over its card, so the card is the target; a face box keeps its drawn size. */
+  .mm-card-link, .mm-face { min-height: 0; }
 }

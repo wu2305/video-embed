@@ -9,7 +9,7 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: {
     people, samples: personSamples, corpus: [...hits, audioHit],
-    index: indexInfo, now, viewer, onNavigate: fn(), onName: fn(),
+    index: indexInfo, now, viewer, onNavigate: fn(), onName: fn(), onMerge: fn(), onUndoMerge: fn(),
   },
 } satisfies Meta<typeof PeoplePage>;
 
@@ -35,13 +35,50 @@ export const NameACluster: Story = {
 /** A named person, with where they appear. */
 export const NamedPerson: Story = { args: { selectedId: "person-0003" } };
 
-/** Reusing a name warns that two clusters will merge. */
+/** Reusing a name is a merge: the action says so and is styled as one. */
 export const MergeWarning: Story = {
   args: { selectedId: "person-0019" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.type(canvas.getByLabelText("name"), "Ana Ruiz");
-    await expect(canvas.getByRole("note")).toHaveTextContent("already names another cluster");
+    await expect(canvas.getByRole("note")).toHaveTextContent("already names person-0003");
+    await expect(canvas.getByRole("button", { name: "Merge into Ana Ruiz" })).toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: "Apply name" })).toBeNull();
+  },
+};
+
+/** A merge needs a confirm step naming both clusters and the combined count, and can be undone. */
+export const ConfirmAndUndoMerge: Story = {
+  args: { selectedId: "person-0019" },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.type(canvas.getByLabelText("name"), "Ana Ruiz");
+    await userEvent.click(canvas.getByRole("button", { name: "Merge into Ana Ruiz" }));
+    await expect(args.onMerge).not.toHaveBeenCalled();
+    await expect(canvas.getByRole("alert")).toHaveTextContent("Merge person-0019 (17 faces) into person-0003, Ana Ruiz (212 faces)?");
+    await expect(canvas.getByRole("alert")).toHaveTextContent("229 appearances");
+    await userEvent.click(canvas.getByRole("button", { name: "Confirm merge" }));
+    await expect(args.onMerge).toHaveBeenCalledWith("person-0019", "person-0003");
+    await expect(args.onName).not.toHaveBeenCalled();
+    await expect(canvas.getByRole("status")).toHaveTextContent("Merged person-0019 into Ana Ruiz: 229 appearances.");
+    await expect(canvas.queryByRole("button", { name: "person-0019" })).toBeNull();
+    await userEvent.click(canvas.getByRole("button", { name: "Undo merge" }));
+    await expect(args.onUndoMerge).toHaveBeenCalledWith("person-0019", "person-0003");
+    await expect(canvas.getByRole("status")).toHaveTextContent("person-0019 is its own person again.");
+    await expect(canvas.getByRole("button", { name: "person-0019" })).toBeInTheDocument();
+  },
+};
+
+/** Cancelling the confirm step changes nothing. */
+export const CancelMerge: Story = {
+  args: { selectedId: "person-0019" },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.type(canvas.getByLabelText("name"), "Ana Ruiz");
+    await userEvent.click(canvas.getByRole("button", { name: "Merge into Ana Ruiz" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Cancel" }));
+    await expect(canvas.queryByRole("alert")).toBeNull();
+    await expect(args.onMerge).not.toHaveBeenCalled();
   },
 };
 

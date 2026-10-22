@@ -19,7 +19,7 @@ export function PersonCard({ person, sampleSrc, selected = false, onOpen }: Pers
         <span className="mm-score" aria-label={`${person.faces} appearances`}>{person.faces}</span>
       </div>
       <div className="mm-body">
-        <button type="button" className="mm-name mm-card-link" title={label} aria-pressed={selected} onClick={() => onOpen?.(person)}>{label}</button>
+        <button type="button" className="mm-name mm-card-link" title={label} onClick={() => onOpen?.(person)}>{label}</button>
         <div className="mm-mono">
           {person.name ? <Tag tone="accent">named</Tag> : <Tag tone="warn">unnamed</Tag>}
           {person.name && <Tag>{person.id}</Tag>}

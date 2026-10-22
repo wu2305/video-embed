@@ -33,7 +33,14 @@ export interface PreviewPanelProps {
    * last night's update. The preview fails closed and shows no frame.
    */
   unavailable?: Unavailable;
+  /**
+   * Shown over the page as a modal dialog: takes focus when it opens and keeps
+   * Tab inside itself. The caller makes the page behind it inert.
+   */
+  modal?: boolean;
 }
+
+const FOCUSABLE = "a[href], button:not(:disabled), input, select, textarea, video[controls], [tabindex]:not([tabindex='-1'])";
 
 const UNAVAILABLE: Record<Unavailable, { title: string; body: string }> = {
   forbidden: {
@@ -53,9 +60,10 @@ const UNAVAILABLE: Record<Unavailable, { title: string; body: string }> = {
  */
 export function PreviewPanel({
   hit, position, total, frameSrc, videoSrc, faces = [], people = [], annotations = [],
-  scenes = [], duration = 0, playhead, onSeek, onPrev, onNext, onClose, actions, unavailable,
+  scenes = [], duration = 0, playhead, onSeek, onPrev, onNext, onClose, actions, unavailable, modal = false,
 }: PreviewPanelProps) {
   const video = useRef<HTMLVideoElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
   const range: Scene | null = hit.scene_start != null && hit.scene_end != null ? { start: hit.scene_start, end: hit.scene_end } : null;
   const now = playhead ?? range?.start ?? 0;
   const activeNote = annotations.find((a) => now >= a.t_start && (a.t_end === null || now <= a.t_end));
@@ -65,24 +73,47 @@ export function PreviewPanel({
     if (video.current && range) video.current.currentTime = range.start;
   }, [hit.unit_id, range?.start]);
 
+  // A modal takes focus when it opens, so Escape and the arrow keys work at once.
+  useEffect(() => {
+    if (modal) dialog.current?.focus({ preventScroll: true });
+  }, [modal]);
+
   function loop() {
     if (video.current && range && video.current.currentTime >= range.end) video.current.currentTime = range.start;
   }
 
   function keys(event: React.KeyboardEvent) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onClose?.();
+      return;
+    }
+    if (event.key === "Tab" && modal) {
+      trap(event);
+      return;
+    }
     if ((event.target as HTMLElement).closest("input, textarea, [role=slider]")) return;
     if (event.key === "ArrowLeft") onPrev?.();
     else if (event.key === "ArrowRight") onNext?.();
-    else if (event.key === "Escape") onClose?.();
     else return;
     event.preventDefault();
+  }
+
+  // Tab from the last control wraps to the first, and Shift+Tab the other way.
+  function trap(event: React.KeyboardEvent) {
+    const items = [...(dialog.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])];
+    const first = items[0], last = items[items.length - 1];
+    if (!first || !last) { event.preventDefault(); return; }
+    const active = document.activeElement;
+    if (event.shiftKey && (active === first || active === dialog.current)) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && active === last) { event.preventDefault(); first.focus(); }
   }
 
   const name = hit.path.split("/").pop() ?? hit.path;
   const text = (hit.ocr_text || hit.asr_text).trim();
 
   return (
-    <div className="mm-preview" role="dialog" aria-label={`Preview ${name}`} tabIndex={-1} onKeyDown={keys}>
+    <div ref={dialog} className="mm-preview" role="dialog" aria-modal={modal || undefined} aria-label={`Preview ${name}`} tabIndex={-1} onKeyDown={keys}>
       <div>
         <div className="mm-stage">
           {unavailable ? (

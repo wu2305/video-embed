@@ -13,7 +13,7 @@ export interface AnnotationTrackProps {
 
 const pct = (value: number, total: number) => `${(Math.min(Math.max(value, 0), total) / total) * 100}%`;
 
-/** Timeline of scene cuts, notes and the matched range. Clicking seeks. */
+/** Timeline of scene cuts, notes and the matched range. Clicking seeks. On touch the hit band is 44px tall around the 28px track. */
 export function AnnotationTrack({ duration, scenes, annotations = [], playhead = 0, matched = null, onSeek }: AnnotationTrackProps) {
   function seek(event: React.MouseEvent<HTMLDivElement>) {
     const box = event.currentTarget.getBoundingClientRect();
@@ -23,7 +23,7 @@ export function AnnotationTrack({ duration, scenes, annotations = [], playhead =
   return (
     <div>
       <div
-        className="mm-track"
+        className="mm-scrub"
         role="slider"
         tabIndex={0}
         aria-label="Timeline"
@@ -37,14 +37,16 @@ export function AnnotationTrack({ duration, scenes, annotations = [], playhead =
           if (e.key === "ArrowLeft") onSeek?.(Math.max(0, playhead - 5));
         }}
       >
-        {scenes.map((s) => (
-          <div key={s.start} className="scene" style={{ left: pct(s.start, duration), width: pct(s.end - s.start, duration) }} />
-        ))}
-        {matched && <div className="matched" style={{ left: pct(matched.start, duration), width: pct(matched.end - matched.start, duration) }} />}
-        {annotations.map((a) => (
-          <div key={a.id} className="note" title={a.text} style={{ left: pct(a.t_start, duration), width: pct((a.t_end ?? a.t_start + 2) - a.t_start, duration) }} />
-        ))}
-        <div className="playhead" style={{ left: pct(playhead, duration) }} />
+        <div className="mm-track">
+          {scenes.map((s) => (
+            <div key={s.start} className="scene" style={{ left: pct(s.start, duration), width: pct(s.end - s.start, duration) }} />
+          ))}
+          {matched && <div className="matched" style={{ left: pct(matched.start, duration), width: pct(matched.end - matched.start, duration) }} />}
+          {annotations.map((a) => (
+            <div key={a.id} className="note" title={a.text} style={{ left: pct(a.t_start, duration), width: pct((a.t_end ?? a.t_start + 2) - a.t_start, duration) }} />
+          ))}
+          <div className="playhead" style={{ left: pct(playhead, duration) }} />
+        </div>
       </div>
       <div className="mm-track-legend mm-mono">
         <span>{formatTime(0)}</span>

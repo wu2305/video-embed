@@ -87,7 +87,11 @@ Facts about the current code that shape every scene:
   `face_overrides` for single-face corrections.
 - A write route, `POST /api/tag`, with `{unit_id, face_index, name, scope}`.
 - Merge or split handling: tagging two clusters with the same name merges them;
-  untagging one face moves it out.
+  untagging one face moves it out. A merge is its own action in the console,
+  never a side effect of *Apply name*: the button reads *Merge into Ana Ruiz*,
+  a confirm step names both cluster ids and the combined appearance count, and
+  the saved line offers *Undo merge*. The write route needs a matching undo
+  (`DELETE` of the merge, or a merge log), because names are shared.
 
 **Edge cases**: a name shared by two people (use a stable `person_key` as well as
 the display name); a face in cluster `-1` (noise) that Mei tags, which becomes a
@@ -242,6 +246,9 @@ as in scene 6; a service account alone gets nothing back.
 3. Prev/next steps through hits without closing the preview.
 4. *Open in folder* and *copy path* are shown, and nothing else that touches
    files.
+5. The preview is a modal dialog: it takes focus on open, keeps Tab inside,
+   closes on Esc, makes the page behind it inert and unscrollable, and returns
+   focus to the card on close.
 
 **Today**: *partial.* The console plays `/api/source` with HTTP range support and
 shows a thumbnail grid. The grid card renders `<video muted preload="metadata">`

@@ -46,9 +46,10 @@ so they keep these values in both themes.
 
 - `text` on `bg`, `panel` and `field`. `muted` for labels, metadata and ghost buttons. Every text colour
   is at least 4.5:1 on all three surfaces in both themes; `npm test` checks every story in each.
-- `accent` is the single interactive colour: the primary button, the focus ring, a selected card, a named person.
+- `accent` is the single interactive colour: the primary button, the focus ring, a selected card, a named person,
+  and the brand mark (a keyframe with a face box).
 - `good` means *matched* (scene range, score, saved). `warn` means *look twice* (copy, merge, unnamed).
-  `bad` means *blocked* (error, no such person).
+  `bad` means *blocked* (error, no such person), and outlines a `danger` button such as *Merge into Ana Ruiz*.
 - Every signal colour sits next to a word or number. Green and red are close in lightness in both themes,
   so hue alone never carries meaning.
 - `line` is a separator (about 1.3:1). Selection and focus always add `accent` on top of it.
