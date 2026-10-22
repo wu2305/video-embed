@@ -151,7 +151,7 @@ export function PeoplePage({
                     <div><Button variant="primary" type="submit" disabled={!draft.trim() || draft.trim() === person.name}>{person.name ? "Rename" : "Apply name"}</Button></div>
                   )}
                   {saved && (
-                    <p className="mm-hint" role="status" style={{ margin: 0 }}>
+                    <p className="mm-hint mm-saved" role="status" style={{ margin: 0 }}>
                       <Tag tone={saved.tone}>{saved.label}</Tag>{saved.text}
                       {saved.undo && <> <Button onClick={() => undoMerge(saved.undo!)}>Undo merge</Button></>}
                     </p>

@@ -53,6 +53,13 @@
   --space-1: 4px; --space-2: 8px; --space-3: 10px; --space-4: 14px; --space-5: 20px; --space-6: 28px;
   --radius-sm: 4px; --radius-chip: 5px; --radius-md: 7px; --radius-lg: 10px; --radius-pill: 999px;
   --control-min: 38px; --touch-min: 44px; --track-h: 28px; --card-min: 212px; --page-max: 1240px;
+
+  /* motion. Static is the default; the transitions live in the
+     prefers-reduced-motion: no-preference block at the end of this file, so
+     turning motion off needs no override. --dur-2 is the baseline: faster
+     reads twitchy, slower reads laggy. */
+  --dur-1: 100ms; --dur-2: 150ms; --dur-3: 200ms; --dur-4: 250ms;
+  --ease-out: cubic-bezier(.2, 0, 0, 1); --ease-in: cubic-bezier(.4, 0, 1, 1);
 }
 
 * { box-sizing: border-box; }
@@ -303,4 +310,71 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
   .mm-scrub { padding: calc((var(--touch-min) - var(--track-h)) / 2) 0; }
   /* A card link is stretched over its card, so the card is the target; a face box keeps its drawn size. */
   .mm-card-link, .mm-face { min-height: 0; }
+}
+
+/* Motion is opt-in: the rules above are the whole interface when the reader
+   asks for less movement. Everything here explains a state change, a press, or
+   where a surface came from. Nothing runs on its own except the loading pulse,
+   which is the system saying it is still working. */
+@media (prefers-reduced-motion: no-preference) {
+  /* Tactile. Every control answers a pointer within one frame of intent. */
+  button, input, select, textarea, .mm-links a, .mm-card, .mm-note,
+  .mm-tag, .mm-scrub, .mm-track .matched, .mm-face {
+    transition-property: background-color, border-color, color, opacity, scale, translate;
+    transition-duration: var(--dur-2);
+    transition-timing-function: var(--ease-out);
+  }
+
+  /* Press reads as physical: the control gives slightly, then returns. */
+  button:active:not(:disabled), .mm-links a:active {
+    scale: .97;
+    transition-duration: var(--dur-1);
+  }
+
+  /* A card lifts toward the pointer by a single pixel. It never jumps. */
+  .mm-card:hover, .mm-note:hover { translate: 0 -1px; }
+  .mm-card:active, .mm-note:active { translate: 0 0; scale: .995; transition-duration: var(--dur-1); }
+
+  /* A selected face box settles rather than snapping. */
+  .mm-face.selected { transition-duration: var(--dur-1); }
+
+  /* The preview arrives from the page it covers: a short fade plus a small
+     rise. @starting-style animates the element as it mounts, so no script is
+     involved. Closing is immediate, because the user already knows the surface
+     by then and a delayed exit would hold the page hostage. */
+  .mm-backdrop {
+    transition: opacity var(--dur-4) var(--ease-out), background-color var(--dur-4) var(--ease-out);
+  }
+  .mm-backdrop > * {
+    transition: opacity var(--dur-4) var(--ease-out), scale var(--dur-4) var(--ease-out),
+      translate var(--dur-4) var(--ease-out);
+  }
+  @starting-style {
+    .mm-backdrop { opacity: 0; }
+    .mm-backdrop > * { opacity: 0; scale: .97; translate: 0 10px; }
+  }
+
+  /* The merge confirmation mounts in place, so it reveals in place: it belongs
+     to the form above it, and sliding it in from off-screen would say it came
+     from somewhere it did not. */
+  .mm-confirm { animation: mm-reveal var(--dur-3) var(--ease-out) both; }
+
+  /* A saved or merged message appears after the write. It rises from the button
+     that caused it. */
+  .mm-saved { animation: mm-reveal var(--dur-3) var(--ease-out) both; }
+
+  /* Loading. Placeholders replace the old results while a search runs, and the
+     status line pulses so the wait has a heartbeat. The pulse is state, not
+     decoration, and it stops the moment the search resolves. */
+  [aria-busy="true"] .mm-status { animation: mm-pulse 1.2s var(--ease-out) infinite; }
+
+  @keyframes mm-reveal {
+    from { opacity: 0; translate: 0 -6px; }
+    to { opacity: 1; translate: 0 0; }
+  }
+
+  @keyframes mm-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .55; }
+  }
 }
