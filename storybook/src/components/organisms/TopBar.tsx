@@ -23,11 +23,21 @@ function initials(name: string): string {
   return name.split(/\s+/).map((part) => part[0] ?? "").join("").slice(0, 2).toUpperCase();
 }
 
+/** A keyframe with a face box in it: what the console finds. */
+function BrandMark() {
+  return (
+    <svg className="mm-brand-mark" viewBox="0 0 18 18" aria-hidden focusable="false">
+      <rect x="1" y="3" width="16" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="6.5" y="6" width="5" height="5.5" rx="1" fill="currentColor" />
+    </svg>
+  );
+}
+
 /** App header: product mark, primary navigation, how fresh the NAS index is, and who is signed in. */
 export function TopBar({ current, index, now, viewer, onNavigate }: TopBarProps) {
   return (
     <header className="mm-topbar">
-      <div className="mm-brand"><span className="mm-brand-mark" aria-hidden />Unified Search</div>
+      <div className="mm-brand"><BrandMark />Unified Search</div>
       <nav aria-label="Primary" className="mm-links">
         {LINKS.map((link) => (
           <a

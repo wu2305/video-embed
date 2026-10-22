@@ -23,7 +23,7 @@ import { Meta } from "@storybook/addon-docs/blocks";
 
 <div style={{ display: "flex", gap: 14, alignItems: "flex-end", margin: "16px 0" }}>
   {[4, 8, 10, 14, 20, 28].map((n) => (
-    <div key={n} style={{ textAlign: "center", font: "11px ui-monospace, monospace", color: "#8b94a7" }}>
+    <div key={n} style={{ textAlign: "center", font: "12px ui-monospace, monospace", color: "#8b94a7" }}>
       <div style={{ width: n, height: n, background: "#6ea8fe", margin: "0 auto 6px" }} />{n}
     </div>
   ))}
@@ -35,3 +35,21 @@ import { Meta } from "@storybook/addon-docs/blocks";
 - Detail pages split 2 : 1 (`.mm-split`). Below 760px every split stacks into one column.
 - Grids auto-fill from `--card-min` (212px for hits, 160px for people). Override the variable, not the grid.
 - No shadows, gradients or motion. Depth comes from `bg` → `panel` → `field`.
+
+## Controls and touch
+
+| Token | Value | Use |
+|---|---|---|
+| `--control-min` | 38px | Button height with a fine pointer |
+| `--touch-min` | 44px | Every button, input, select, chip and top-bar link with a coarse pointer (`pointer: coarse`) |
+| `--track-h` | 28px | Timeline track; on touch it sits centred in a 44px band, and the whole band seeks |
+
+- Buttons come in four variants. `default` has the panel fill and a resting edge, so it never reads as a
+  text field (inputs use `field`). `primary` is the one submit action of a form. `ghost` is for dismissals.
+  `danger` is for an action other people will see and that needs a confirm step, such as merging two people.
+- A card's one link is stretched over the card, so on touch the card is the target, not the line of text.
+- The preview is a modal dialog. It takes focus when it opens, keeps Tab inside, closes on Esc, makes the
+  page behind it inert and stops it scrolling, and on close returns focus to the card of the hit last shown.
+- Face labels sit above their box. When that would cover another label or face, or leave the frame, the
+  label moves below the box or to its right edge. Placement is measured on the rendered stage and re-run
+  when it resizes, so a phone-width preview is handled too.

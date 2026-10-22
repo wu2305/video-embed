@@ -22,4 +22,5 @@ export const Untagged: Story = { args: { face: kitchenFaces[3]!, label: "untagge
 export const Selected: Story = { args: { selected: true, onSelect: () => {} } };
 
 /** When another label would cover this one, it goes under the box. */
-export const LabelBelow: Story = { args: { labelBelow: true } };
+export const LabelBelow: Story = { args: { labelPlace: "below" } };
+export const LabelBelowEnd: Story = { args: { labelPlace: "below-end" } };

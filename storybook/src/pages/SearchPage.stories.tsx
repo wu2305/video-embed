@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { SearchPage } from "./SearchPage";
 import { archiveRecords, audioHit, documentHit, hits, indexInfo, now, people, staleIndexInfo, viewer } from "../mock/data";
 
@@ -35,6 +35,26 @@ export const PreviewOpen: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Open clip" }));
     await expect(args.onOpenClip).toHaveBeenCalledWith(expect.objectContaining({ unit_id: 101 }));
+  },
+};
+
+/** The preview is a modal: it takes focus, keeps Tab inside, and Esc returns focus to the card. */
+export const PreviewKeyboard: Story = {
+  args: { initialQuery: "Ana is cooking", openId: 101 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const dialog = canvas.getByRole("dialog");
+    await expect(dialog).toHaveAttribute("aria-modal", "true");
+    await waitFor(() => expect(dialog).toHaveFocus());
+    await expect(canvasElement.querySelector(".mm-shell")).toHaveAttribute("inert");
+    for (let i = 0; i < 12; i++) {
+      await userEvent.tab();
+      await expect(dialog.contains(document.activeElement)).toBe(true);
+    }
+    await userEvent.keyboard("{Escape}");
+    await expect(canvas.queryByRole("dialog")).toBeNull();
+    await expect(canvasElement.querySelector(".mm-shell")).not.toHaveAttribute("inert");
+    await waitFor(() => expect(canvasElement.querySelector('[data-unit-id="101"] .mm-card-link')).toHaveFocus());
   },
 };
 

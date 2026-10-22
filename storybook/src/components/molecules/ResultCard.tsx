@@ -28,13 +28,15 @@ function thumbSrc(hit: Hit): string | null {
  */
 export function ResultCard({ hit, rank, people = [], selected = false, onOpen, compact = false, showSource = false }: ResultCardProps) {
   const name = hit.path.split("/").pop() ?? hit.path;
+  // The folder tells a file from its copy; `title` never shows on touch.
+  const folder = hit.path.slice(0, hit.path.length - name.length);
   const src = thumbSrc(hit);
   const machineText = (hit.ocr_text || hit.asr_text || "").trim();
   const bonus = hit.text_bonus ? ` +${hit.text_bonus.toFixed(2)} text` : "";
   const hasRange = hit.scene_start != null && hit.scene_end != null;
 
   return (
-    <article className={`mm-card${selected ? " selected" : ""}`} aria-label={`Result ${rank}`}>
+    <article className={`mm-card${selected ? " selected" : ""}`} aria-label={`Result ${rank}`} data-unit-id={hit.unit_id}>
       <div className="mm-thumb">
         {src ? <img loading="lazy" src={src} alt="" /> : <span className="mm-glyph" aria-hidden>{GLYPH[hit.kind]}</span>}
         {!compact && <span className="mm-rank">{rank}</span>}
@@ -42,7 +44,8 @@ export function ResultCard({ hit, rank, people = [], selected = false, onOpen, c
         {!compact && <span className="mm-score">{hit.score.toFixed(3)}{bonus}</span>}
       </div>
       <div className="mm-body">
-        <button type="button" className="mm-name mm-card-link" title={hit.path} aria-pressed={selected} onClick={() => onOpen?.(hit)}>{name}</button>
+        <button type="button" className="mm-name mm-card-link" title={hit.path} onClick={() => onOpen?.(hit)}>{name}</button>
+        {folder && <div className="mm-mono mm-path" title={hit.path}>{folder}</div>}
         {!compact && <div className="mm-mono">sim {hit.similarity.toFixed(3)} · unit {hit.unit_index}</div>}
         <div className="mm-mono">
           <Tag>{hit.kind}</Tag>

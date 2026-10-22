@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isArchive, type ArchiveRecord, type Hit, type IndexInfo, type Person, type Result, type SourceStatus, type Unavailable, type Viewer } from "../types";
 import { Button } from "../components/atoms/Button";
 import { Panel } from "../components/atoms/Panel";
@@ -68,46 +68,72 @@ export function SearchPage({
 
   const gone = hit ? unavailable[hit.unit_id] : undefined;
 
-  return (
-    <AppShell current="search" title="Search" subtitle="One search over the NAS media library and the Archive System. Name a person and say what they are doing."
-      index={indexInfo} now={now} viewer={viewer} onNavigate={onNavigate}>
-      <SearchBar key={runKey} people={people} initialQuery={query} busy={loading}
-        onSearch={(p) => run(p.query, { person: p.person || undefined, min_faces: p.min_faces, limit: p.limit })} />
+  // While the preview is open the page behind it is inert and does not scroll.
+  // On close, focus goes back to the card of the hit that was last shown.
+  const page = useRef<HTMLDivElement>(null);
+  const lastOpen = useRef<number | null>(null);
+  const isOpen = hit !== null;
+  useEffect(() => {
+    if (hit) lastOpen.current = hit.unit_id;
+  }, [hit?.unit_id]);
+  const backdrop = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isOpen) {
+      // Lock only when the backdrop covers the viewport (a fixed element with
+      // no containing ancestor has no offsetParent); a contained one, as in a
+      // docs page, leaves the page scrollable.
+      if (backdrop.current?.offsetParent !== null) return;
+      const body = document.body, overflow = body.style.overflow;
+      body.style.overflow = "hidden";
+      return () => { body.style.overflow = overflow; };
+    }
+    const id = lastOpen.current;
+    lastOpen.current = null;
+    if (id !== null) page.current?.querySelector<HTMLElement>(`[data-unit-id="${id}"] .mm-card-link`)?.focus();
+  }, [isOpen]);
 
-      {!query && !loading && !error ? (
-        <>
-          <Panel as="section" title="Try a query">
-            <div className="mm-chips">
-              {EXAMPLES.map((q) => (
-                <Button key={q} onClick={() => { run(q); setRunKey((k) => k + 1); }}>{q}</Button>
-              ))}
-            </div>
-            <p className="mm-mono" style={{ margin: "12px 0 0" }}>A capitalised name filters NAS media to that person; the rest is matched against what is on screen and sent to the Archive System as text.</p>
-          </Panel>
-          <Panel as="section" title="What this searches">
-            <ul className="mm-sources">
-              <li><b>NAS media library</b><span>Photos, video and audio on the Synology NAS: faces, on-screen text, speech and notes. Opens a preview.</span></li>
-              <li><b>Archive System</b><span>Archived records such as contracts and minutes. Metadata only; each result opens in the Archive System.</span></li>
-              <li><b>WeCom</b><span>Live documents are not searched here; use WeCom’s own search. Finalized material that is archived to the NAS shows up as NAS media.</span></li>
-            </ul>
-            <p className="mm-mono" style={{ margin: "12px 0 0" }}>
-              You only see results you are allowed to open{viewer ? `, as ${viewer.name}` : ""}. Searches are logged.
-            </p>
-            {indexInfo && <p style={{ margin: "8px 0 0" }}><Freshness index={indexInfo} now={now} long /></p>}
-          </Panel>
-        </>
-      ) : (
-        <>
-          {indexInfo?.stale && <Freshness index={indexInfo} now={now} long />}
-          <ResultGrid results={found.results} sources={found.sources} query={query} people={people} loading={loading} error={error}
-            selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }} />
-        </>
-      )}
+  return (
+    <div ref={page}>
+      <AppShell current="search" title="Search" subtitle="One search over the NAS media library and the Archive System. Name a person and say what they are doing."
+        index={indexInfo} now={now} viewer={viewer} onNavigate={onNavigate} inert={isOpen}>
+        <SearchBar key={runKey} people={people} initialQuery={query} busy={loading}
+          onSearch={(p) => run(p.query, { person: p.person || undefined, min_faces: p.min_faces, limit: p.limit })} />
+  
+        {!query && !loading && !error ? (
+          <>
+            <Panel as="section" title="Try a query">
+              <div className="mm-chips">
+                {EXAMPLES.map((q) => (
+                  <Button key={q} onClick={() => { run(q); setRunKey((k) => k + 1); }}>{q}</Button>
+                ))}
+              </div>
+              <p className="mm-mono" style={{ margin: "12px 0 0" }}>A capitalised name filters NAS media to that person; the rest is matched against what is on screen and sent to the Archive System as text.</p>
+            </Panel>
+            <Panel as="section" title="What this searches">
+              <ul className="mm-sources">
+                <li><b>NAS media library</b><span>Photos, video and audio on the Synology NAS: faces, on-screen text, speech and notes. Opens a preview.</span></li>
+                <li><b>Archive System</b><span>Archived records such as contracts and minutes. Metadata only; each result opens in the Archive System.</span></li>
+                <li><b>WeCom</b><span>Live documents are not searched here; use WeCom’s own search. Finalized material that is archived to the NAS shows up as NAS media.</span></li>
+              </ul>
+              <p className="mm-mono" style={{ margin: "12px 0 0" }}>
+                You only see results you are allowed to open{viewer ? `, as ${viewer.name}` : ""}. Searches are logged.
+              </p>
+              {indexInfo && <p style={{ margin: "8px 0 0" }}><Freshness index={indexInfo} now={now} long /></p>}
+            </Panel>
+          </>
+        ) : (
+          <>
+            {indexInfo?.stale && <Freshness index={indexInfo} now={now} long />}
+            <ResultGrid results={found.results} sources={found.sources} query={query} people={people} loading={loading} error={error}
+              selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }} />
+          </>
+        )}
+      </AppShell>
 
       {hit && (
-        <div className="mm-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setOpen(null); }}>
+        <div ref={backdrop} className="mm-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setOpen(null); }}>
           <PreviewPanel
-            hit={hit} position={position + 1} total={previewable.length}
+            modal hit={hit} position={position + 1} total={previewable.length}
             frameSrc={hit.thumb_url ?? kitchenFrame}
             faces={hitFaces(hit)} unavailable={gone}
             people={people} annotations={hit.kind === "video" ? annotations : []} scenes={scenes} duration={duration}
@@ -117,6 +143,6 @@ export function SearchPage({
           />
         </div>
       )}
-    </AppShell>
+    </div>
   );
 }
