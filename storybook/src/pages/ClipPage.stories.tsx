@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 import { ClipPage } from "./ClipPage";
-import { annotations, audioHit, cookingHit, duration, hitFaces, indexInfo, kitchenFaces, kitchenFrame, people, photoHit, scenes } from "../mock/data";
+import { annotations, audioHit, cookingHit, duration, hitFaces, indexInfo, kitchenFaces, kitchenFrame, now, people, photoHit, scenes, viewer } from "../mock/data";
 
 const meta = {
   title: "Pages/Clip",
@@ -9,7 +9,7 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: {
     hit: cookingHit, frameSrc: kitchenFrame, faces: kitchenFaces, people, scenes, duration, annotations,
-    units: indexInfo.units, snapshot: indexInfo.snapshot, onNavigate: fn(), onBack: fn(),
+    index: indexInfo, now, viewer, onNavigate: fn(), onBack: fn(),
   },
 } satisfies Meta<typeof ClipPage>;
 

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { AppShell } from "./AppShell";
 import { Button } from "../atoms/Button";
 import { Panel } from "../atoms/Panel";
-import { indexInfo } from "../../mock/data";
+import { indexInfo, now, viewer } from "../../mock/data";
 
 const meta = {
   title: "Templates/AppShell",
@@ -10,7 +10,7 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: {
     current: "search", title: "Page title", subtitle: "One line that says what this page is for.",
-    units: indexInfo.units, snapshot: indexInfo.snapshot,
+    index: indexInfo, now, viewer,
     children: <Panel>Page body</Panel>,
   },
 } satisfies Meta<typeof AppShell>;

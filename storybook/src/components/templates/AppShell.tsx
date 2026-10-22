@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { IndexInfo, Viewer } from "../../types";
 import { TopBar, type PageId } from "../organisms/TopBar";
 
 export interface AppShellProps {
@@ -10,17 +11,18 @@ export interface AppShellProps {
   crumbs?: ReactNode;
   /** Buttons at the right of the page header. */
   actions?: ReactNode;
-  units?: number;
-  snapshot?: string;
+  index?: IndexInfo;
+  now?: number;
+  viewer?: Viewer;
   onNavigate?: (page: PageId) => void;
   children: ReactNode;
 }
 
 /** Every page: top bar, a centred column with a header, then the page body. */
-export function AppShell({ current, title, subtitle, crumbs, actions, units, snapshot, onNavigate, children }: AppShellProps) {
+export function AppShell({ current, title, subtitle, crumbs, actions, index, now, viewer, onNavigate, children }: AppShellProps) {
   return (
     <div className="mm-shell">
-      <TopBar current={current} units={units} snapshot={snapshot} onNavigate={onNavigate} />
+      <TopBar current={current} index={index} now={now} viewer={viewer} onNavigate={onNavigate} />
       <main className="mm-page">
         <div className="mm-page-head">
           <div>

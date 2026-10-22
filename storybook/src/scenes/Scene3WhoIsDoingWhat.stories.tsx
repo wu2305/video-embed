@@ -23,7 +23,7 @@ export const Flow: Story = {
     return (
       <div style={{ display: "grid", gap: 14 }}>
         <SearchBar people={people} initialQuery="Ana is cooking" onSearch={search} />
-        <ResultGrid hits={shown} people={people} query={query} />
+        <ResultGrid results={shown} people={people} query={query} />
       </div>
     );
   },

@@ -15,10 +15,14 @@ open dialog.
     { id: "pages-prototype--click-through", title: "Prototype", note: "All three pages wired together for demos" },
   ] },
   { title: "Search", pages: [
+    { id: "pages-search--first-visit", title: "First visit", note: "Examples, sources and freshness" },
     { id: "pages-search--results", title: "Results", note: "A name plus an action" },
     { id: "pages-search--preview-open", title: "Preview", note: "The matched scene, faces named" },
     { id: "pages-search--mixed-media", title: "Mixed media", note: "Video, photo, audio and documents" },
-    { id: "pages-search--federated-sources", title: "Federated sources", note: "Another search API merged in" },
+    { id: "pages-search--both-sources", title: "Both sources", note: "NAS and Archive fused by rank" },
+    { id: "pages-search--archive-down", title: "Archive down", note: "Partial results, with a warning" },
+    { id: "pages-search--access-revoked", title: "Access revoked", note: "The preview fails closed" },
+    { id: "pages-search--stale-index", title: "Stale index", note: "No nightly update for days" },
     { id: "pages-search--no-hits", title: "No hits" },
     { id: "pages-search--server-error", title: "Server error" },
   ] },
@@ -26,6 +30,7 @@ open dialog.
     { id: "pages-people--directory", title: "Directory", note: "Every face cluster, largest first" },
     { id: "pages-people--named-person", title: "Named person", note: "Where they appear" },
     { id: "pages-people--merge-warning", title: "Merge warning", note: "Reusing a name merges clusters" },
+    { id: "pages-people--pending-faces", title: "Pending faces", note: "New faces wait for the next regroup" },
   ] },
   { title: "Clip", pages: [
     { id: "pages-clip--video", title: "Video", note: "Matched scene, faces, notes, timeline" },

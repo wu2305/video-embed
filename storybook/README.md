@@ -1,8 +1,10 @@
-# mmindex component gallery
+# Unified Search component gallery
 
-A Storybook (React + Vite) for the query console and the scenes in
+A Storybook (React + Vite) for the Unified Search Gateway's console and the scenes in
 [`../STORYBOOK.md`](../STORYBOOK.md): naming faces, writing notes on a video,
-searching "who is doing what", mixed media and APIs, and the result preview.
+searching "who is doing what", NAS media and Archive System results in one list, the result
+preview, per-user permission filtering, and nightly index freshness. The product it designs for is
+in [`../docs/UNIFIED_SEARCH_DESIGN.md`](../docs/UNIFIED_SEARCH_DESIGN.md).
 
 The gallery is self-contained. Data is mocked in `src/mock/`, so it needs no
 index, model weights or running `scripts/serve.py`.
@@ -50,23 +52,24 @@ not redistribute them.
 |---|---|
 | `src/foundations/` | Colour, type, space and shape docs (MDX) |
 | `src/components/atoms/` | Button, Tag, Label, Chip, Kbd, Panel |
-| `src/components/molecules/` | Field, ParseStep, FaceBox, ResultCard, PersonCard, NoteItem, MetaList |
+| `src/components/molecules/` | Field, ParseStep, FaceBox, ResultCard, ArchiveCard, Freshness, PersonCard, NoteItem, MetaList |
 | `src/components/organisms/` | TopBar, SearchBar, ResultGrid, PeopleGrid, FaceOverlay, FaceTagger, AnnotationTrack, AnnotationComposer, NoteList, PreviewPanel |
 | `src/components/templates/` | AppShell |
 | `src/pages/` | Search, People and Clip pages, and a click-through prototype for demos |
 | `src/scenes/` | One story per scene in `../STORYBOOK.md`, composed from organisms |
 | `scripts/fetch_media.py` | Fetches the real keyframes from Hugging Face; `--select` picks new ones |
-| `src/types.ts` | `Hit` mirrors `SearchHit.to_dict()`. Fields under "proposed" do not exist in the Python code yet |
+| `src/types.ts` | `Hit` mirrors `SearchHit.to_dict()`. Fields under "proposed" do not exist in the Python code yet. `ArchiveRecord`, `Viewer` and `IndexInfo` are proposals for the gateway |
 | `src/lib/parseQuery.ts` | Rule-based "who is what" splitter used by `SearchBar` |
-| `src/mock/` | Fake hits, people and notes; keyframes from `media.ts` (real photos when fetched, SVG otherwise) |
+| `src/lib/fuse.ts` | Reciprocal rank fusion of NAS and Archive results; positions only, never raw scores |
+| `src/mock/` | Fake hits, Archive records, people, notes, the signed-in user and index freshness; keyframes from `media.ts` (real photos when fetched, SVG otherwise). `now` is pinned so "updated today 02:40" is stable |
 | `src/styles.css` | Tokens (top of file) and classes; every rule uses a token, values from the console page in `scripts/serve.py` |
 
 ## Status
 
 `ResultCard` and `ResultGrid` follow the console's existing markup and
 classes. Everything else is a proposal: face boxes, notes, the who/what readout,
-new media kinds, source badges and the seeking preview all depend on backend
-work listed in `../STORYBOOK.md`.
+new media kinds, Archive results, sign-in and permission states, index freshness
+and the seeking preview all depend on backend work listed in `../STORYBOOK.md`.
 
 The console in `scripts/serve.py` is still a single inline HTML page. Nothing
 here is wired into it yet.

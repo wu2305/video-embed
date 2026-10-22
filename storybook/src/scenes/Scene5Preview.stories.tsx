@@ -26,7 +26,7 @@ export const Flow: Story = {
             onPrev={() => setIndex((i) => Math.max(0, (i ?? 0) - 1))} onNext={() => setIndex((i) => Math.min(hits.length - 1, (i ?? 0) + 1))}
             onClose={() => setIndex(null)} />
         )}
-        <ResultGrid hits={hits} people={people} selectedId={hit?.unit_id ?? null} onOpen={(h) => setIndex(hits.findIndex((x) => x.unit_id === h.unit_id))} />
+        <ResultGrid results={hits} people={people} selectedId={hit?.unit_id ?? null} onOpen={(h) => setIndex(hits.findIndex((x) => x.unit_id === h.unit_id))} />
       </div>
     );
   },

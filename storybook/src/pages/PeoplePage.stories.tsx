@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 import { PeoplePage } from "./PeoplePage";
-import { audioHit, hits, indexInfo, people, personSamples } from "../mock/data";
+import { audioHit, hits, indexInfo, now, pendingFaces, people, personSamples, viewer } from "../mock/data";
 
 const meta = {
   title: "Pages/People",
@@ -9,7 +9,7 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: {
     people, samples: personSamples, corpus: [...hits, audioHit],
-    units: indexInfo.units, snapshot: indexInfo.snapshot, onNavigate: fn(), onName: fn(),
+    index: indexInfo, now, viewer, onNavigate: fn(), onName: fn(),
   },
 } satisfies Meta<typeof PeoplePage>;
 
@@ -44,5 +44,8 @@ export const MergeWarning: Story = {
     await expect(canvas.getByRole("note")).toHaveTextContent("already names another cluster");
   },
 };
+
+/** New faces from recent nights wait in a pending pool until the next full regroup. */
+export const PendingFaces: Story = { args: { pendingFaces } };
 
 export const AllNamed: Story = { args: { people: people.map((p, i) => ({ ...p, name: p.name ?? `Guest ${i}` })) } };

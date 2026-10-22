@@ -1,4 +1,4 @@
-import type { Annotation, Face, Hit, Person, Scene } from "../types";
+import type { Annotation, ArchiveRecord, Face, Hit, IndexInfo, Person, Scene, Viewer } from "../types";
 import { personSample, sceneFaces, sceneFrame, type Slot } from "./media";
 
 export const people: Person[] = [
@@ -107,16 +107,40 @@ export const documentHit = hit(106, {
   ocr_text: "Garlic butter: 4 cloves, 80 g butter, rest 10 min",
 });
 
-export const externalHit = hit(201, {
-  path: "https://catalog.example.com/assets/8841",
-  kind: "video",
-  score: 0.88,
-  similarity: 0.88,
-  source: "ProductSearch",
-  scene_start: 5,
-  scene_end: 19,
-  thumb_url: sceneFrame("night", "ProductSearch #8841"),
-});
+/** Local time, so "today" and "tonight" read the same in every time zone. */
+function at(y: number, m: number, d: number, h: number, min = 0): number {
+  return Math.floor(new Date(y, m - 1, d, h, min).getTime() / 1000);
+}
+
+/** "Now" for every story: mid-morning, after last night's cycle published. */
+export const now = at(2026, 10, 22, 9, 30);
+
+/** Records the Archive System returns for "cooking" and "budget" (design doc §3.2). */
+export const archiveRecords: ArchiveRecord[] = [
+  {
+    source: "archive", record_id: "CT-2025-0412", vendor_rank: 1,
+    title: "Catering services agreement — cooking class series 2025",
+    doc_type: "Contract", archived_at: at(2025, 3, 18, 10), department: "Marketing",
+    summary: "Counterparty: Lumen Kitchen Studio · term 2025-04 to 2025-12 · status: active",
+    deep_link: "https://archive.example.internal/records/CT-2025-0412",
+  },
+  {
+    source: "archive", record_id: "MN-2025-1187", vendor_rank: 2,
+    title: "Q3 budget review — approved minutes",
+    doc_type: "Board minutes", archived_at: at(2025, 10, 2, 16), department: "Finance",
+    summary: "Approved by the finance committee · 14 pages · retention: 10 years",
+    deep_link: "https://archive.example.internal/records/MN-2025-1187",
+  },
+  {
+    source: "archive", record_id: "PO-2024-2290", vendor_rank: 3,
+    title: "Purchase order — kitchen equipment for the cooking studio",
+    doc_type: "Purchase order", archived_at: at(2024, 11, 5, 9), department: "Facilities",
+    deep_link: "https://archive.example.internal/records/PO-2024-2290",
+  },
+];
+
+/** The signed-in user. Groups come from the IdP on every query. */
+export const viewer: Viewer = { name: "Mei Chen", groups: ["Marketing", "Media-Library"] };
 
 export const hits: Hit[] = [cookingHit, presentingHit, photoHit, copyHit];
 
@@ -141,7 +165,7 @@ export const personSamples: Record<string, string> = {
   "person-0019": personSample("person-0019"),
 };
 
-const HIT_SCENES: Record<number, Slot> = { 101: "kitchen", 102: "office", 103: "park", 104: "kitchen", 201: "night" };
+const HIT_SCENES: Record<number, Slot> = { 101: "kitchen", 102: "office", 103: "park", 104: "kitchen" };
 
 /** The detected faces on a hit's keyframe; none for audio and documents. */
 export function hitFaces(hit: Hit): Face[] {
@@ -149,5 +173,15 @@ export function hitFaces(hit: Hit): Face[] {
   return slot ? sceneFaces(slot) : [];
 }
 
-/** What the top bar reports about the published snapshot. */
-export const indexInfo = { units: 77_412, snapshot: "2026-10-18" };
+/** What the top bar reports about the published NAS snapshot: last night's cycle. */
+export const indexInfo: IndexInfo = {
+  units: 77_412, snapshot: "2026-10-22", published_at: at(2026, 10, 22, 2, 40), next_run: at(2026, 10, 23, 1),
+};
+
+/** No snapshot for three nights: the cycle is failing `verify` or not running. */
+export const staleIndexInfo: IndexInfo = {
+  ...indexInfo, snapshot: "2026-10-19", published_at: at(2026, 10, 19, 2, 40), stale: true,
+};
+
+/** Faces from recent nights that matched no person yet; they wait for the next full regroup. */
+export const pendingFaces = 38;

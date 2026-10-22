@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import type { Hit, Person } from "../types";
+import type { Hit, IndexInfo, Person, Viewer } from "../types";
 import { Button } from "../components/atoms/Button";
 import { Panel } from "../components/atoms/Panel";
 import { Tag } from "../components/atoms/Tag";
@@ -16,15 +16,24 @@ export interface PeoplePageProps {
   corpus?: readonly Hit[];
   /** Select this cluster at load. */
   selectedId?: string | null;
-  units?: number;
-  snapshot?: string;
+  /** Faces from recent nights that matched no person; they wait for the next full regroup. */
+  pendingFaces?: number;
+  index?: IndexInfo;
+  now?: number;
+  viewer?: Viewer;
   onNavigate?: (page: PageId) => void;
   /** Called with the new name. The caller owns persistence (a future `POST /api/tag`). */
   onName?: (personId: string, name: string) => void;
 }
 
-/** Page: every person cluster, with a side panel to name the selected one and see where they appear. */
-export function PeoplePage({ people: initial, samples = {}, corpus = [], selectedId = null, units, snapshot, onNavigate, onName }: PeoplePageProps) {
+/**
+ * Page: every person cluster the viewer can see, with a side panel to name the
+ * selected one and see where they appear. Counts cover only files the viewer
+ * may open, so two users can see different numbers for the same person.
+ */
+export function PeoplePage({
+  people: initial, samples = {}, corpus = [], selectedId = null, pendingFaces = 0, index, now, viewer, onNavigate, onName,
+}: PeoplePageProps) {
   const [people, setPeople] = useState<Person[]>(() => [...initial]);
   const [selected, setSelected] = useState<string | null>(selectedId);
   const [draft, setDraft] = useState(() => initial.find((p) => p.id === selectedId)?.name ?? "");
@@ -55,7 +64,12 @@ export function PeoplePage({ people: initial, samples = {}, corpus = [], selecte
   return (
     <AppShell current="people" title="People"
       subtitle={unnamed ? `${unnamed} of ${people.length} face clusters have no name yet. Name one and every appearance follows.` : "Every face cluster has a name."}
-      units={units} snapshot={snapshot} onNavigate={onNavigate}>
+      index={index} now={now} viewer={viewer} onNavigate={onNavigate}>
+      {pendingFaces > 0 && (
+        <div className="mm-notice" role="note">
+          {pendingFaces} new faces from recent uploads did not match anyone yet. They join a person, or become a new one, at the next full regroup.
+        </div>
+      )}
       <div className="mm-split">
         <PeopleGrid people={people} samples={samples} selectedId={selected} onOpen={select} />
         <aside>
@@ -75,6 +89,7 @@ export function PeoplePage({ people: initial, samples = {}, corpus = [], selecte
                     <input type="text" list={listId} value={draft} onChange={(e) => { setDraft(e.target.value); setSaved(null); }} placeholder="Full name" autoComplete="off" />
                   </Field>
                   <datalist id={listId}>{known.map((n) => <option key={n} value={n} />)}</datalist>
+                  <p className="mm-mono" style={{ margin: 0 }}>Names are shared: everyone who can see this person sees the name.</p>
                   {merging && <p className="mm-mono" role="note" style={{ margin: 0 }}><Tag tone="warn">merge</Tag>“{draft.trim()}” already names another cluster. Both will become one person.</p>}
                   <div><Button variant="primary" type="submit" disabled={!draft.trim() || draft.trim() === person.name}>{person.name ? "Rename" : "Apply name"}</Button></div>
                   {saved && <p className="mm-mono" role="status" style={{ margin: 0 }}><Tag tone="good">saved</Tag>{saved}</p>}

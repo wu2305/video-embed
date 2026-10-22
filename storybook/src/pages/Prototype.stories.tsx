@@ -4,14 +4,14 @@ import { ClipPage } from "./ClipPage";
 import { PeoplePage } from "./PeoplePage";
 import { SearchPage } from "./SearchPage";
 import type { PageId } from "../components/organisms/TopBar";
-import { annotations, audioHit, documentHit, duration, hitFaces, hits, indexInfo, kitchenFrame, people as seedPeople, personSamples, scenes } from "../mock/data";
+import { annotations, archiveRecords, audioHit, documentHit, duration, hitFaces, hits, indexInfo, kitchenFrame, now, pendingFaces, people as seedPeople, personSamples, scenes, viewer } from "../mock/data";
 import type { Hit, Person } from "../types";
 
 const meta = {
   title: "Pages/Prototype",
   parameters: {
     layout: "fullscreen",
-    docs: { description: { component: "The three pages wired together for demos. Search, open a hit, open its clip, name people; names carry across pages." } },
+    docs: { description: { component: "The three pages wired together for demos. Search both sources, open a NAS hit, open its clip, name people; names carry across pages." } },
   },
 } satisfies Meta;
 
@@ -26,7 +26,7 @@ export const ClickThrough: Story = {
     const [clip, setClip] = useState<Hit | null>(null);
     const [people, setPeople] = useState<Person[]>(seedPeople);
     const [lastQuery] = useState("Ana is cooking");
-    const shared = { units: indexInfo.units, snapshot: indexInfo.snapshot, onNavigate: setPage };
+    const shared = { index: indexInfo, now, viewer, onNavigate: setPage };
 
     if (page === "clip" && clip) {
       return (
@@ -37,12 +37,12 @@ export const ClickThrough: Story = {
     }
     if (page === "people") {
       return (
-        <PeoplePage {...shared} people={people} samples={personSamples} corpus={corpus}
+        <PeoplePage {...shared} people={people} samples={personSamples} corpus={corpus} pendingFaces={pendingFaces}
           onName={(id, name) => setPeople((list) => list.map((p) => (p.id === id ? { ...p, name } : p)))} />
       );
     }
     return (
-      <SearchPage {...shared} people={people} corpus={corpus} initialQuery={lastQuery}
+      <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} initialQuery={lastQuery}
         onOpenClip={(h) => { setClip(h); setPage("clip"); }} />
     );
   },

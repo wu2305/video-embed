@@ -4,7 +4,7 @@ import { ClipPage } from "../ClipPage";
 import { PeoplePage } from "../PeoplePage";
 import { SearchPage } from "../SearchPage";
 import {
-  annotations, audioHit, cookingHit, documentHit, duration, hitFaces, hits, indexInfo, kitchenFrame, people, personSamples, scenes,
+  annotations, archiveRecords, audioHit, cookingHit, documentHit, duration, hitFaces, hits, indexInfo, kitchenFrame, now, people, personSamples, scenes, viewer,
 } from "../../mock/data";
 
 /** A page to export as a static showcase card. `width`/`height` are the layout size in px. */
@@ -17,25 +17,25 @@ export interface ExportedPage {
   element: ReactElement;
 }
 
-const shared = { units: indexInfo.units, snapshot: indexInfo.snapshot };
+const shared = { index: indexInfo, now, viewer };
 const corpus = [...hits, audioHit, documentHit];
 
 /** The pages shown as examples in the design system, with the same data as their stories. */
 export const PAGES: ExportedPage[] = [
   {
     name: "SearchStartPage", title: "Search · first visit", story: "pages-search--first-visit", width: 1280,
-    summary: "The Search page before any query: the search bar and example queries instead of an empty grid.",
-    element: <SearchPage {...shared} people={people} corpus={corpus} />,
+    summary: "The Search page before any query: the search bar, example queries, what each source covers and when new files show up.",
+    element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} />,
   },
   {
     name: "SearchResultsPage", title: "Search · results", story: "pages-search--results", width: 1280,
-    summary: "The Search page after “Ana is cooking”: the who/what read-out, the status line and the result grid.",
-    element: <SearchPage {...shared} people={people} corpus={corpus} initialQuery="Ana is cooking" />,
+    summary: "The Search page after “Ana is cooking”: the who/what read-out, the status line and NAS and Archive results fused into one grid.",
+    element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} initialQuery="Ana is cooking" />,
   },
   {
     name: "SearchPreviewPage", title: "Search · preview open", story: "pages-search--preview-open", width: 1280,
     summary: "A hit opened in the preview dialog: the matched scene with named faces, the timeline and the Open clip action.",
-    element: <SearchPage {...shared} people={people} corpus={corpus} initialQuery="Ana is cooking" openId={101} onOpenClip={() => {}} />,
+    element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} initialQuery="Ana is cooking" openId={101} onOpenClip={() => {}} />,
   },
   {
     name: "PeoplePage", title: "People · named person", story: "pages-people--named-person", width: 1280,
@@ -53,7 +53,7 @@ export const PAGES: ExportedPage[] = [
   {
     name: "SearchPhonePage", title: "Search · phone", story: "pages-search--results", width: 390,
     summary: "The Search results page at 390px: the form stacks and the grid drops to two columns.",
-    element: <SearchPage {...shared} people={people} corpus={corpus} initialQuery="Ana is cooking" />,
+    element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} initialQuery="Ana is cooking" />,
   },
 ];
 

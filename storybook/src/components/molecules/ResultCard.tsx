@@ -10,6 +10,8 @@ export interface ResultCardProps {
   onOpen?: (hit: Hit) => void;
   /** Thumbnail, name and tags only: for lists where rank and score mean nothing. */
   compact?: boolean;
+  /** Badge the card "NAS", for lists that mix in Archive records. */
+  showSource?: boolean;
 }
 
 const GLYPH: Record<string, string> = { audio: "♪", document: "▤", video: "▶", image: "▣" };
@@ -21,10 +23,10 @@ function thumbSrc(hit: Hit): string | null {
 }
 
 /**
- * One search hit. Same layout as the console card, plus scene range, notes and source.
+ * One NAS search hit. Same layout as the console card, plus scene range, notes and source.
  * The file name is the button; it stretches over the card, so the whole card is clickable.
  */
-export function ResultCard({ hit, rank, people = [], selected = false, onOpen, compact = false }: ResultCardProps) {
+export function ResultCard({ hit, rank, people = [], selected = false, onOpen, compact = false, showSource = false }: ResultCardProps) {
   const name = hit.path.split("/").pop() ?? hit.path;
   const src = thumbSrc(hit);
   const machineText = (hit.ocr_text || hit.asr_text || "").trim();
@@ -36,7 +38,7 @@ export function ResultCard({ hit, rank, people = [], selected = false, onOpen, c
       <div className="mm-thumb">
         {src ? <img loading="lazy" src={src} alt="" /> : <span className="mm-glyph" aria-hidden>{GLYPH[hit.kind]}</span>}
         {!compact && <span className="mm-rank">{rank}</span>}
-        {hit.source && <span className="mm-source">{hit.source}</span>}
+        {showSource && <span className="mm-source">NAS</span>}
         {!compact && <span className="mm-score">{hit.score.toFixed(3)}{bonus}</span>}
       </div>
       <div className="mm-body">

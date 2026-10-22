@@ -124,6 +124,16 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-status { font: var(--text-sm)/1.4 var(--mono); color: var(--muted); margin: 0 0 var(--space-3); min-height: 17px; }
 .mm-status.error { color: var(--bad); }
 .mm-empty { color: var(--muted); padding: var(--space-4) 0; }
+.mm-notice { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--field); padding: var(--space-2) var(--space-3); margin: 0 0 var(--space-3); font-size: var(--text-sm); }
+.mm-notice.warn { border-color: var(--warn); }
+.mm-archive .mm-name { white-space: normal; }
+.mm-unavailable { aspect-ratio: 4 / 3; display: grid; place-content: center; gap: var(--space-2); padding: var(--space-5); text-align: center; color: var(--muted); }
+.mm-unavailable strong { color: var(--text); }
+.mm-viewer { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); }
+.mm-avatar { width: 24px; height: 24px; border-radius: var(--radius-pill); background: var(--field); border: 1px solid var(--line); display: grid; place-items: center; font: var(--text-xs)/1 var(--mono); color: var(--text); }
+.mm-sources { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); }
+.mm-sources li { display: grid; grid-template-columns: 10rem 1fr; gap: var(--space-3); }
+.mm-sources b { font-weight: 600; }
 
 /* stage and face boxes (scene 1) */
 .mm-stage { position: relative; background: var(--thumb); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
@@ -175,6 +185,8 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-links a[aria-current=page] { color: var(--text); background: var(--field); }
 .mm-links a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .mm-topbar .mm-mono { margin-left: auto; }
+.mm-topbar .mm-viewer { margin-left: auto; }
+.mm-topbar .mm-mono + .mm-viewer { margin-left: 0; }
 
 /* templates: app shell and page header */
 .mm-shell { min-height: 100vh; display: flex; flex-direction: column; }
@@ -197,6 +209,8 @@ button:disabled { opacity: .5; cursor: default; }
   .mm-tagger, .mm-preview, .mm-split { grid-template-columns: 1fr; }
   .mm-topbar { gap: var(--space-3); padding: 0 var(--space-4); overflow-x: auto; }
   .mm-topbar .mm-mono { display: none; }
+  .mm-viewer .mm-viewer-name { display: none; }
+  .mm-sources li { grid-template-columns: 1fr; gap: 0; }
   .mm-page { padding: var(--space-4); }
   .mm-grid { --card-min: 150px; }
 }

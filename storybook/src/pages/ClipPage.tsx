@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Annotation, Face, Hit, Person, Scene } from "../types";
+import type { Annotation, Face, Hit, IndexInfo, Person, Scene, Viewer } from "../types";
 import { displayName, formatTime } from "../lib/format";
 import { Panel } from "../components/atoms/Panel";
 import { Tag } from "../components/atoms/Tag";
@@ -21,8 +21,9 @@ export interface ClipPageProps {
   annotations?: readonly Annotation[];
   /** Start here instead of the matched scene. */
   initialPlayhead?: number;
-  units?: number;
-  snapshot?: string;
+  index?: IndexInfo;
+  now?: number;
+  viewer?: Viewer;
   onNavigate?: (page: PageId) => void;
   onBack?: () => void;
 }
@@ -30,7 +31,7 @@ export interface ClipPageProps {
 /** Page: one file. Watch the matched scene, see who is in frame, read and write notes on the timeline. */
 export function ClipPage({
   hit, frameSrc, faces = [], people = [], scenes = [], duration = 0, annotations = [], initialPlayhead,
-  units, snapshot, onNavigate, onBack,
+  index, now, viewer, onNavigate, onBack,
 }: ClipPageProps) {
   const still = hit.kind !== "video" && hit.kind !== "audio";
   const hasFrame = hit.kind === "video" || hit.kind === "image";
@@ -43,7 +44,7 @@ export function ClipPage({
   const inFrame = people.filter((p) => faces.some((f) => f.person_id === p.id));
 
   return (
-    <AppShell current="clip" title={name} units={units} snapshot={snapshot} onNavigate={onNavigate}
+    <AppShell current="clip" title={name} index={index} now={now} viewer={viewer} onNavigate={onNavigate}
       crumbs={<><a href="#search" onClick={(e) => { e.preventDefault(); onBack?.(); }}>← Search results</a> / {hit.kind}</>}
       subtitle={<span className="mm-mono">{hit.path}</span>}>
       <div className="mm-split">
@@ -78,15 +79,16 @@ export function ClipPage({
               ...(duration && !still ? [["duration", formatTime(duration)] as const, ["scenes", String(scenes.length)] as const] : []),
               ["unit", `${hit.unit_index} (id ${hit.unit_id})`],
               ["faces in frame", String(hasFrame && faces.length ? faces.length : hit.face_count)],
-              ["source", hit.source ?? "this index"],
+              ["source", "NAS media library"],
             ]} />
           </Panel>
           <Panel as="section" title={`Notes (${notes.length})`}>
             <NoteList notes={notes} people={people} playhead={still ? -1 : playhead} onSeek={setPlayhead} />
+            <p className="mm-mono" style={{ margin: "10px 0 0" }}>Notes are visible to everyone who can open this file, with the author’s name.</p>
           </Panel>
           <AnnotationComposer key={still ? "still" : scene?.start ?? "none"} time={playhead} scene={scene} still={still}
             inFrame={inFrame} people={people}
-            onSave={(n) => setNotes((cur) => [...cur, { ...n, id: `n${cur.length + 1}`, author: "you" }])} />
+            onSave={(n) => setNotes((cur) => [...cur, { ...n, id: `n${cur.length + 1}`, author: viewer?.name ?? "you" }])} />
         </aside>
       </div>
     </AppShell>

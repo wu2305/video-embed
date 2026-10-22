@@ -1,0 +1,65 @@
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, within } from "storybook/test";
+import { Panel } from "../components/atoms/Panel";
+import { PreviewPanel } from "../components/organisms/PreviewPanel";
+import { ResultGrid } from "../components/organisms/ResultGrid";
+import { TopBar } from "../components/organisms/TopBar";
+import { fuseByRank } from "../lib/fuse";
+import { archiveRecords, cookingHit, copyHit, indexInfo, kitchenFrame, now, people, photoHit, presentingHit, viewer } from "../mock/data";
+import type { Viewer } from "../types";
+
+const meta = {
+  title: "Scenes/6 · Only what you may open",
+  parameters: {
+    layout: "fullscreen",
+    docs: { description: { component: "Mei and Raj run the same query. The gateway filters every result against each caller's groups, so each sees only what they could open directly. Status: **new** (design doc §5; no ACL capture or sign-in exists yet)." } },
+  },
+} satisfies Meta;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+const raj: Viewer = { name: "Raj Patel", groups: ["Finance"] };
+
+/** Same query, two users. Marketing footage is not in Raj's list; the Finance minutes are not in Mei's. */
+export const TwoUsers: Story = {
+  render: () => (
+    <div className="mm-split" style={{ padding: 20, gridTemplateColumns: "1fr 1fr" }}>
+      {[
+        { who: viewer, results: fuseByRank([[cookingHit, copyHit, photoHit], archiveRecords.slice(0, 1)]) },
+        { who: raj, results: fuseByRank([[presentingHit], archiveRecords.slice(1, 2)]) },
+      ].map(({ who, results }) => (
+        <Panel key={who.name} title={`${who.name} · ${who.groups.join(", ")}`}>
+          <ResultGrid results={results} people={people} query="cooking or budget" label={`Results for ${who.name}`} />
+        </Panel>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getAllByText("Only results you are allowed to open are shown.")).toHaveLength(2);
+  },
+};
+
+/** A file's folder permissions changed after last night's update. The preview fails closed. */
+export const AccessChangedToday: Story = {
+  render: () => (
+    <div style={{ padding: 20 }}>
+      <PreviewPanel hit={cookingHit} position={1} total={3} frameSrc={kitchenFrame} people={people} unavailable="forbidden" />
+    </div>
+  ),
+};
+
+/** Hovering the name shows the groups the gateway resolved, for "why can't I see it" questions. */
+export const WhoAmI: Story = {
+  render: () => (
+    <div>
+      <TopBar current="search" index={indexInfo} now={now} viewer={viewer} />
+      <div style={{ padding: 20 }}>
+        <Panel as="section" title="Signed in">
+          <p className="mm-mono" style={{ margin: 0 }}>{viewer.name} · groups: {viewer.groups.join(", ")}. Membership is read from the directory on every search, so a change applies at once.</p>
+        </Panel>
+      </div>
+    </div>
+  ),
+};
