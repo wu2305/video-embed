@@ -5,6 +5,7 @@ import { Label } from "../atoms/Label";
 import { Tag } from "../atoms/Tag";
 import { Field } from "../molecules/Field";
 import { FaceOverlay } from "./FaceOverlay";
+import { useI18n } from "../../i18n";
 
 export interface FaceTaggerProps {
   src: string;
@@ -19,6 +20,7 @@ export interface FaceTaggerProps {
 
 /** Scene 1: click a face box, name it, choose whether the name covers the whole cluster. */
 export function FaceTagger({ src, faces, people, initialSelected = null, initialName = "", onTag }: FaceTaggerProps) {
+  const { t } = useI18n();
   const [selected, setSelected] = useState<number | null>(initialSelected);
   const [name, setName] = useState(initialName);
   const [scope, setScope] = useState<TagScope>(() => (faces.find((f) => f.face_index === initialSelected)?.person_id === null ? "face" : "cluster"));
@@ -43,7 +45,7 @@ export function FaceTagger({ src, faces, people, initialSelected = null, initial
     event.preventDefault();
     if (!face || !name.trim()) return;
     onTag?.({ face_index: face.face_index, name: name.trim(), scope });
-    setApplied(scope === "cluster" && cluster ? `Named ${cluster.faces} appearances “${name.trim()}”.` : `Named this face “${name.trim()}”.`);
+    setApplied(scope === "cluster" && cluster ? t("face.namedAll", { faces: cluster.faces, name: name.trim() }) : t("face.namedOne", { name: name.trim() }));
   }
 
   return (
@@ -52,29 +54,29 @@ export function FaceTagger({ src, faces, people, initialSelected = null, initial
         <img src={src} alt="Keyframe with detected faces" />
         <FaceOverlay faces={faces} people={people} selectedIndex={selected} onSelect={select} />
       </div>
-      <form className="mm-panel" onSubmit={submit} aria-label="Tag face">
+      <form className="mm-panel" onSubmit={submit} aria-label={t("face.tagForm")}>
         {!face ? (
-          <p className="mm-hint">Select a face box to name it. Dashed boxes have no cluster yet.</p>
+          <p className="mm-hint">{t("face.hint")}</p>
         ) : (
           <>
-            <Field label="name">
+            <Field label={t("face.name")}>
               <input id={nameId} type="text" list={listId} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ana Ruiz" autoComplete="off" />
             </Field>
             <datalist id={listId}>{known.map((n) => <option key={n} value={n} />)}</datalist>
             <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: 8 }}>
-              <legend><Label as="span">apply to</Label></legend>
+              <legend><Label as="span">{t("face.applyTo")}</Label></legend>
               <label className="mm-radio">
                 <input type="radio" name="scope" checked={scope === "cluster"} disabled={!cluster} onChange={() => setScope("cluster")} />
-                <span>All appearances{cluster && <small>{cluster.id} · {cluster.faces} faces</small>}{!cluster && <small>needs a cluster</small>}</span>
+                <span>{t("face.all")}{cluster && <small>{cluster.id} · {cluster.faces} faces</small>}{!cluster && <small>{t("face.needsCluster")}</small>}</span>
               </label>
               <label className="mm-radio">
                 <input type="radio" name="scope" checked={scope === "face"} onChange={() => setScope("face")} />
-                <span>This face only<small>use to correct a wrong cluster</small></span>
+                <span>{t("face.thisOnly")}<small>{t("face.correct")}</small></span>
               </label>
             </fieldset>
-            {merging && <p className="mm-hint" role="note"><Tag tone="warn">merge</Tag>“{name.trim()}” already names another cluster. Both will become one person.</p>}
-            <Button variant="primary" type="submit" disabled={!name.trim()}>Apply name</Button>
-            {applied && <p className="mm-hint" role="status"><Tag tone="good">saved</Tag>{applied}</p>}
+            {merging && <p className="mm-hint" role="note"><Tag tone="warn">{t("face.merge")}</Tag>“{name.trim()}” {t("face.mergeWarn")}</p>}
+            <Button variant="primary" type="submit" disabled={!name.trim()}>{t("face.apply")}</Button>
+            {applied && <p className="mm-hint" role="status"><Tag tone="good">{t("face.saved")}</Tag>{applied}</p>}
           </>
         )}
       </form>

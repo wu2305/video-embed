@@ -9,6 +9,7 @@ import { BrandMark, TopBar, type PageId } from "../components/organisms/TopBar";
 import { AppShell } from "../components/templates/AppShell";
 import { annotations, duration, hitFaces, kitchenFrame, scenes } from "../mock/data";
 import { searchGateway } from "./search";
+import { useI18n } from "../i18n";
 
 export interface SearchPageProps {
   people: readonly Person[];
@@ -40,6 +41,7 @@ export function SearchPage({
   people, corpus, archive = [], archiveDown = false, unavailable = {}, initialQuery, openId = null, loading = false, error = null,
   index: indexInfo, now, viewer, onNavigate, onOpenClip,
 }: SearchPageProps) {
+  const { t } = useI18n();
   const runSearch = (q: string, extra: { min_faces?: number; limit?: number } = {}) =>
     searchGateway(corpus, archive, people, { query: q, ...extra }, archiveDown);
   const [query, setQuery] = useState(initialQuery ?? "");
@@ -103,29 +105,27 @@ export function SearchPage({
             <h1 className="mm-home-brand"><BrandMark />Unified Search</h1>
             <SearchBar home people={people} busy={loading} onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
             <div className="mm-home-examples">
-              <span>Try</span>
+              <span>{t("home.try")}</span>
               {EXAMPLES.map((q) => <button key={q} type="button" className="mm-link" onClick={() => run(q)}>{q}</button>)}
             </div>
             <div className="mm-home-foot">
               <p className="mm-hint">
-                Name a person and say what they are doing. Searches the NAS media library and the Archive System, and shows only
-                what you are allowed to open{viewer ? `, as ${viewer.name}` : ""}. Searches are logged. Files added today are
-                searchable tomorrow morning.
+                {t("home.about", { as: viewer ? t("home.asViewer", { name: viewer.name }) : "" })}
               </p>
               {indexInfo && <Freshness index={indexInfo} now={now} />}
               <details className="mm-hint">
-                <summary>What is searched?</summary>
+                <summary>{t("home.sourcesToggle")}</summary>
                 <ul className="mm-sources">
-                  <li><b>NAS media library</b><span>Photos, video and audio on the Synology NAS: faces, on-screen text, speech and notes. Opens a preview.</span></li>
-                  <li><b>Archive System</b><span>Archived records such as contracts and minutes. Metadata only; each result opens in the Archive System.</span></li>
-                  <li><b>WeCom</b><span>Live documents are not searched here; use WeCom’s own search. Finalized material that is archived to the NAS shows up as NAS media.</span></li>
+                  <li><b>{t("home.src.nasName")}</b><span>{t("home.src.nasDesc")}</span></li>
+                  <li><b>{t("home.src.archiveName")}</b><span>{t("home.src.archiveDesc")}</span></li>
+                  <li><b>{t("home.src.wecomName")}</b><span>{t("home.src.wecomDesc")}</span></li>
                 </ul>
               </details>
             </div>
           </main>
         </div>
       ) : (
-        <AppShell current="search" title="Search" subtitle="One search over the NAS media library and the Archive System. Name a person and say what they are doing."
+        <AppShell current="search" title={t("page.search.title")} subtitle={t("page.search.subtitle")}
           index={indexInfo} now={now} viewer={viewer} onNavigate={onNavigate} inert={isOpen}>
           <SearchBar people={people} initialQuery={query} busy={loading}
             onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
@@ -144,7 +144,7 @@ export function SearchPage({
             people={people} annotations={hit.kind === "video" ? annotations : []} scenes={scenes} duration={duration}
             playhead={playhead} onSeek={setPlayhead}
             onPrev={() => step(-1)} onNext={() => step(1)} onClose={() => setOpen(null)}
-            actions={onOpenClip && hit.kind !== "document" ? <Button variant="primary" onClick={() => onOpenClip(hit)}>Open clip</Button> : undefined}
+            actions={onOpenClip && hit.kind !== "document" ? <Button variant="primary" onClick={() => onOpenClip(hit)}>{t("page.openClip")}</Button> : undefined}
           />
         </div>
       )}

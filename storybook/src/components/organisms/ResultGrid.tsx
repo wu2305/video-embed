@@ -5,6 +5,7 @@ import { Button } from "../atoms/Button";
 import { Chip } from "../atoms/Chip";
 import { ArchiveCard } from "../molecules/ArchiveCard";
 import { ResultCard } from "../molecules/ResultCard";
+import { useI18n, type MessageKey } from "../../i18n";
 
 export interface ResultGridProps {
   /** Already fused across sources, best first. */
@@ -26,57 +27,59 @@ export interface ResultGridProps {
 
 type Filter = "all" | SourceId;
 
-const LABEL: Record<SourceId, string> = { nas: "NAS media", archive: "Archive" };
-const NAME: Record<SourceId, string> = { nas: "The NAS index", archive: "The Archive System" };
+const LABEL: Record<SourceId, MessageKey> = { nas: "results.sourceNas", archive: "results.sourceArchive" };
+const NAME: Record<SourceId, MessageKey> = { nas: "results.nasIndex", archive: "results.archiveSystem" };
 
 /**
  * Status line, source filter and the card grid. Covers the loading, error,
  * empty, partial (one source down) and populated states.
  */
-export function ResultGrid({ results, query = "", people, sources, selectedId = null, loading = false, error = null, label = "Search results", onRetry, onOpen }: ResultGridProps) {
+export function ResultGrid({ results, query = "", people, sources, selectedId = null, loading = false, error = null, label, onRetry, onOpen }: ResultGridProps) {
+  const { t } = useI18n();
   const [filter, setFilter] = useState<Filter>("all");
+  const sectionLabel = label ?? t("results.label");
   const counts = countBySource(results);
   const down = (sources ?? []).filter((s) => s.state === "unavailable");
   const mixed = counts.nas > 0 && counts.archive > 0;
   const shown = filter === "all" ? results : results.filter((r) => sourceOf(r) === filter);
 
   let status = "";
-  if (loading) status = "searching…";
-  else if (error) status = "The search failed.";
+  if (loading) status = t("results.searching");
+  else if (error) status = t("results.failed");
   else if (query) {
-    status = results.length ? `${results.length} results for “${query}”` : `no results for “${query}”`;
-    if (mixed) status += ` · NAS ${counts.nas} · Archive ${counts.archive}`;
+    status = results.length ? t("results.count", { count: results.length, query }) : t("results.none", { query });
+    if (mixed) status += t("results.bySource", { nas: counts.nas, archive: counts.archive });
   }
 
   return (
-    <section aria-label={label} aria-busy={loading || undefined}>
+    <section aria-label={sectionLabel} aria-busy={loading || undefined}>
       <div className={`mm-status${error ? " error" : ""}`} role="status">{status}</div>
       {error && (
         <div className="mm-notice bad" role="alert">
-          <p style={{ margin: 0 }}>Something went wrong on the search server, not with your query. Try again; if it keeps failing, send IT the details below.</p>
+          <p style={{ margin: 0 }}>{t("results.serverError")}</p>
           <div className="mm-row" style={{ marginTop: 8 }}>
-            {onRetry && <Button onClick={onRetry}>Try again</Button>}
-            <details className="mm-hint"><summary>Details</summary><code className="mm-mono">{error}</code></details>
+            {onRetry && <Button onClick={onRetry}>{t("results.retry")}</Button>}
+            <details className="mm-hint"><summary>{t("results.details")}</summary><code className="mm-mono">{error}</code></details>
           </div>
         </div>
       )}
       {!loading && !error && down.map((s) => (
         <div key={s.source} className="mm-notice warn" role="alert">
-          {NAME[s.source]} did not respond, so these results are incomplete. Try again in a few minutes.
+          {t("results.down", { name: t(NAME[s.source]) })}
         </div>
       ))}
       {!loading && !error && mixed && (
-        <div className="mm-chips" role="group" aria-label="Filter by source" style={{ marginBottom: 14 }}>
+        <div className="mm-chips" role="group" aria-label={t("results.filter")} style={{ marginBottom: 14 }}>
           {(["all", "nas", "archive"] as const).map((f) => (
             <Chip key={f} pressed={filter === f} onClick={() => setFilter(f)}>
-              {f === "all" ? `all (${results.length})` : `${LABEL[f]} (${counts[f]})`}
+              {f === "all" ? t("results.filterAll", { count: results.length }) : `${t(LABEL[f])} (${counts[f]})`}
             </Chip>
           ))}
         </div>
       )}
       {!loading && !error && results.length === 0 && query && (
         <div className="mm-empty">
-          Nothing you can open matches. Try fewer filters or remove the name from the query. Files added to the NAS today are searchable tomorrow morning.
+          {t("results.empty")}
         </div>
       )}
       <div className="mm-grid">
@@ -93,7 +96,7 @@ export function ResultGrid({ results, query = "", people, sources, selectedId = 
         ))}
       </div>
       {!loading && !error && results.length > 0 && (
-        <p className="mm-hint" style={{ margin: "12px 0 0" }}>Only results you are allowed to open are shown.</p>
+        <p className="mm-hint" style={{ margin: "12px 0 0" }}>{t("results.allowedOnly")}</p>
       )}
     </section>
   );

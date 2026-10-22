@@ -2,8 +2,18 @@ import type { Decorator, Preview } from "@storybook/react-vite";
 import { useEffect } from "react";
 import "../src/styles.css";
 import "./theme.css";
+import { LocaleProvider, LOCALES, type Locale } from "../src/i18n";
 
 type Theme = "dark" | "light" | "side-by-side";
+
+/**
+ * Renders the story in the language picked in the toolbar. Components read it
+ * through useI18n, so the UI strings and the story content switch together.
+ */
+const withLocale: Decorator = (Story, context) => {
+  const locale = (context.globals.locale ?? "en") as Locale;
+  return <LocaleProvider locale={locale}><Story /></LocaleProvider>;
+};
 
 /**
  * Pins the story to a theme by setting data-theme on a wrapper. "Side by side"
@@ -39,8 +49,17 @@ const withTheme: Decorator = (Story, context) => {
 
 const preview: Preview = {
   tags: ["autodocs"],
-  decorators: [withTheme],
+  decorators: [withLocale, withTheme],
   globalTypes: {
+    locale: {
+      description: "Language",
+      toolbar: {
+        title: "Language",
+        icon: "globe",
+        items: LOCALES.map((l) => ({ value: l.value, title: l.title })),
+        dynamicTitle: true,
+      },
+    },
     theme: {
       description: "Colour theme",
       toolbar: {
@@ -56,7 +75,7 @@ const preview: Preview = {
     },
   },
   // `npm test` runs every story in both themes; VITE_SB_THEME picks the pass.
-  initialGlobals: { theme: import.meta.env.VITE_SB_THEME === "light" ? "light" : "dark" },
+  initialGlobals: { theme: import.meta.env.VITE_SB_THEME === "light" ? "light" : "dark", locale: "en" },
   parameters: {
     layout: "padded",
     backgrounds: { disable: true },

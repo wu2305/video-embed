@@ -6,6 +6,7 @@ import { Chip } from "../atoms/Chip";
 import { Label } from "../atoms/Label";
 import { Tag } from "../atoms/Tag";
 import { Field } from "../molecules/Field";
+import { useI18n } from "../../i18n";
 
 export interface AnnotationComposerProps {
   /** Playhead position in seconds. */
@@ -25,6 +26,7 @@ export interface AnnotationComposerProps {
 
 /** Scene 2: attach a typed note to a time range, optionally tied to people in frame. */
 export function AnnotationComposer({ time, scene = null, inFrame = [], people = [], still = false, initialText = "", initialTo, onSave }: AnnotationComposerProps) {
+  const { t } = useI18n();
   const start = scene?.start ?? time;
   const [text, setText] = useState(initialText);
   const [from, setFrom] = useState(formatTime(start));
@@ -51,24 +53,24 @@ export function AnnotationComposer({ time, scene = null, inFrame = [], people = 
   }
 
   return (
-    <form className="mm-panel mm-note-form" onSubmit={submit} aria-label="Add note">
-      <Field label="note">
-        <textarea id={textId} value={text} onChange={(e) => setText(e.target.value)} placeholder="Ana is presenting the Q3 budget" />
+    <form className="mm-panel mm-note-form" onSubmit={submit} aria-label={t("note.form")}>
+      <Field label={t("note.field")}>
+        <textarea id={textId} value={text} onChange={(e) => setText(e.target.value)} placeholder={t("note.placeholder")} />
       </Field>
       {!still && (
         <div className="mm-row">
-          <Field label="from">
+          <Field label={t("note.from")}>
             <input id={fromId} type="text" value={from} onChange={(e) => setFrom(e.target.value)} style={{ width: 90 }} aria-invalid={rangeError !== null} />
           </Field>
-          <Field label="to (blank = open-ended)">
+          <Field label={t("note.to")}>
             <input id={toId} type="text" value={to} onChange={(e) => setTo(e.target.value)} style={{ width: 90 }} aria-invalid={rangeError !== null} />
           </Field>
         </div>
       )}
-      {rangeError && <p className="mm-hint" role="alert"><Tag tone="bad">range</Tag>{rangeError}</p>}
+      {rangeError && <p className="mm-hint" role="alert"><Tag tone="bad">{t("note.range")}</Tag>{rangeError}</p>}
       {inFrame.length > 0 && (
         <div className="mm-field">
-          <Label as="span">people in frame</Label>
+          <Label as="span">{t("note.peopleInFrame")}</Label>
           <div className="mm-chips">
             {inFrame.map((p) => (
               <Chip key={p.id} pressed={chosen.includes(p.id)} onClick={() => setChosen((c) => (c.includes(p.id) ? c.filter((x) => x !== p.id) : [...c, p.id]))}>
@@ -78,7 +80,7 @@ export function AnnotationComposer({ time, scene = null, inFrame = [], people = 
           </div>
         </div>
       )}
-      <div><Button variant="primary" type="submit" disabled={!canSave}>Save note</Button></div>
+      <div><Button variant="primary" type="submit" disabled={!canSave}>{t("note.save")}</Button></div>
     </form>
   );
 }

@@ -1,5 +1,6 @@
 import type { IndexInfo } from "../../types";
 import { formatDate, formatUpdated } from "../../lib/format";
+import { useI18n } from "../../i18n";
 import { Tag } from "../atoms/Tag";
 
 export interface FreshnessProps {
@@ -15,21 +16,22 @@ export interface FreshnessProps {
  * nightly, so this is what tells a user why this morning's upload is missing.
  */
 export function Freshness({ index, now = Date.now() / 1000, long = false }: FreshnessProps) {
+  const { t, locale } = useI18n();
   const updated = formatUpdated(index.published_at, now);
   if (index.stale) {
     return (
       <span className={long ? "mm-hint" : "mm-mono"} role={long ? "alert" : undefined}>
         <Tag tone="warn">stale</Tag>
         {long
-          ? `The NAS index has not been updated since ${formatDate(index.published_at)}. Results are still correct for files that existed then; newer files are missing. IT has been alerted.`
-          : `not updated since ${formatDate(index.published_at)}`}
+          ? t("freshness.staleLong", { date: formatDate(index.published_at) })
+          : t("freshness.stale", { date: formatDate(index.published_at) })}
       </span>
     );
   }
-  if (!long) return <span className="mm-mono">{index.units.toLocaleString("en-US")} items · updated {updated}</span>;
+  if (!long) return <span className="mm-mono">{t("freshness.items", { count: index.units.toLocaleString(locale === "zh" ? "zh-CN" : "en-US"), updated })}</span>;
   return (
     <span className="mm-hint">
-      NAS index updated {updated}. Files added to the NAS today become searchable tomorrow morning, after the nightly update.
+      {t("freshness.updated", { updated })}
     </span>
   );
 }
