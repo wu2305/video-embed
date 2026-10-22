@@ -1,0 +1,55 @@
+import { Meta, ColorPalette, ColorItem } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundations/Colour" />
+
+# Colour
+
+Two themes from one set of tokens. Each colour in `src/styles.css` is `light-dark(<light>, <dark>)`:
+a page follows the OS setting, and `data-theme="light"` or `"dark"` on any element pins that subtree,
+so both themes can render on one page. Dark is the console's own palette and the default here.
+
+Use the **Theme** toolbar to switch any story, or pick **Side by side** to see both at once.
+
+## Dark
+
+<ColorPalette>
+  <ColorItem title="Surfaces" subtitle="bg · panel · field · thumb · line"
+    colors={{ bg: "#0f1115", panel: "#171a21", field: "#12151b", thumb: "#0b0d11", line: "#262b36" }} />
+  <ColorItem title="Text" subtitle="text · muted · on-accent"
+    colors={{ text: "#e6e9ef", muted: "#8b94a7", "on-accent": "#0b0d11" }} />
+  <ColorItem title="Signal" subtitle="accent · good · warn · bad"
+    colors={{ accent: "#6ea8fe", good: "#59d18c", warn: "#e5c07b", bad: "#ff8b8b" }} />
+</ColorPalette>
+
+## Light
+
+<ColorPalette>
+  <ColorItem title="Surfaces" subtitle="bg · panel · field · thumb · line"
+    colors={{ bg: "#f5f6f8", panel: "#ffffff", field: "#f2f4f7", thumb: "#e3e6eb", line: "#d5dae2" }} />
+  <ColorItem title="Text" subtitle="text · muted · on-accent"
+    colors={{ text: "#171b23", muted: "#586174", "on-accent": "#ffffff" }} />
+  <ColorItem title="Signal" subtitle="accent · good · warn · bad"
+    colors={{ accent: "#1d5bd6", good: "#127a48", warn: "#8f5d00", bad: "#c42b2b" }} />
+</ColorPalette>
+
+## On photos and video (both themes)
+
+<ColorPalette>
+  <ColorItem title="Over imagery" subtitle="scrim · on-scrim · image-accent · image-good · image-warn"
+    colors={{ scrim: "rgba(0,0,0,.72)", "on-scrim": "#fff", "image-accent": "#6ea8fe", "image-good": "#59d18c", "image-warn": "#e5c07b" }} />
+</ColorPalette>
+
+Face boxes, rank and score chips and the note over the frame sit on a photo, not on a theme surface,
+so they keep these values in both themes.
+
+## Rules
+
+- `text` on `bg`, `panel` and `field`. `muted` for labels, metadata and ghost buttons. Every text colour
+  is at least 4.5:1 on all three surfaces in both themes; `npm test` checks every story in each.
+- `accent` is the single interactive colour: the primary button, the focus ring, a selected card, a named person.
+- `good` means *matched* (scene range, score, saved). `warn` means *look twice* (copy, merge, unnamed).
+  `bad` means *blocked* (error, no such person).
+- Every signal colour sits next to a word or number. Green and red are close in lightness in both themes,
+  so hue alone never carries meaning.
+- `line` is a separator (about 1.3:1). Selection and focus always add `accent` on top of it.
+- Never write a hex value in a component. If a colour is missing, add a token with both theme values.

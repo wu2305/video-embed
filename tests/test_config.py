@@ -45,3 +45,13 @@ def test_media_kind_classification(tmp_path):
     assert media_kind("a.jpg") == "image"
     assert media_kind("a.MP4") == "video"
     assert media_kind("a.txt") is None
+
+
+def test_layout_refuses_the_production_namespace(tmp_path):
+    import pytest
+
+    from mmindex.config import PRODUCTION_NAMESPACE, Layout, ProtectedPathError
+
+    with pytest.raises(ProtectedPathError, match=PRODUCTION_NAMESPACE):
+        Layout(tmp_path, namespace=PRODUCTION_NAMESPACE)
+    assert Layout(tmp_path, namespace="review").namespace == "review"

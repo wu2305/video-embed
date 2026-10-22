@@ -193,3 +193,37 @@ def test_release_does_not_count_retry(tmp_path):
         assert queue.failures("infer") == []
     finally:
         queue.close()
+
+
+def test_stale_worker_cannot_fail_a_row_it_no_longer_owns(tmp_path):
+    """Regression: a late mark_failed used to bounce a row another worker was running."""
+    queue = _queue(tmp_path)
+    try:
+        queue.enqueue("infer", _entries(1))
+        stale = queue.claim("infer", "w1")
+        queue.reclaim_stale(lease_seconds=-1)
+        queue.claim("infer", "w2")
+        assert queue.mark_failed(stale.task_id, "late", "w1") is False
+        assert queue.mark_done(stale.task_id, "w1") is False
+        assert queue.heartbeat(stale.task_id, "w1") is False
+        assert queue.release(stale.task_id, "w1") is False
+        assert queue.stats("infer") == {CLAIMED: 1}
+        assert queue.mark_done(stale.task_id, "w2") is True
+        assert queue.stats("infer") == {DONE: 1}
+    finally:
+        queue.close()
+
+
+def test_owner_aware_failure_counts_one_retry(tmp_path):
+    queue = _queue(tmp_path, max_retries=1)
+    try:
+        queue.enqueue("infer", _entries(1))
+        task = queue.claim("infer", "w")
+        assert queue.mark_failed(task.task_id, "boom", "w") is True
+        assert queue.stats("infer") == {PENDING: 1}
+        task = queue.claim("infer", "w")
+        queue.mark_failed(task.task_id, "boom again", "w")
+        assert queue.stats("infer") == {"failed": 1}
+        assert queue.failures("infer")[0]["retries"] == 2
+    finally:
+        queue.close()

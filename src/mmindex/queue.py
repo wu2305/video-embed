@@ -71,7 +71,10 @@ class WorkQueue:
         *,
         lease_seconds: float = 300.0,
         max_retries: int = 3,
+        journal_mode: str = "WAL",
     ) -> None:
+        if journal_mode.upper() not in ("WAL", "DELETE"):
+            raise ValueError(f"journal_mode must be WAL or DELETE, not {journal_mode!r}")
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.lease_seconds = lease_seconds
@@ -80,8 +83,8 @@ class WorkQueue:
             self.db_path, timeout=60.0, isolation_level=None, check_same_thread=False
         )
         self._conn.row_factory = sqlite3.Row
-        self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA busy_timeout=60000")
+        self._conn.execute(f"PRAGMA journal_mode={journal_mode.upper()}")
         self._conn.executescript(SCHEMA)
 
     # ------------------------------------------------------------- populate
@@ -191,42 +194,58 @@ class WorkQueue:
             task_id=row["task_id"],
         )
 
-    def heartbeat(self, task_id: str) -> None:
-        self._conn.execute(
-            "UPDATE work_queue SET heartbeat=?, updated_at=? WHERE task_id=?",
-            (time.time(), time.time(), task_id),
-        )
+    # The four methods below take an optional ``worker_id``. When given, the update
+    # applies only if that worker still owns the claim, so a worker whose lease
+    # expired (and whose row was re-claimed) cannot finish, fail or release work
+    # that now belongs to someone else. They return whether the update applied.
 
-    def mark_done(self, task_id: str) -> None:
+    @staticmethod
+    def _owned(worker_id: str | None) -> tuple[str, tuple]:
+        if worker_id is None:
+            return "", ()
+        return " AND status=? AND worker_id=?", (CLAIMED, worker_id)
+
+    def heartbeat(self, task_id: str, worker_id: str | None = None) -> bool:
         now = time.time()
-        self._conn.execute(
-            "UPDATE work_queue SET status=?, error_msg=NULL, heartbeat=?, updated_at=?"
-            " WHERE task_id=?",
-            (DONE, now, now, task_id),
+        guard, args = self._owned(worker_id)
+        cur = self._conn.execute(
+            "UPDATE work_queue SET heartbeat=?, updated_at=? WHERE task_id=?" + guard,
+            (now, now, task_id, *args),
         )
+        return cur.rowcount > 0
 
-    def mark_failed(self, task_id: str, error: str) -> None:
+    def mark_done(self, task_id: str, worker_id: str | None = None) -> bool:
+        now = time.time()
+        guard, args = self._owned(worker_id)
+        cur = self._conn.execute(
+            "UPDATE work_queue SET status=?, error_msg=NULL, heartbeat=?, updated_at=?"
+            " WHERE task_id=?" + guard,
+            (DONE, now, now, task_id, *args),
+        )
+        return cur.rowcount > 0
+
+    def mark_failed(self, task_id: str, error: str, worker_id: str | None = None) -> bool:
         """Fail a row, re-queueing it while retries remain."""
         now = time.time()
-        row = self._conn.execute(
-            "SELECT retries FROM work_queue WHERE task_id=?", (task_id,)
-        ).fetchone()
-        retries = int(row["retries"] or 0) + 1 if row else 1
-        status = PENDING if retries <= self.max_retries else FAILED
-        self._conn.execute(
-            "UPDATE work_queue SET status=?, retries=?, error_msg=?, heartbeat=?, updated_at=?"
-            " WHERE task_id=?",
-            (status, retries, error[:2000], now, now, task_id),
+        guard, args = self._owned(worker_id)
+        cur = self._conn.execute(
+            "UPDATE work_queue SET retries=COALESCE(retries, 0) + 1,"
+            " status=CASE WHEN COALESCE(retries, 0) + 1 <= ? THEN ? ELSE ? END,"
+            " error_msg=?, heartbeat=?, updated_at=? WHERE task_id=?" + guard,
+            (self.max_retries, PENDING, FAILED, error[:2000], now, now, task_id, *args),
         )
+        return cur.rowcount > 0
 
-    def release(self, task_id: str) -> None:
+    def release(self, task_id: str, worker_id: str | None = None) -> bool:
         """Return a claimed row to ``pending`` without counting a retry."""
         now = time.time()
-        self._conn.execute(
+        guard, args = self._owned(worker_id)
+        cur = self._conn.execute(
             "UPDATE work_queue SET status=?, worker_id=NULL, claimed_at=NULL, updated_at=?"
-            " WHERE task_id=?",
-            (PENDING, now, task_id),
+            " WHERE task_id=?" + guard,
+            (PENDING, now, task_id, *args),
         )
+        return cur.rowcount > 0
 
     # ------------------------------------------------------------- watchdog
 

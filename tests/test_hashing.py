@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from mmindex.hashing import fast_digest, sha256_digest, shard_for
+from mmindex.hashing import digests, fast_digest, sha256_digest, shard_for
 
 
 def test_sha256_matches_hashlib(tmp_path):
@@ -31,3 +31,14 @@ def test_shard_for_is_deterministic():
     assert 0 <= shard_for("some/path.jpg", 8) < 8
     spread = {shard_for(f"file-{i}", 8) for i in range(200)}
     assert len(spread) == 8
+
+
+def test_combined_digests_match_the_standalone_hashes(tmp_path):
+    """The single-read helper must reproduce both hashes byte for byte, or the
+    manifest's fast digest would drift from ``fast_digest``."""
+    for size in (0, 1, 100, 16 * 1024, 16 * 1024 + 1, 3 * 1024 * 1024 + 7):
+        path = tmp_path / f"f{size}.bin"
+        path.write_bytes(bytes(range(256)) * (size // 256) + b"z" * (size % 256))
+        sha, fast = digests(path)
+        assert sha == sha256_digest(path)
+        assert fast == fast_digest(path)

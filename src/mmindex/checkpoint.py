@@ -16,11 +16,13 @@ import os
 import sqlite3
 import threading
 import time
+import uuid
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
 from . import codec
+from .config import LEGACY_CHECKPOINT_NAME, PRODUCTION_NAMESPACE, ProtectedPathError
 
 try:  # POSIX advisory locking
     import fcntl
@@ -77,6 +79,16 @@ class IncrementalCheckpoint:
         self.db_path = Path(db_path)
         self.stage = stage
         self.namespace = namespace
+        if namespace == PRODUCTION_NAMESPACE:
+            raise ProtectedPathError(
+                f"namespace {PRODUCTION_NAMESPACE!r} holds the production checkpoint "
+                "shards and is immutable; use another namespace"
+            )
+        if self.db_path.name == LEGACY_CHECKPOINT_NAME:
+            raise ProtectedPathError(
+                f"{LEGACY_CHECKPOINT_NAME} is the read-only production checkpoint; "
+                "this package must not open it for writing"
+            )
         self.shard_dir = Path(shard_dir) if shard_dir else self.db_path.parent / "shards"
         self.sync_interval = sync_interval
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -92,6 +104,7 @@ class IncrementalCheckpoint:
             self._conn.execute("PRAGMA synchronous=NORMAL")
             self._conn.executescript(_SCHEMA)
             self._conn.commit()
+        self.writer_id = self._ensure_writer_id()
         self._baseline: dict[tuple[str, str, str], str] = {}
         self._capture_baseline()
         if auto_sync:
@@ -182,15 +195,6 @@ class IncrementalCheckpoint:
         self._baseline[key] = payload_sha
         return True
 
-    def delete(self, path: str, digest: str) -> bool:
-        with self._exclusive():
-            cur = self._conn.execute(
-                "DELETE FROM records WHERE path=? AND digest=? AND stage=?",
-                (path, digest, self.stage),
-            )
-            self._conn.commit()
-            return cur.rowcount > 0
-
     def count(self, stage: str | None = None) -> int:
         stage = stage or self.stage
         with self._mutex:
@@ -217,49 +221,68 @@ class IncrementalCheckpoint:
 
     # ------------------------------------------------------------- sharding
 
-    def _next_shard_index(self) -> int:
-        existing = sorted(self.shard_dir.glob("shard-*.json.gz"))
-        if not existing:
-            return 1
-        return int(existing[-1].stem.split("-")[1].split(".")[0]) + 1
+    def _ensure_writer_id(self) -> str:
+        """A stable id for this database, minted once and kept in its meta table.
+
+        Shard names embed it, so two machines with separate local databases can
+        never pick the same shard name and overwrite each other's progress.
+        """
+        with self._exclusive():
+            row = self._conn.execute("SELECT value FROM meta WHERE key='writer_id'").fetchone()
+            if row:
+                return row["value"]
+            writer_id = uuid.uuid4().hex[:12]
+            self._conn.execute("INSERT INTO meta (key, value) VALUES ('writer_id', ?)", (writer_id,))
+            self._conn.commit()
+            return writer_id
+
+    def _next_shard_path(self) -> tuple[Path, int]:
+        row = self._conn.execute("SELECT value FROM meta WHERE key='shard_seq'").fetchone()
+        seq = int(row["value"]) if row else 0
+        while True:
+            seq += 1
+            target = self.shard_dir / f"shard-{self.writer_id}-{seq:06d}.json.gz"
+            if not target.exists():
+                return target, seq
 
     def sync(self) -> Path | None:
-        """Drain the outbox into one new immutable gzip shard."""
+        """Drain the outbox into one new immutable gzip shard.
+
+        Shards are named ``shard-<writer>-<seq>.json.gz`` and are never replaced:
+        the name is unique to this database, and an existing file is skipped over.
+        """
         with self._exclusive():
-            rows = self._conn.execute(
-                "SELECT seq, path, digest, stage, payload_sha, created_at "
-                "FROM outbox ORDER BY seq"
-            ).fetchall()
-            if not rows:
+            cursor = self._conn.execute(
+                "SELECT o.path, o.digest, o.stage, o.payload_sha, o.created_at, r.payload "
+                "FROM outbox o LEFT JOIN records r "
+                "ON r.path=o.path AND r.digest=o.digest AND r.stage=o.stage "
+                "ORDER BY o.seq"
+            )
+            row = cursor.fetchone()
+            if row is None:
                 return None
-            index = self._next_shard_index()
-            name = f"shard-{index:06d}.json.gz"
-            target = self.shard_dir / name
+            target, seq = self._next_shard_path()
+            name = target.name
             tmp = target.with_suffix(".json.gz.tmp")
-            record_rows = {
-                (r["path"], r["digest"], r["stage"]): r["payload"]
-                for r in self._conn.execute(
-                    "SELECT path, digest, stage, payload FROM records"
-                ).fetchall()
-            }
             with gzip.open(tmp, "wb", compresslevel=6) as handle:
-                for row in rows:
-                    key = (row["path"], row["digest"], row["stage"])
-                    payload = record_rows.get(key)
-                    if payload is None:
-                        continue
-                    envelope = {
-                        "path": row["path"],
-                        "digest": row["digest"],
-                        "stage": row["stage"],
-                        "payload_sha": row["payload_sha"],
-                        "created_at": row["created_at"],
-                        "payload": payload.decode("utf-8"),
-                    }
-                    handle.write(json.dumps(envelope).encode())
-                    handle.write(b"\n")
+                while row is not None:
+                    if row["payload"] is not None:
+                        envelope = {
+                            "path": row["path"],
+                            "digest": row["digest"],
+                            "stage": row["stage"],
+                            "payload_sha": row["payload_sha"],
+                            "created_at": row["created_at"],
+                            "payload": row["payload"].decode("utf-8"),
+                        }
+                        handle.write(json.dumps(envelope).encode())
+                        handle.write(b"\n")
+                    row = cursor.fetchone()
             os.replace(tmp, target)
             self._conn.execute("DELETE FROM outbox")
+            self._conn.execute(
+                "INSERT OR REPLACE INTO meta (key, value) VALUES ('shard_seq', ?)", (str(seq),)
+            )
             self._conn.execute(
                 "INSERT OR REPLACE INTO applied_shards (name, applied_at) VALUES (?,?)",
                 (name, time.time()),
@@ -268,7 +291,12 @@ class IncrementalCheckpoint:
         return target
 
     def import_shards(self) -> int:
-        """Apply shards written by other machines.  Returns rows inserted."""
+        """Apply shards written by other machines.  Returns rows inserted.
+
+        Each shard is applied in one transaction, and every payload is checked
+        against the hash its writer recorded, so a damaged shard fails loudly
+        instead of seeding the checkpoint with corrupt records.
+        """
         applied = 0
         for shard in sorted(self.shard_dir.glob("shard-*.json.gz")):
             with self._mutex:
@@ -277,6 +305,7 @@ class IncrementalCheckpoint:
                 ).fetchone()
             if seen:
                 continue
+            rows = []
             with gzip.open(shard, "rb") as handle:
                 for line in handle:
                     line = line.strip()
@@ -285,28 +314,35 @@ class IncrementalCheckpoint:
                     envelope = json.loads(line)
                     payload = envelope["payload"].encode("utf-8")
                     payload_sha = hashlib.sha256(payload).hexdigest()
-                    with self._exclusive():
-                        self._conn.execute(
-                            "INSERT OR IGNORE INTO records "
-                            "(path, digest, stage, payload, payload_sha, updated_at) "
-                            "VALUES (?,?,?,?,?,?)",
-                            (
-                                envelope["path"],
-                                envelope["digest"],
-                                envelope["stage"],
-                                payload,
-                                payload_sha,
-                                envelope.get("created_at", time.time()),
-                            ),
+                    expected = envelope.get("payload_sha")
+                    if expected and expected != payload_sha:
+                        raise CheckpointConflict(
+                            f"shard {shard.name} is corrupt: payload for "
+                            f"{envelope['path']} does not match its recorded hash"
                         )
-                        self._conn.commit()
-                    applied += 1
-            with self._mutex:
+                    rows.append(
+                        (
+                            envelope["path"],
+                            envelope["digest"],
+                            envelope["stage"],
+                            payload,
+                            payload_sha,
+                            envelope.get("created_at", time.time()),
+                        )
+                    )
+            with self._exclusive():
+                self._conn.executemany(
+                    "INSERT OR IGNORE INTO records "
+                    "(path, digest, stage, payload, payload_sha, updated_at) "
+                    "VALUES (?,?,?,?,?,?)",
+                    rows,
+                )
                 self._conn.execute(
                     "INSERT OR REPLACE INTO applied_shards (name, applied_at) VALUES (?,?)",
                     (shard.name, time.time()),
                 )
                 self._conn.commit()
+            applied += len(rows)
         self._capture_baseline()
         return applied
 

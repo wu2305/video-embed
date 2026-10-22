@@ -58,6 +58,42 @@ mmindex search "red car on a bridge" --work-dir ./index_work --limit 10
 mmindex verify --work-dir ./index_work
 ```
 
+`mmindex search` prints raw JSON. `scripts/query.py` is the same query with
+readable output, and it explains the mechanics when given `--explain`:
+
+```bash
+# in the CNB dev environment, against the benchmark index from scripts/benchmark.py
+python scripts/query.py "a man in a suit" --limit 5
+python scripts/query.py "crowd of people" --person person-0003 --min-faces 1 --explain
+```
+
+A query is one text embedding, one SQL filter and one matrix multiply:
+`Index` embeds the text with SigLIP, selects candidate rows from the SQLite
+`units` table, then scores `matrix[vec_row_idx] @ query_vector` — cosine
+similarity, since both sides are L2-normalised — and adds `text_bonus` when the
+query appears in a unit's OCR/ASR text. There is no separate vector database:
+metadata is SQLite, vectors are one FP16 `.npy` matrix.
+
+### Query console
+
+`scripts/serve.py` puts the same query behind a small web page: a query box, the
+filters, result cards with thumbnails, and the embed/filter/rank timings for each
+search. It uses only the standard library, so it runs anywhere the CLI does.
+
+```bash
+# in the CNB dev environment, against the index scripts/benchmark.py built
+python scripts/serve.py --work-dir /opt/benchmark_work --port 8000
+
+# it listens on 0.0.0.0, so forward the port from your machine and open
+# http://localhost:8000
+```
+
+Thumbnails are cached JPEGs; for video units the frame is re-extracted from the
+clip at the scene midpoint, because `infer` deletes the extracted frames.
+`/api/source?id=N` streams the original file with `Range` support, which is what
+lets the browser play a video rather than show a broken player. The server is a
+demo, not a service: no auth, no pagination, one process.
+
 Without the ML extras installed, use `--backend hash`. It produces deterministic
 pseudo-embeddings from image content so the whole pipeline — including the work
 queue and search — can be exercised on any machine. Records are tagged
@@ -67,12 +103,19 @@ queue and search — can be exercised on any machine. Records are tagged
 
 | Stage | What it does | Output |
 |---|---|---|
-| `scan` | Walk the tree, xxhash64 fast-hash, SHA256 exact dedup, canonical timestamps | `manifest.jsonl`, `deduplicated.json` |
-| `prepare` | SceneDetect `ContentDetector` (threshold 27.0) + faster-whisper ASR | checkpoint `prepare` records |
-| `extract` | One midpoint frame per scene, persisted as `.npy` | `frames/*.npy`, checkpoint `extract` records |
-| `infer` | SigLIP 768-d, InsightFace 512-d faces, RapidOCR, dhash, sharpness | checkpoint `infer` records |
+| `scan` | Walk the tree, one read per file for xxhash64 + SHA256 exact dedup, canonical timestamps | `manifest.jsonl`, `deduplicated.json` |
+| `prepare` | SceneDetect `ContentDetector` (threshold 27.0) + faster-whisper ASR with segment timings | checkpoint `prepare` records |
+| `extract` | One midpoint frame per scene, stored as a bounded JPEG (1024 px, quality 90) | `frames/*.jpg`, checkpoint `extract` records |
+| `infer` | SigLIP 768-d, InsightFace 512-d faces, RapidOCR, dhash, sharpness; deletes the frames | checkpoint `infer` records |
 | `cluster` | HDBSCAN over face vectors + KMeans prototypes | `person_catalog.json`, `person_labels.json` |
 | `export` | SQLite + FP16 `.npy` snapshot, atomic manifest swap | `index_snapshots/<id>/`, `index_manifest.json` |
+
+Frames are scratch data: they are written once at a bounded size and removed as
+soon as the infer record is stored, so disk use tracks the corpus rather than
+its resolution. `MMINDEX_KEEP_FRAMES=1` keeps them for inspection.
+
+ASR keeps Whisper's own segment timings, so each scene gets the words actually
+spoken during it rather than a pro-rata slice of the whole transcript.
 
 Search scores are cosine similarity over L2-normalised SigLIP vectors plus a
 `0.15` bonus when the query term appears in the unit's OCR/ASR text.
@@ -111,17 +154,40 @@ mmindex queue reclaim --work-dir /mnt/shared
 mmindex queue retry --work-dir /mnt/shared --stage infer
 ```
 
+A running task keeps its lease alive from a background heartbeat, so only a
+vanished machine loses its claim, and a worker whose lease was reclaimed cannot
+finish, fail or release a row that another worker now owns. A stage whose tasks
+have all exhausted their retries makes the coordinator stop with the failing
+files instead of waiting forever; fix the cause and run `mmindex queue retry`.
+
+### Several machines, shared storage
+
+When `--work-dir` is a network mount, give every machine its own database:
+
+```bash
+mmindex worker --stage infer --work-dir /mnt/shared --shard 0 \
+    --local-dir /tmp/mmindex --queue-journal delete
+```
+
+`--local-dir` keeps the worker's checkpoint database on the machine and shares
+progress only through immutable shards under `<work-dir>/checkpoints/shards`,
+named `shard-<writer>-<seq>.json.gz` so two machines can never overwrite each
+other. A worker syncs its shard before it marks a task done and imports other
+machines' shards before it needs their records. `--queue-journal delete` is for
+a queue file on a network mount, where SQLite's default WAL mode does not work;
+use Redis or a managed queue instead if the mount cannot provide POSIX locks.
+
 ## Index layout
 
 ```
 index_work/
   checkpoints/
     checkpoint-v2-<namespace>.sqlite
-    shards/shard-000001.json.gz
+    shards/shard-<writer>-<seq>.json.gz
   work_queue.sqlite
   manifest.jsonl
   deduplicated.json
-  frames/
+  frames/                      # bounded JPEGs, removed once infer stores a record
   person_catalog.json
   person_labels.json
   index_snapshots/<timestamp>_<uuid>/
@@ -135,6 +201,11 @@ index_work/
 `verify` re-checks dtype, dimensions, row alignment and manifest validity before
 reporting success, and `export` refuses to publish a snapshot that fails those
 checks.
+
+The production checkpoint namespace and its legacy SQLite file are refused
+outright: `Layout` and `IncrementalCheckpoint` raise `ProtectedPathError` for
+`--namespace 7d928ad0a65d18eab89b` and for `checkpoint-38193eda9da83f4d2192.sqlite`,
+so the "never write to production" rule is enforced rather than remembered.
 
 ## Benchmark against the reference corpus
 
@@ -191,11 +262,12 @@ approximately reproducing it.
 pytest
 ```
 
-112 tests cover hashing and dedup, canonical timestamps, checkpoint resume and
+158 tests cover hashing and dedup, canonical timestamps, checkpoint resume and
 guarded overwrite, shard round-trips, queue leasing and lease recovery,
-stage-scoped task ids, stage idempotency, video scene detection, export
-consistency checks, near-duplicate master selection, hybrid search ranking and
-the benchmark scoring logic — all without model downloads.
+stage-scoped task ids, stage idempotency, video scene detection, per-scene ASR
+assignment, bounded frame storage, export consistency checks, near-duplicate
+master selection, hybrid search ranking and the benchmark scoring logic — all
+without model downloads. Four of them skip when PyAV or torch is absent.
 
 `scripts/ml_check.py` additionally exercises the real model stack (SigLIP,
 InsightFace, RapidOCR, faster-whisper) and is what the cloud dev environment

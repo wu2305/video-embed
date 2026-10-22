@@ -1,0 +1,122 @@
+import { useState } from "react";
+import { isArchive, type ArchiveRecord, type Hit, type IndexInfo, type Person, type Result, type SourceStatus, type Unavailable, type Viewer } from "../types";
+import { Button } from "../components/atoms/Button";
+import { Panel } from "../components/atoms/Panel";
+import { Freshness } from "../components/molecules/Freshness";
+import { ResultGrid } from "../components/organisms/ResultGrid";
+import { PreviewPanel } from "../components/organisms/PreviewPanel";
+import { SearchBar } from "../components/organisms/SearchBar";
+import type { PageId } from "../components/organisms/TopBar";
+import { AppShell } from "../components/templates/AppShell";
+import { annotations, duration, hitFaces, kitchenFrame, scenes } from "../mock/data";
+import { searchGateway } from "./search";
+
+export interface SearchPageProps {
+  people: readonly Person[];
+  /** NAS hits the mock search can return, already limited to what the viewer may open. */
+  corpus: readonly Hit[];
+  /** Archive System records the mock vendor API can return. */
+  archive?: readonly ArchiveRecord[];
+  /** The Archive System times out on every query. */
+  archiveDown?: boolean;
+  /** NAS hits whose file the source route refuses, by unit id. */
+  unavailable?: Readonly<Record<number, Unavailable>>;
+  /** A query already run when the page opens. Omit for the first-visit state. */
+  initialQuery?: string;
+  /** Open the preview on this hit at load. */
+  openId?: number | null;
+  loading?: boolean;
+  error?: string | null;
+  index?: IndexInfo;
+  now?: number;
+  viewer?: Viewer;
+  onNavigate?: (page: PageId) => void;
+  onOpenClip?: (hit: Hit) => void;
+}
+
+const EXAMPLES = ["Ana is cooking", "Ana and Ben are cooking", "Q3 budget"];
+
+/** Page: query every source at once, scan the fused results, preview the matched moment, open the clip. */
+export function SearchPage({
+  people, corpus, archive = [], archiveDown = false, unavailable = {}, initialQuery, openId = null, loading = false, error = null,
+  index: indexInfo, now, viewer, onNavigate, onOpenClip,
+}: SearchPageProps) {
+  const runSearch = (q: string, extra: { person?: string; min_faces?: number; limit?: number } = {}) =>
+    searchGateway(corpus, archive, people, { query: q, ...extra }, archiveDown);
+  const [query, setQuery] = useState(initialQuery ?? "");
+  const [found, setFound] = useState<{ results: Result[]; sources: SourceStatus[] }>(() =>
+    initialQuery ? runSearch(initialQuery) : { results: [], sources: [] });
+  const [open, setOpen] = useState<number | null>(openId);
+  const [playhead, setPlayhead] = useState<number | undefined>(undefined);
+  const [runKey, setRunKey] = useState(0);
+
+  // Only NAS hits preview; Archive records open in the Archive System.
+  const previewable = found.results.filter((r): r is Hit => !isArchive(r));
+  const position = open === null ? -1 : previewable.findIndex((h) => h.unit_id === open);
+  const hit = position >= 0 ? previewable[position]! : null;
+
+  function run(q: string, extra: { person?: string; min_faces?: number; limit?: number } = {}) {
+    setQuery(q);
+    setFound(runSearch(q, extra));
+    setOpen(null);
+  }
+
+  function step(delta: number) {
+    const next = previewable[Math.min(previewable.length - 1, Math.max(0, position + delta))];
+    if (next) { setOpen(next.unit_id); setPlayhead(undefined); }
+  }
+
+  const gone = hit ? unavailable[hit.unit_id] : undefined;
+
+  return (
+    <AppShell current="search" title="Search" subtitle="One search over the NAS media library and the Archive System. Name a person and say what they are doing."
+      index={indexInfo} now={now} viewer={viewer} onNavigate={onNavigate}>
+      <SearchBar key={runKey} people={people} initialQuery={query} busy={loading}
+        onSearch={(p) => run(p.query, { person: p.person || undefined, min_faces: p.min_faces, limit: p.limit })} />
+
+      {!query && !loading && !error ? (
+        <>
+          <Panel as="section" title="Try a query">
+            <div className="mm-chips">
+              {EXAMPLES.map((q) => (
+                <Button key={q} onClick={() => { run(q); setRunKey((k) => k + 1); }}>{q}</Button>
+              ))}
+            </div>
+            <p className="mm-mono" style={{ margin: "12px 0 0" }}>A capitalised name filters NAS media to that person; the rest is matched against what is on screen and sent to the Archive System as text.</p>
+          </Panel>
+          <Panel as="section" title="What this searches">
+            <ul className="mm-sources">
+              <li><b>NAS media library</b><span>Photos, video and audio on the Synology NAS: faces, on-screen text, speech and notes. Opens a preview.</span></li>
+              <li><b>Archive System</b><span>Archived records such as contracts and minutes. Metadata only; each result opens in the Archive System.</span></li>
+              <li><b>WeCom</b><span>Live documents are not searched here; use WeCom’s own search. Finalized material that is archived to the NAS shows up as NAS media.</span></li>
+            </ul>
+            <p className="mm-mono" style={{ margin: "12px 0 0" }}>
+              You only see results you are allowed to open{viewer ? `, as ${viewer.name}` : ""}. Searches are logged.
+            </p>
+            {indexInfo && <p style={{ margin: "8px 0 0" }}><Freshness index={indexInfo} now={now} long /></p>}
+          </Panel>
+        </>
+      ) : (
+        <>
+          {indexInfo?.stale && <Freshness index={indexInfo} now={now} long />}
+          <ResultGrid results={found.results} sources={found.sources} query={query} people={people} loading={loading} error={error}
+            selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }} />
+        </>
+      )}
+
+      {hit && (
+        <div className="mm-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setOpen(null); }}>
+          <PreviewPanel
+            hit={hit} position={position + 1} total={previewable.length}
+            frameSrc={hit.thumb_url ?? kitchenFrame}
+            faces={hitFaces(hit)} unavailable={gone}
+            people={people} annotations={hit.kind === "video" ? annotations : []} scenes={scenes} duration={duration}
+            playhead={playhead} onSeek={setPlayhead}
+            onPrev={() => step(-1)} onNext={() => step(1)} onClose={() => setOpen(null)}
+            actions={onOpenClip && hit.kind !== "document" ? <Button variant="primary" onClick={() => onOpenClip(hit)}>Open clip</Button> : undefined}
+          />
+        </div>
+      )}
+    </AppShell>
+  );
+}

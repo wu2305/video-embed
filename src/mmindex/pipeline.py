@@ -39,12 +39,18 @@ class Pipeline:
 
     def checkpoint(self, stage: str) -> IncrementalCheckpoint:
         if stage not in self._checkpoints:
-            self._checkpoints[stage] = IncrementalCheckpoint(
-                self.layout.checkpoint_db,
+            # Workers given --local-dir keep their records in per-machine databases
+            # and share progress only as shards, so read through the same database
+            # and import whatever the other machines have published.
+            checkpoint = IncrementalCheckpoint(
+                self.layout.worker_checkpoint_db,
                 stage=stage,
                 shard_dir=self.layout.shard_dir,
                 namespace=self.layout.namespace,
             )
+            if self.layout.local_dir is not None:
+                checkpoint.import_shards()
+            self._checkpoints[stage] = checkpoint
         return self._checkpoints[stage]
 
     def _backend(self) -> Backend:
@@ -104,6 +110,8 @@ class Pipeline:
 
     def collect_units(self) -> list[dict]:
         checkpoint = self.checkpoint("infer")
+        if self.layout.local_dir is not None:
+            checkpoint.import_shards()
         records = [record for _path, _digest, record in checkpoint.records("infer")]
         return collect_units(records)
 

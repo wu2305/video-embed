@@ -28,6 +28,7 @@ from typing import Iterable, Sequence
 import numpy as np
 
 from .backends import l2_normalize
+from .clustering import unit_key
 from .config import Layout, Settings
 
 SCHEMA = """
@@ -70,70 +71,107 @@ def _snapshot_id() -> str:
     return f"{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}_{uuid.uuid4().hex[:8]}"
 
 
-def _band_keys(dhash: str, bands: int = 4) -> list[str]:
-    """Split a 64-bit dhash into bands so near-dups sharing no prefix still meet.
+_DHASH_BITS = 64
+_PAIR_BLOCK = 4_000_000  # xor-matrix cells per numpy block, bounds peak memory
 
-    Pigeonhole: two hashes within ``bands - 1`` bits must agree exactly on at
-    least one band. With four bands that finds every pair within hamming 3, and
-    candidates are still confirmed by a full hamming comparison.
-    """
-    if not dhash:
-        return []
-    value = int(dhash, 16)
-    width = 16 // bands
-    mask = (1 << width) - 1
-    return [f"{band}:{(value >> (band * width)) & mask:0{width}x}" for band in range(bands)]
+
+def _band_layout(bands: int, total_bits: int = _DHASH_BITS) -> list[tuple[int, int]]:
+    """``(shift, width)`` for ``bands`` contiguous bit ranges covering every bit."""
+    base, extra = divmod(total_bits, bands)
+    layout: list[tuple[int, int]] = []
+    shift = 0
+    for band in range(bands):
+        width = base + (1 if band < extra else 0)
+        layout.append((shift, width))
+        shift += width
+    return layout
+
+
+def _popcount(values: np.ndarray) -> np.ndarray:
+    """Per-element population count of a ``uint64`` array."""
+    if hasattr(np, "bitwise_count"):  # numpy >= 2.0
+        return np.bitwise_count(values).astype(np.int64)
+    one, two, four = np.uint64(1), np.uint64(2), np.uint64(4)
+    m1, m2, m4 = (np.uint64(c) for c in (0x5555555555555555, 0x3333333333333333, 0x0F0F0F0F0F0F0F0F))
+    values = values - ((values >> one) & m1)
+    values = (values & m2) + ((values >> two) & m2)
+    values = (values + (values >> four)) & m4
+    return ((values * np.uint64(0x0101010101010101)) >> np.uint64(56)).astype(np.int64)
 
 
 def near_duplicates(units: Sequence[dict], settings: Settings) -> dict[int, bool]:
     """Mark the sharpest member of each dhash near-duplicate group as master.
 
+    Candidate pairs come from multi-index hashing: the 64-bit dhash is cut into
+    ``near_dup_hamming + 1`` bands covering every bit, and two hashes within
+    ``near_dup_hamming`` bits must agree exactly on at least one band (pigeonhole),
+    so no qualifying pair is missed. Candidates sharing a band are confirmed with
+    a full hamming comparison in numpy blocks, and confirmed pairs are merged
+    into groups with union-find, so memory stays proportional to the unit count.
+
     Returns ``{unit_index: is_master}`` for every unit.
     """
-    from .media import hamming
-
     masters: dict[int, bool] = {i: True for i in range(len(units))}
-    buckets: dict[str, list[int]] = {}
-    for index, unit in enumerate(units):
-        for key in _band_keys(unit.get("dhash") or ""):
-            buckets.setdefault(key, []).append(index)
+    indices = [i for i, unit in enumerate(units) if unit.get("dhash")]
+    if len(indices) < 2:
+        return masters
 
-    # Compare each candidate pair once, even when several bands agree.
-    compared: set[tuple[int, int]] = set()
-    groups: list[list[int]] = []
-    assigned: dict[int, int] = {}
-    for members in buckets.values():
-        if len(members) < 2:
-            continue
-        for position, left in enumerate(members):
-            for right in members[position + 1 :]:
-                pair = (min(left, right), max(left, right))
-                if pair in compared:
-                    continue
-                compared.add(pair)
-                left_hash = units[pair[0]].get("dhash") or ""
-                right_hash = units[pair[1]].get("dhash") or ""
-                if hamming(left_hash, right_hash) > settings.near_dup_hamming:
-                    continue
-                left_group = assigned.get(pair[0])
-                right_group = assigned.get(pair[1])
-                if left_group is None and right_group is None:
-                    groups.append([pair[0], pair[1]])
-                    assigned[pair[0]] = assigned[pair[1]] = len(groups) - 1
-                elif left_group is not None and right_group is None:
-                    groups[left_group].append(pair[1])
-                    assigned[pair[1]] = left_group
-                elif right_group is not None and left_group is None:
-                    groups[right_group].append(pair[0])
-                    assigned[pair[0]] = right_group
-                elif left_group != right_group:
-                    keep, drop = min(left_group, right_group), max(left_group, right_group)
-                    groups[keep].extend(groups[drop])
-                    for member in groups[drop]:
-                        assigned[member] = keep
-                    groups[drop] = []
+    values = [int(units[i]["dhash"], 16) for i in indices]
+    if any(value >> _DHASH_BITS for value in values):
+        raise ValueError(f"dhash wider than {_DHASH_BITS} bits")
+    # Identical hashes (a run of black or fade frames, say) are one node: they
+    # are trivially duplicates of each other, and comparing every pair of them
+    # would be quadratic in the size of the run.
+    hashes, inverse = np.unique(np.array(values, dtype=np.uint64), return_inverse=True)
+    threshold = settings.near_dup_hamming
 
-    for group in groups:
+    parent = np.arange(len(hashes), dtype=np.int64)
+
+    def find_many(nodes: np.ndarray) -> np.ndarray:
+        """Roots of ``nodes``, halving paths as it climbs."""
+        while True:
+            up = parent[nodes]
+            if (up == nodes).all():
+                return nodes
+            parent[nodes] = parent[up]
+            nodes = up
+
+    def union_many(left: np.ndarray, right: np.ndarray) -> None:
+        """Merge the sets of every ``(left[k], right[k])`` pair."""
+        while len(left):
+            a, b = find_many(left), find_many(right)
+            apart = a != b
+            if not apart.any():
+                return
+            left, right, a, b = left[apart], right[apart], a[apart], b[apart]
+            # Several pairs may write the same high root; the survivors are
+            # re-checked next round, so a lost write only costs another pass.
+            parent[np.maximum(a, b)] = np.minimum(a, b)
+
+    bands = max(1, min(_DHASH_BITS, threshold + 1))
+    for shift, width in _band_layout(bands):
+        keys = (hashes >> np.uint64(shift)) & np.uint64((1 << width) - 1)
+        order = np.argsort(keys, kind="stable")
+        sorted_keys = keys[order]
+        cuts = np.flatnonzero(sorted_keys[1:] != sorted_keys[:-1]) + 1
+        for chunk in np.split(order, cuts):
+            size = len(chunk)
+            if size < 2:
+                continue
+            members = hashes[chunk]
+            rows_per_block = max(1, _PAIR_BLOCK // size)
+            for start in range(0, size, rows_per_block):
+                block = members[start : start + rows_per_block]
+                close = _popcount(block[:, None] ^ members[None, :]) <= threshold
+                rows, cols = np.nonzero(close)
+                union_many(chunk[start + rows], chunk[cols])
+
+    roots = find_many(np.arange(len(hashes)))[inverse]
+    grouped: dict[int, list[int]] = {}
+    for position, root in enumerate(roots.tolist()):
+        grouped.setdefault(root, []).append(indices[position])
+
+    for group in grouped.values():
         if len(group) < 2:
             continue
         best = max(group, key=lambda i: float(units[i].get("sharpness") or 0.0))
@@ -151,17 +189,46 @@ def collect_units(
     records: Iterable[dict],
     person_labels: dict | None = None,
 ) -> list[dict]:
-    """Flatten stage-3 records into a flat unit list with person ids attached."""
+    """Flatten stage-3 records into a flat unit list with person ids attached.
+
+    Labels written with ``unit_keys`` are joined by unit identity and must cover
+    exactly the units being exported; otherwise they were computed for a different
+    corpus and :class:`ExportError` tells the caller to re-run ``cluster``. Labels
+    from older runs carry no keys and fall back to the positional join.
+    """
     units: list[dict] = []
     for record in records:
         for unit in record.get("units") or []:
             copy = dict(unit)
             copy.setdefault("person_ids", [])
+            if record.get("backend"):
+                copy.setdefault("backend", record["backend"])
+            if "sharpness_edge" in record:
+                copy.setdefault("sharpness_edge", record["sharpness_edge"])
             units.append(copy)
 
     if person_labels:
         labels = person_labels.get("labels") or []
         refs = person_labels.get("unit_refs") or []
+        keys = person_labels.get("unit_keys")
+        if keys is not None:
+            labelled = [(k[0], k[1], int(k[2])) for k in keys]
+            current = {unit_key(unit) for unit in units}
+            if current != set(labelled):
+                raise ExportError(
+                    "person labels are stale: they cover "
+                    f"{len(set(labelled))} units, {len(set(labelled) - current)} no longer "
+                    f"present and {len(current - set(labelled))} not yet clustered; "
+                    "re-run the cluster stage before exporting"
+                )
+            by_key: dict[tuple, set[str]] = {}
+            for label, ref in zip(labels, refs):
+                if label != -1:
+                    by_key.setdefault(labelled[int(ref[0])], set()).add(f"person-{int(label):04d}")
+            for unit in units:
+                unit["person_ids"] = sorted(by_key.get(unit_key(unit), ()))
+            return units
+
         by_unit: dict[int, list[str]] = {}
         for label, ref in zip(labels, refs):
             if label == -1:
@@ -170,6 +237,40 @@ def collect_units(
         for index, unit in enumerate(units):
             unit["person_ids"] = sorted(set(by_unit.get(index, [])))
     return units
+
+
+def resolve_backend(units: Sequence[dict], settings: Settings) -> str:
+    """The one inference backend that produced ``units``.
+
+    Hash pseudo-embeddings and real model embeddings live in unrelated vector
+    spaces, so a snapshot mixing them would rank nonsense. Units carry the name
+    of the backend that made them; with none recorded, fall back to the setting.
+    """
+    names = sorted({unit["backend"] for unit in units if unit.get("backend")})
+    if len(names) > 1:
+        raise ExportError(
+            f"units come from several inference backends {names}; re-run the infer "
+            "stage with one backend before exporting"
+        )
+    return names[0] if names else settings.backend
+
+
+def resolve_sharpness_edge(units: Sequence[dict], settings: Settings) -> int:
+    """The one scale the units' sharpness values were measured at.
+
+    Sharpness is only comparable at a fixed size (``media.sharpness``), and
+    master election compares it across files. A record set written partly at the
+    old full-resolution scale and partly at the normalised one would elect
+    masters by an artefact of when each file was inferred, so refuse the mix.
+    Units with no scale recorded predate the field and are all treated as raw.
+    """
+    edges = sorted({int(unit.get("sharpness_edge") or 0) for unit in units})
+    if len(edges) > 1:
+        raise ExportError(
+            f"units record {len(edges)} sharpness scales {edges}; sharpness is only "
+            "comparable at one scale, so re-run the infer stage for the whole corpus"
+        )
+    return edges[0] if edges else int(settings.sharpness_edge)
 
 
 def export_snapshot(
@@ -182,6 +283,9 @@ def export_snapshot(
 ) -> dict:
     """Write a snapshot to local disk and flip the manifest when consistent."""
     layout.ensure()
+    backend_name = resolve_backend(units, settings)
+    # Checked before any file is written: a mixed-scale corpus must not publish.
+    sharpness_edge = resolve_sharpness_edge(units, settings)
     snapshot_dir = layout.snapshots_dir / _snapshot_id()
     tmp_dir = snapshot_dir.with_name(snapshot_dir.name + ".tmp")
     tmp_dir.mkdir(parents=True, exist_ok=False)
@@ -244,7 +348,7 @@ def export_snapshot(
                 "unit_count": str(len(units)),
                 "embedding_dim": str(settings.clip_embedding_dim),
                 "embedding_dtype": "float16",
-                "backend": settings.backend,
+                "backend": backend_name,
                 "master_count": str(sum(1 for v in masters.values() if v)),
             }
             conn.executemany(
@@ -279,7 +383,8 @@ def export_snapshot(
         "settings": {
             "clip_embedding_dim": settings.clip_embedding_dim,
             "face_embedding_dim": settings.face_embedding_dim,
-            "backend": settings.backend,
+            "backend": backend_name,
+            "sharpness_edge": sharpness_edge,
         },
     }
     if manifest_extra:

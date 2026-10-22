@@ -209,9 +209,14 @@ def fetch_flickr(root: Path, spec: CorpusSpec, log=print) -> tuple[list[Path], P
     target.mkdir(parents=True, exist_ok=True)
     log(f"Flickr30k: downloading (limit={spec.flickr_limit})")
     split = f"test[:{spec.flickr_limit}]" if spec.flickr_limit else "test"
+    # The Parquet-backed mirror works on every `datasets` 3.x/4.x/5.x; the
+    # nlphuji copy ships a loading script, which 4.x+ refuses. Trying the
+    # fallback only on a missing Parquet mirror keeps the original error visible
+    # instead of replacing it with "scripts are no longer supported".
     try:
         dataset = load_dataset("lmms-lab-encoder/flickr30k", split=split)
-    except Exception:
+    except Exception as first:
+        log(f"Flickr30k: lmms-lab mirror failed ({type(first).__name__}: {first})")
         dataset = load_dataset("nlphuji/flickr30k", split=split)
 
     captions: dict[str, list[str]] = {}

@@ -1,0 +1,45 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Overview" />
+
+# Unified Search component gallery
+
+Components for the Unified Search Gateway's console and the scenes in `STORYBOOK.md` at the repo root.
+The gateway searches the NAS media library (the `mmindex` index) and the Archive System in one query,
+filters every result to what the signed-in user may open, and is updated nightly
+(`docs/UNIFIED_SEARCH_DESIGN.md`). The data is mocked, so no index, gateway or backend is needed.
+
+## How the gallery is organised
+
+Atomic design, smallest first. Start at **Pages/Overview** to see every page at a glance, **Pages/Prototype**
+for a demo, and **Foundations** to build.
+
+Every story renders in a dark and a light theme. Switch with the **Theme** toolbar, or pick **Side by side**.
+
+| Level | Stories | Built from |
+|---|---|---|
+| **Foundations** | Colour, Type, Space and shape | the tokens at the top of `styles.css` |
+| **Atoms** | `Button`, `Tag`, `Label`, `Chip`, `Kbd`, `Panel` | tokens only |
+| **Molecules** | `Field`, `ParseStep`, `FaceBox`, `ResultCard`, `ArchiveCard`, `Freshness`, `PersonCard`, `NoteItem`, `MetaList` | atoms |
+| **Organisms** | `TopBar`, `SearchBar`, `ResultGrid`, `PeopleGrid`, `FaceOverlay`, `FaceTagger`, `AnnotationTrack`, `AnnotationComposer`, `NoteList`, `PreviewPanel` | molecules and atoms |
+| **Templates** | `AppShell` | top bar, page header, body slot |
+| **Pages** | `Overview` (live previews), `Prototype`, `Search`, `People`, `Clip` | organisms in the shell, with mock state |
+| **Scenes** | one per user story in `STORYBOOK.md` | the flow each story describes |
+
+Every story is also a test: `npm test` runs each one in Chromium, once per theme, including its `play`
+steps and an accessibility check that fails on any axe violation (colour contrast included).
+
+Component stories hold the states and the interaction tests; scene stories show the whole flow.
+
+| Scene | Organisms | Status in the repo |
+|---|---|---|
+| 1 · Name a face | `FaceTagger` | **new.** The index stores no face boxes yet. |
+| 2 · Write on the video | `AnnotationTrack`, `AnnotationComposer` | **new.** Needs a sidecar notes store. |
+| 3 · Who is doing what | `SearchBar`, `ResultGrid` | **partial.** The card and grid match the console. The who/what readout is new. |
+| 4 · More media, more sources | `ResultGrid`, `ArchiveCard` | **partial.** Images exist. Audio, documents and the Archive System are new. |
+| 5 · Preview | `PreviewPanel` | **partial.** The console plays the source file but does not seek to the scene. |
+| 6 · Only what you may open | `TopBar`, `ResultGrid`, `PreviewPanel` | **new.** No sign-in, ACL capture or query-time filtering yet. |
+| 7 · Today's files, tomorrow morning | `Freshness`, `ResultGrid`, `PreviewPanel` | **new.** The nightly incremental cycle is not built yet. |
+
+`src/types.ts` marks which `Hit` fields do not exist in `SearchHit.to_dict()` today. `ArchiveRecord`, `Viewer`
+and `IndexInfo` are all proposals: the Archive vendor's response shape is still to be confirmed.

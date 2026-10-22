@@ -67,6 +67,7 @@ class Index:
             raise FileNotFoundError(f"incomplete snapshot: {self.snapshot_dir}")
         self.matrix = np.load(self.npy_path).astype(np.float32)
         self.matrix = l2_normalize(self.matrix)
+        self.backend = self._read_backend()
         catalog_path = self.snapshot_dir / "person_catalog.json"
         self.catalog = (
             json.loads(catalog_path.read_text(encoding="utf-8"))
@@ -80,6 +81,27 @@ class Index:
         if not manifest or not manifest.get("complete"):
             raise FileNotFoundError(f"no complete index manifest at {layout.index_manifest}")
         return cls(manifest["snapshot_dir"], settings)
+
+    def _read_backend(self) -> str | None:
+        conn = sqlite3.connect(self.db_path)
+        try:
+            row = conn.execute("SELECT value FROM meta WHERE key='backend'").fetchone()
+        except sqlite3.Error:
+            return None
+        finally:
+            conn.close()
+        return row[0] if row else None
+
+    def check_backend(self, name: str) -> None:
+        """Refuse a query embedded by a different backend than the one that built
+        the index: the vectors would not be comparable and the ranking is noise.
+        Snapshots from before the backend was recorded (``auto`` or absent) pass.
+        """
+        if self.backend in ("hash", "ml") and name in ("hash", "ml") and name != self.backend:
+            raise ValueError(
+                f"index was built with the '{self.backend}' backend but the query was "
+                f"embedded with '{name}'; pass --backend {self.backend}"
+            )
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
@@ -147,28 +169,62 @@ class Index:
                 raise ValueError(
                     f"query vector has {vector.shape[0]} dims, index has {self.matrix.shape[1]}"
                 )
-            similarities = self.matrix[rows_index] @ vector
+            similarities = (self.matrix[rows_index] @ vector).astype(np.float32)
         else:
             similarities = np.zeros(len(rows), dtype=np.float32)
 
+        bonus = self.settings.text_bonus
         needle = (text or "").strip().lower()
-        hits: list[SearchHit] = []
-        for row, similarity in zip(rows, similarities):
-            bonus = 0.0
-            if needle:
+        bonuses = np.zeros(len(rows), dtype=np.float32)
+        if needle:
+            # Only rows that can still reach the top k need their text read: a
+            # row matches only if its similarity is within one bonus of the k-th
+            # best similarity, so the rest are skipped without touching the
+            # OCR/ASR columns.
+            cutoff = self._similarity_cutoff(similarities, limit, bonus)
+            for position in np.flatnonzero(similarities >= cutoff).tolist():
+                row = rows[position]
                 haystack = f"{row['ocr_text'] or ''} {row['asr_text'] or ''}".lower()
                 if needle in haystack:
-                    bonus = self.settings.text_bonus
-            score = float(similarity) + bonus
-            if min_score is not None and score < min_score:
-                continue
+                    bonuses[position] = bonus
+
+        scores = similarities + bonuses
+        if min_score is not None:
+            scores = np.where(scores >= min_score, scores, -np.inf)
+        if limit <= 0:
+            return []
+        if len(scores) > limit:
+            # argpartition finds the k best in O(n); only those get a SearchHit.
+            top = np.argpartition(-scores, limit - 1)[:limit]
+            # Rows tied with the k-th score compete on path and unit index, as
+            # the previous full sort did, so include that tie group before the
+            # final ordering. Their paths are read, but no hit is built for them.
+            boundary = float(scores[top].min())
+            if np.isfinite(boundary):
+                top = np.union1d(top, np.flatnonzero(scores == boundary))
+        else:
+            top = np.arange(len(scores))
+
+        chosen = [position for position in top.tolist() if np.isfinite(scores[position])]
+        chosen.sort(
+            key=lambda position: (
+                -scores[position],
+                rows[position]["path"],
+                rows[position]["unit_index"],
+            )
+        )
+        chosen = chosen[:limit]
+
+        hits: list[SearchHit] = []
+        for position in chosen:
+            row = rows[position]
             hits.append(
                 SearchHit(
                     unit_id=int(row["unit_id"]),
                     path=row["path"],
-                    score=score,
-                    similarity=float(similarity),
-                    text_bonus=bonus,
+                    score=float(scores[position]),
+                    similarity=float(similarities[position]),
+                    text_bonus=float(bonuses[position]),
                     kind=row["kind"],
                     canonical_time=float(row["canonical_time"]),
                     ocr_text=row["ocr_text"] or "",
@@ -179,9 +235,17 @@ class Index:
                     unit_index=int(row["unit_index"]),
                 )
             )
-
-        hits.sort(key=lambda hit: (-hit.score, hit.path, hit.unit_index))
         return hits[:limit]
+
+    @staticmethod
+    def _similarity_cutoff(similarities: np.ndarray, limit: int, bonus: float) -> float:
+        """Lowest similarity a row needs to reach the top ``limit`` after bonuses."""
+        if limit <= 0:
+            return np.inf
+        if len(similarities) <= limit:
+            return -np.inf
+        kth = np.partition(similarities, len(similarities) - limit)[len(similarities) - limit]
+        return float(kth) - bonus
 
     def persons(self) -> list[dict]:
         return list(self.catalog.get("persons", []))

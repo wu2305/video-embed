@@ -187,6 +187,71 @@ CUDA path from the production notebook and is out of scope for this package.
 
 ---
 
+## Code-review fixes (2026-10-19)
+
+A review against this handover found eight defects, now fixed with regression
+tests (158 tests, 4 skipped without PyAV or torch). Behaviour you may otherwise
+be surprised by:
+
+- **Distributed `prepare` runs ASR.** The worker builds a backend lazily on the
+  first video task; images never load models.
+- **Near-duplicate grouping** (`export.near_duplicates`) cuts the 64-bit dhash
+  into `near_dup_hamming + 1` bands over every bit, so no pair within the
+  threshold is missed, and confirms candidates with vectorised hamming checks.
+  `BENCHMARK.md`'s 0.375 lossy re-encode fold rate predates this fix and has not
+  been re-measured.
+- **Face detection** keeps two InsightFace apps (640 px, plus a 320 px fallback
+  built on first use) instead of re-`prepare`-ing one, which had left every later
+  image at 320 px.
+- **Leases**: a background heartbeat runs while a task is processed, and
+  `heartbeat/mark_done/mark_failed/release(task_id, worker_id)` apply only if that
+  worker still owns the claim. `Worker` summaries report `lost` leases.
+- **Failed stages**: `Coordinator.wait_for_stage` returns `False` as soon as only
+  failed rows remain, and `run` aborts naming the failing files.
+- **Person labels** are written with `unit_keys` (path, digest, unit index) and
+  joined by key at export; a changed unit set raises `ExportError` ("re-run the
+  cluster stage"). Label files from older runs fall back to the positional join.
+- **Backend identity**: units carry the backend that produced them; export refuses
+  a mix, stores the real name in the snapshot, and `Index.check_backend` (used by
+  `mmindex search`) rejects a query embedded by another backend.
+- **Multi-machine checkpoints**: shards are named
+  `shard-<writer>-<seq>.json.gz` (writer id minted once per database) and
+  imported shards are hash-checked. `--local-dir` gives each machine its own
+  database, and a durable worker syncs its shard before marking a task done.
+  `--queue-journal delete` is for a queue file on a network mount. This is tested
+  with simulated machines on one disk, not on a real NFS or FUSE mount.
+
+Findings 9-13 are covered in the next section. `scripts/query.py` still does not
+call `Index.check_backend`.
+
+---
+
+## Findings 9-13 (2026-10-19, same branch)
+
+- **Per-scene ASR (9).** `prepare` records carry `schema: 2` and
+  `asr_segments` (Whisper `start`/`end`/`text`); `infer` gives a scene every
+  segment that overlaps it. Records without `asr_segments` still use the old
+  pro-rata word split, so existing checkpoints keep working. `infer` also keys
+  its per-frame arrays by `frame["index"]`, so a scene whose frame failed to
+  decode no longer shifts later units onto the wrong scene.
+- **Frame storage (10).** `extract` writes a bounded JPEG (`frame_max_edge`
+  1024, `frame_jpeg_quality` 90) instead of a full-resolution `.npy`, and
+  `infer` unlinks the frames after storing its record. `keep_frames` (env
+  `MMINDEX_KEEP_FRAMES`) retains them. Because `infer` now reads through
+  `media.load_frame`, an extract record written before this change (pointing at
+  a `.npy` file) must be re-extracted.
+- **Scan (11).** `hashing.digests` returns SHA256 and xxhash from one read;
+  `scan` groups by SHA256 alone, and an unreadable file lands in `skipped`
+  instead of aborting the run.
+- **Search (12).** `Index.search` ranks with numpy, pulls the k-th tie group
+  for exact ordering, and builds `SearchHit`s only for the returned rows.
+- **Production guard (13).** `Layout` and `IncrementalCheckpoint` raise
+  `ProtectedPathError` for namespace `7d928ad0a65d18eab89b` and for
+  `checkpoint-38193eda9da83f4d2192.sqlite`. `IncrementalCheckpoint.delete()` was
+  removed; it had no callers.
+
+---
+
 ## What to do next
 
 1. **Production index export (unchanged)**: the user still runs notebook cells
