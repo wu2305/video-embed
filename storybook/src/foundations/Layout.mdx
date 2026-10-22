@@ -35,6 +35,13 @@ import { Meta } from "@storybook/addon-docs/blocks";
 - Detail pages split 2 : 1 (`.mm-split`). Below 760px every split stacks into one column.
 - Grids auto-fill from `--card-min` (212px for hits, 160px for people). Override the variable, not the grid.
 - No shadows, gradients or motion. Depth comes from `bg` → `panel` → `field`.
+- Cards are size containers (`container-type: inline-size`). Below 180px a card tightens its body and clamps
+  long text to three lines, whatever the page width.
+- Use logical properties (`margin-inline-start`, `inset-inline-end`, `text-align: start`) so the console mirrors
+  under `dir="rtl"`. Positions over media stay physical: frames and timelines do not mirror.
+- Below 400px the top bar shows only the brand mark; the name stays for screen readers.
+- A heading that can hold a file name (`.mm-page-head h1`, the preview `h2`) uses `overflow-wrap: anywhere`, so a
+  name with no break points never widens the page.
 
 ## Controls and touch
 

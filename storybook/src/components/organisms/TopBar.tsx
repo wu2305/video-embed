@@ -39,7 +39,7 @@ export function BrandMark() {
 export function TopBar({ current, index, now, viewer, onNavigate, hideBrand = false }: TopBarProps) {
   return (
     <header className="mm-topbar">
-      {!hideBrand && <div className="mm-brand"><BrandMark />Unified Search</div>}
+      {!hideBrand && <div className="mm-brand"><BrandMark /><span className="mm-brand-name">Unified Search</span></div>}
       <nav aria-label="Primary" className="mm-links">
         {LINKS.map((link) => (
           <a
