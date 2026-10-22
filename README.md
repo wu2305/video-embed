@@ -79,6 +79,11 @@ Search scores are cosine similarity over L2-normalised SigLIP vectors plus a
 
 ## Distributed spot workers
 
+This is the topology for the one-off historical backfill. Steady-state
+incremental ingestion and per-user permission filtering are designed in
+§4–5 of [`docs/UNIFIED_SEARCH_DESIGN.md`](./docs/UNIFIED_SEARCH_DESIGN.md)
+but not yet implemented.
+
 Stages 1-3 scale horizontally over a SQLite work queue on shared storage:
 
 ```bash

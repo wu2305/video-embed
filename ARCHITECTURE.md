@@ -159,6 +159,10 @@ new ingestion pipelines on smaller local libraries.
 
 ## 4. Distributed spot architecture
 
+> This topology is for the one-off historical backfill. Steady-state
+> incremental ingestion and the permission model are in §4–5 of
+> [`docs/UNIFIED_SEARCH_DESIGN.md`](./docs/UNIFIED_SEARCH_DESIGN.md).
+
 ### 4.1 Design constraints
 
 - Machines are preemptible: they can vanish without notice mid-file.

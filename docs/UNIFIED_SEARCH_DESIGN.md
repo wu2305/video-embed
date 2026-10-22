@@ -127,6 +127,111 @@ cost.
 
 ---
 
+## 4. Operating model
+
+*Proposed 2026-10-22. Decisions marked **To be confirmed** are still open.*
+
+The NAS pipeline runs in two phases with different shapes. The main node plus
+spot workers in [`ARCHITECTURE.md` §4](../ARCHITECTURE.md#4-distributed-spot-architecture)
+fits only the first.
+
+### 4.1 Phase 1 — historical backfill (one-off)
+
+Batch-process the existing historical archive once.
+
+- **Topology:** one stable coordinator node plus preemptible spot workers over
+  shared storage and the SQLite lease queue. Stages run one at a time across
+  every machine (`prepare` → `extract` → `infer`), then `cluster` and
+  `export` run on the coordinator.
+- **Why it fits:** the corpus is large and fixed, throughput matters more than
+  latency, and spot capacity is cheap. Every stage is idempotent, so losing
+  a machine costs at most the files it had in flight.
+- **Why it does not fit steady state:** it assumes a closed file list. Every
+  stage has to finish before the next one starts, clustering is a full
+  HDBSCAN pass, and a run ends with one full export. New files would wait for
+  the next full batch, and spinning up a spot fleet for a few hundred files a
+  day costs more than it saves.
+- **Exit criterion:** the backfill snapshot is published and `verify` passes.
+  After that the spot fleet is retired; it comes back only for a full
+  re-index, such as a model upgrade that invalidates every embedding.
+
+### 4.2 Phase 2 — steady-state incremental ingestion
+
+Keep the index current as business lines add material to the NAS, including
+the WeCom static material archived under §3.3.
+
+| Concern | Steady-state design |
+|---|---|
+| **Topology** | One always-on ingestion node on the intranet next to the NAS, with a read-only mount. No spot fleet and no shared work queue; the same stage functions run in-process. |
+| **Change detection** | A scheduled incremental `scan` (e.g. nightly) diffs the tree against the previous `manifest.jsonl`. The fast hash is the change key, so new or modified files enter the pipeline and unchanged files are skipped by the checkpoint. |
+| **Deletes and moves** | Files missing from the new manifest are tombstoned, and the next snapshot drops their units. A move is a delete plus an add under the same digest, so the checkpoint reuses the existing features and nothing is re-inferred. |
+| **Per-file processing** | `prepare` → `extract` → `infer` run file by file in a pipeline instead of stage by stage, so a new file is searchable after one cycle. |
+| **Person clustering** | New faces are assigned to the nearest existing person prototype within a distance threshold; unmatched faces wait in a pending pool. A full HDBSCAN re-cluster runs on a slower cadence (e.g. weekly) to merge and split persons and absorb the pending pool. |
+| **Publishing** | Each cycle exports a new snapshot from the checkpoint and switches `index_manifest.json` atomically, as today. Readers never see a partial index. The last *N* snapshots are kept for rollback. |
+| **Failure handling** | A file that fails is retried on the next cycle and marked failed after *k* attempts. A cycle with failures still publishes the files that succeeded. |
+| **Monitoring** | Per cycle: files added, changed and deleted, failures, cycle duration, snapshot id, and `verify` result. Alert when a cycle fails `verify` or nothing has been published for longer than the expected cadence. |
+
+> **To be confirmed:** the ingestion cadence (nightly vs. hourly), whether
+> new files may be pushed to the node by a DSM file-change hook instead of
+> waiting for a scheduled scan, and the full re-cluster cadence.
+
+### 4.3 Run procedures
+
+| Procedure | Trigger | Steps |
+|---|---|---|
+| Backfill | One-off, or a full re-index | Start coordinator → `scan` → enqueue each stage to spot workers → `cluster` → `export` → `verify` → retire workers |
+| Incremental cycle | Schedule | Incremental `scan` → per-file pipeline for new and changed files → prototype assignment → `export` → `verify` → atomic switch |
+| Full re-cluster | Slower schedule | HDBSCAN over all faces → rebuild prototypes → `export` → `verify` → atomic switch |
+| Rollback | Bad snapshot reported | Point `index_manifest.json` back at the previous snapshot |
+| Model upgrade | New embedding model | New checkpoint namespace → backfill under that namespace → switch once `verify` and the benchmark pass. Old and new vectors are never mixed. |
+
+---
+
+## 5. Permission model
+
+### 5.1 Principle: index broadly, filter per user at query time
+
+The ingestion side must read everything it indexes, so the index itself holds
+material that not every user may see. Permissions are therefore enforced on
+every query at the gateway, never by limiting what gets indexed. The gateway
+returns a hit only if the caller could open the source item directly.
+
+### 5.2 Per-source enforcement
+
+| Source | Where permissions live | Enforcement |
+|---|---|---|
+| **NAS** | DSM shared folders and directory ACLs, mapped to directory groups (§3.1.1) | At ingestion, record for each file the directory groups allowed to read it, taken from its share and directory ACLs. At query time, the gateway resolves the caller's groups from the IdP and keeps only units whose allowed groups intersect them. |
+| **Archive System** | Vendor's confidentiality visibility rules | The gateway passes the caller's identity through (§3.2) and the vendor filters. The gateway stores nothing from the Archive. |
+| **WeCom** | Per-user ACLs | Not applicable. Live data is not indexed (§3.3); archived material inherits the ACLs of the NAS folder it lands in. |
+
+### 5.3 Keeping NAS permissions current
+
+- ACLs are re-read on every incremental scan, so a permission change takes
+  effect at the next published snapshot even when the file itself did not
+  change.
+- Group membership is resolved live from the IdP on each query, not stored in
+  the index, so adding or removing a user from a group takes effect
+  immediately.
+- When a file's ACL cannot be read, its units are excluded from results
+  rather than shown to everyone (fail closed).
+
+### 5.4 Service accounts
+
+| Account | Access | Used by |
+|---|---|---|
+| Ingestion | Read-only on the indexed NAS shares, plus read of their ACLs | Ingestion node |
+| Index writer | Write to the snapshot directory and `index_manifest.json` | Ingestion node only |
+| Gateway | Read-only on published snapshots; IdP group lookup; Archive API client | Search gateway |
+
+Users never touch the index files directly. All access goes through the
+gateway, which logs each query with the caller's identity for audit.
+
+> **To be confirmed:** whether directory-level ACLs are granular enough or
+> per-file ACLs are needed, and whether the audit log must meet a specific
+> retention policy.
+
+---
+
 ## Open items
 
 | Item | Owner | Blocks |
@@ -137,3 +242,7 @@ cost.
 | Sign-off on WeCom pruning ADR | Business side | §3.3 scope closure |
 | Store keyframes as compressed previews (e.g. WebP) instead of raw `.npy` | This repo | §3.1.2 stage 2 spec deviation |
 | Document (Word/PDF) parsing on NAS | Not yet designed | §2 heterogeneous data, §3.3 archived WeCom docs |
+| Ingestion cadence, DSM change hook, re-cluster cadence | Wu / client IT | §4.2 steady state |
+| Incremental scan with tombstones, per-file pipeline, prototype assignment | This repo | §4.2 steady state |
+| ACL capture at scan and query-time group filtering | This repo | §5.2 NAS enforcement |
+| ACL granularity (directory vs. file) and audit retention | Client IT | §5 permission model |
