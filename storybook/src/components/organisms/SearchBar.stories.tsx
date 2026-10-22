@@ -71,3 +71,15 @@ export const EmptyQuery: Story = {
 };
 
 export const Busy: Story = { args: { initialQuery: "Ana is cooking", busy: true } };
+
+/** The same form in Chinese: the labels, the button and the reason all switch with the language. */
+export const Chinese: Story = {
+  args: { initialQuery: "Zed Marlow is cooking" },
+  globals: { locale: "zh" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("button", { name: "搜索" })).toBeInTheDocument();
+    await expect(canvas.getByText(/没有名为 Zed Marlow 的人/)).toBeInTheDocument();
+    await expect(canvas.getByText(/无此人/)).toBeInTheDocument();
+  },
+};

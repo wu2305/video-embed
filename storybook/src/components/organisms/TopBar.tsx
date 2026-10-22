@@ -1,4 +1,5 @@
 import type { IndexInfo, Viewer } from "../../types";
+import { useI18n, type MessageKey } from "../../i18n";
 import { Freshness } from "../molecules/Freshness";
 
 export type PageId = "search" | "people" | "clip";
@@ -16,9 +17,9 @@ export interface TopBarProps {
   hideBrand?: boolean;
 }
 
-const LINKS: { id: PageId; label: string }[] = [
-  { id: "search", label: "Search" },
-  { id: "people", label: "People" },
+const LINKS: { id: PageId; label: MessageKey }[] = [
+  { id: "search", label: "nav.search" },
+  { id: "people", label: "nav.people" },
 ];
 
 function initials(name: string): string {
@@ -37,10 +38,11 @@ export function BrandMark() {
 
 /** App header: product mark, primary navigation, how fresh the NAS index is, and who is signed in. */
 export function TopBar({ current, index, now, viewer, onNavigate, hideBrand = false }: TopBarProps) {
+  const { t } = useI18n();
   return (
     <header className="mm-topbar">
-      {!hideBrand && <div className="mm-brand"><BrandMark /><span className="mm-brand-name">Unified Search</span></div>}
-      <nav aria-label="Primary" className="mm-links">
+      {!hideBrand && <div className="mm-brand"><BrandMark /><span className="mm-brand-name">{t("brand.name")}</span></div>}
+      <nav aria-label={t("nav.primary")} className="mm-links">
         {LINKS.map((link) => (
           <a
             key={link.id}
@@ -48,13 +50,13 @@ export function TopBar({ current, index, now, viewer, onNavigate, hideBrand = fa
             aria-current={current === link.id || (link.id === "search" && current === "clip") ? "page" : undefined}
             onClick={(e) => { e.preventDefault(); onNavigate?.(link.id); }}
           >
-            {link.label}
+            {t(link.label)}
           </a>
         ))}
       </nav>
       {index && <Freshness index={index} now={now} />}
       {viewer && (
-        <span className="mm-viewer" title={`Signed in as ${viewer.name} · groups: ${viewer.groups.join(", ")}`}>
+        <span className="mm-viewer" title={t("viewer.signedIn", { name: viewer.name, groups: viewer.groups.join(t("viewer.groupSep")) })}>
           <span className="mm-avatar" aria-hidden>{initials(viewer.name)}</span>
           <span className="mm-viewer-name">{viewer.name}</span>
         </span>

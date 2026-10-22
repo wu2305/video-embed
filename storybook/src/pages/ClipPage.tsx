@@ -10,6 +10,7 @@ import { FaceOverlay } from "../components/organisms/FaceOverlay";
 import { NoteList } from "../components/organisms/NoteList";
 import type { PageId } from "../components/organisms/TopBar";
 import { AppShell } from "../components/templates/AppShell";
+import { useI18n } from "../i18n";
 
 export interface ClipPageProps {
   hit: Hit;
@@ -33,6 +34,7 @@ export function ClipPage({
   hit, frameSrc, faces = [], people = [], scenes = [], duration = 0, annotations = [], initialPlayhead,
   index, now, viewer, onNavigate, onBack,
 }: ClipPageProps) {
+  const { t } = useI18n();
   const still = hit.kind !== "video" && hit.kind !== "audio";
   const hasFrame = hit.kind === "video" || hit.kind === "image";
   const matched: Scene | null = hit.scene_start != null && hit.scene_end != null ? { start: hit.scene_start, end: hit.scene_end } : null;
@@ -64,7 +66,7 @@ export function ClipPage({
           <div className="mm-mono">
             {matched && <Tag tone="good">matched {formatTime(matched.start)}–{formatTime(matched.end)}</Tag>}
             {hit.person_ids.map((id) => <Tag key={id} tone={displayName(id, people) !== id ? "accent" : "neutral"}>{displayName(id, people)}</Tag>)}
-            {!hit.is_master && <Tag tone="warn">copy</Tag>}
+            {!hit.is_master && <Tag tone="warn">{t("card.copy")}</Tag>}
           </div>
           {(hit.ocr_text || hit.asr_text) && (
             <Panel as="section" title={hit.asr_text ? "Speech" : "On-screen text"}>
@@ -73,7 +75,7 @@ export function ClipPage({
           )}
         </div>
         <aside>
-          <Panel as="section" title="Details">
+          <Panel as="section" title={t("clip.details")}>
             <MetaList items={[
               ["kind", <Tag>{hit.kind}</Tag>],
               ...(duration && !still ? [["duration", formatTime(duration)] as const, ["scenes", String(scenes.length)] as const] : []),
@@ -82,9 +84,9 @@ export function ClipPage({
               ["source", "NAS media library"],
             ]} />
           </Panel>
-          <Panel as="section" title={`Notes (${notes.length})`}>
+          <Panel as="section" title={t("notes.count", { count: notes.length })}>
             <NoteList notes={notes} people={people} playhead={still ? -1 : playhead} onSeek={setPlayhead} />
-            <p className="mm-hint" style={{ margin: "10px 0 0" }}>Notes are visible to everyone who can open this file, with the author’s name.</p>
+            <p className="mm-hint" style={{ margin: "10px 0 0" }}>{t("notes.visible")}</p>
           </Panel>
           <AnnotationComposer key={still ? "still" : scene?.start ?? "none"} time={playhead} scene={scene} still={still}
             inFrame={inFrame} people={people}

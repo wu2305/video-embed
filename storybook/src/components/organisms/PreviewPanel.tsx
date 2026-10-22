@@ -6,6 +6,7 @@ import { Kbd } from "../atoms/Kbd";
 import { Tag } from "../atoms/Tag";
 import { AnnotationTrack } from "./AnnotationTrack";
 import { FaceOverlay } from "./FaceOverlay";
+import { useI18n } from "../../i18n";
 
 export interface PreviewPanelProps {
   hit: Hit;
@@ -62,6 +63,7 @@ export function PreviewPanel({
   hit, position, total, frameSrc, videoSrc, faces = [], people = [], annotations = [],
   scenes = [], duration = 0, playhead, onSeek, onPrev, onNext, onClose, actions, unavailable, modal = false,
 }: PreviewPanelProps) {
+  const { t } = useI18n();
   const video = useRef<HTMLVideoElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
   const range: Scene | null = hit.scene_start != null && hit.scene_end != null ? { start: hit.scene_start, end: hit.scene_end } : null;
@@ -113,7 +115,7 @@ export function PreviewPanel({
   const text = (hit.ocr_text || hit.asr_text).trim();
 
   return (
-    <div ref={dialog} className="mm-preview" role="dialog" aria-modal={modal || undefined} aria-label={`Preview ${name}`} tabIndex={-1} onKeyDown={keys}>
+    <div ref={dialog} className="mm-preview" role="dialog" aria-modal={modal || undefined} aria-label={t("preview.label", { name })} tabIndex={-1} onKeyDown={keys}>
       <div>
         <div className="mm-stage">
           {unavailable ? (
@@ -123,7 +125,7 @@ export function PreviewPanel({
             </div>
           ) : (
             <>
-              {videoSrc ? <video ref={video} src={videoSrc} controls muted playsInline onTimeUpdate={loop} /> : <img src={frameSrc} alt={`Matched scene of ${name}`} />}
+              {videoSrc ? <video ref={video} src={videoSrc} controls muted playsInline onTimeUpdate={loop} /> : <img src={frameSrc} alt={t("preview.matched", { name })} />}
               <FaceOverlay faces={faces} people={people} />
               {activeNote && <div className="mm-overlay-note">{activeNote.text}</div>}
             </>
@@ -137,9 +139,9 @@ export function PreviewPanel({
       </div>
       <aside>
         <div className="mm-nav">
-          <Button onClick={onPrev} disabled={position <= 1}>Previous <Kbd>←</Kbd></Button>
+          <Button onClick={onPrev} disabled={position <= 1}>{t("preview.previous")} <Kbd>←</Kbd></Button>
           <span className="mm-mono">{position} / {total}</span>
-          <Button onClick={onNext} disabled={position >= total}>Next <Kbd>→</Kbd></Button>
+          <Button onClick={onNext} disabled={position >= total}>{t("preview.next")} <Kbd>→</Kbd></Button>
         </div>
         <h2 title={hit.path}>{name}</h2>
         <div className="mm-mono">
@@ -152,8 +154,8 @@ export function PreviewPanel({
         {!unavailable && hit.notes?.map((n) => <div key={n} className="mm-text note">{n}</div>)}
         <div className="mm-row">
           {!unavailable && actions}
-          <Button onClick={() => navigator.clipboard?.writeText(hit.path)}>Copy path</Button>
-          <Button variant="ghost" onClick={onClose}>Close <Kbd>Esc</Kbd></Button>
+          <Button onClick={() => navigator.clipboard?.writeText(hit.path)}>{t("preview.copyPath")}</Button>
+          <Button variant="ghost" onClick={onClose}>{t("preview.close")} <Kbd>Esc</Kbd></Button>
         </div>
       </aside>
     </div>

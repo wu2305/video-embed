@@ -1,5 +1,6 @@
 import type { Annotation, Scene } from "../../types";
 import { formatTime } from "../../lib/format";
+import { useI18n } from "../../i18n";
 
 export interface AnnotationTrackProps {
   duration: number;
@@ -15,6 +16,7 @@ const pct = (value: number, total: number) => `${(Math.min(Math.max(value, 0), t
 
 /** Timeline of scene cuts, notes and the matched range. Clicking seeks. On touch the hit band is 44px tall around the 28px track. */
 export function AnnotationTrack({ duration, scenes, annotations = [], playhead = 0, matched = null, onSeek }: AnnotationTrackProps) {
+  const { t } = useI18n();
   function seek(event: React.MouseEvent<HTMLDivElement>) {
     const box = event.currentTarget.getBoundingClientRect();
     onSeek?.(Math.round(((event.clientX - box.left) / box.width) * duration));
@@ -26,7 +28,7 @@ export function AnnotationTrack({ duration, scenes, annotations = [], playhead =
         className="mm-scrub"
         role="slider"
         tabIndex={0}
-        aria-label="Timeline"
+        aria-label={t("timeline.label")}
         aria-valuemin={0}
         aria-valuemax={duration}
         aria-valuenow={Math.round(playhead)}

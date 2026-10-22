@@ -4,6 +4,7 @@ import { parseQuery } from "../../lib/parseQuery";
 import { Button } from "../atoms/Button";
 import { Field } from "../molecules/Field";
 import { ParseStep } from "../molecules/ParseStep";
+import { useI18n } from "../../i18n";
 
 export interface SearchParams {
   query: string;
@@ -27,6 +28,7 @@ export interface SearchBarProps {
  * the readout shows who will be filtered and what will be embedded.
  */
 export function SearchBar({ people, initialQuery = "", busy = false, home = false, onSearch }: SearchBarProps) {
+  const { t } = useI18n();
   const [query, setQuery] = useState(initialQuery);
   const [limit, setLimit] = useState(12);
   const [minFaces, setMinFaces] = useState(0);
@@ -37,9 +39,9 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
 
   // Why the search cannot run yet. The button stays focusable (aria-disabled,
   // not disabled) and names this reason, so a keyboard user learns what to fix.
-  const reason = busy ? "A search is already running."
-    : !query.trim() ? "Type what to look for, such as “Ana is cooking”."
-    : parsed.unresolved.length ? `Nobody is named ${parsed.unresolved.join(" or ")}. Check the spelling or leave the name out.`
+  const reason = busy ? t("search.reason.busy")
+    : !query.trim() ? t("search.reason.empty")
+    : parsed.unresolved.length ? t("search.reason.unresolved", { names: parsed.unresolved.join(t("list.sep")) })
     : null;
 
   function submit(event: React.FormEvent) {
@@ -53,18 +55,18 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
   const why = reason && <p id={reasonId} className={tried ? "mm-hint mm-why" : "mm-sr-only"} aria-live="polite">{reason}</p>;
   const readout = hasWho && (
     <div className="mm-parse" aria-live="polite">
-      {parsed.who.map((name, i) => <ParseStep key={name} tone="accent">who <b>{name}</b> → {parsed.person_ids[i]}</ParseStep>)}
-      {parsed.unresolved.map((name) => <ParseStep key={name} tone="bad">no such person <b>{name}</b></ParseStep>)}
-      {parsed.unresolved.length === 0 && <ParseStep>what <b>{parsed.what}</b></ParseStep>}
+      {parsed.who.map((name, i) => <ParseStep key={name} tone="accent">{t("search.parse.who")} <b>{name}</b> → {parsed.person_ids[i]}</ParseStep>)}
+      {parsed.unresolved.map((name) => <ParseStep key={name} tone="bad">{t("search.parse.unknown")} <b>{name}</b></ParseStep>)}
+      {parsed.unresolved.length === 0 && <ParseStep>{t("search.parse.what")} <b>{parsed.what}</b></ParseStep>}
     </div>
   );
 
   if (home) {
     return (
-      <form className="mm-home-search" onSubmit={submit} role="search" aria-label="Search the index">
+      <form className="mm-home-search" onSubmit={submit} role="search" aria-label={t("search.region")}>
         <div className="mm-home-field">
-          <input type="search" aria-label="Search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ana Ruiz is cooking" autoComplete="off" />
-          <Button {...submitProps}>{busy ? "searching…" : "Search"}</Button>
+          <input type="search" aria-label={t("search.fieldLabel")} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search.placeholder")} autoComplete="off" />
+          <Button {...submitProps}>{busy ? t("search.searching") : t("search.submitHome")}</Button>
         </div>
         {readout}
         {why}
@@ -73,19 +75,19 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
   }
 
   return (
-    <form className="mm-panel" onSubmit={submit} role="search" aria-label="Search the index">
+    <form className="mm-panel" onSubmit={submit} role="search" aria-label={t("search.region")}>
       <div className="mm-search">
-        <Field label="query" grow>
-          <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ana Ruiz is cooking" autoComplete="off" />
+        <Field label={t("search.query")} grow>
+          <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search.placeholder")} autoComplete="off" />
         </Field>
-        <Field label="limit">
+        <Field label={t("search.limit")}>
           <input type="number" min={1} max={60} value={limit} onChange={(e) => setLimit(Number(e.target.value))} style={{ width: 80 }} />
         </Field>
-        <Field label="min faces">
+        <Field label={t("search.minFaces")}>
           <input type="number" min={0} max={20} value={minFaces} onChange={(e) => setMinFaces(Number(e.target.value))} style={{ width: 90 }} />
         </Field>
         <Button {...submitProps}>
-          {busy ? "searching…" : "search"}
+          {busy ? t("search.searching") : t("search.submit")}
         </Button>
       </div>
       {readout}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Person } from "../../types";
 import { Chip } from "../atoms/Chip";
 import { PersonCard } from "../molecules/PersonCard";
+import { useI18n } from "../../i18n";
 
 export interface PeopleGridProps {
   people: readonly Person[];
@@ -14,6 +15,7 @@ type Filter = "all" | "unnamed" | "named";
 
 /** Every person cluster, largest first, with a named/unnamed filter. */
 export function PeopleGrid({ people, samples = {}, selectedId = null, onOpen }: PeopleGridProps) {
+  const { t } = useI18n();
   const [filter, setFilter] = useState<Filter>("all");
   const unnamed = people.filter((p) => !p.name).length;
   const shown = [...people]
@@ -21,9 +23,9 @@ export function PeopleGrid({ people, samples = {}, selectedId = null, onOpen }: 
     .sort((a, b) => b.faces - a.faces);
 
   return (
-    <section aria-label="People">
+    <section aria-label={t("people.label")}>
       <div className="mm-toolbar" style={{ marginBottom: 14 }}>
-        <div className="mm-chips" role="group" aria-label="Filter people">
+        <div className="mm-chips" role="group" aria-label={t("people.filter")}>
           {(["all", "unnamed", "named"] as const).map((f) => (
             <Chip key={f} pressed={filter === f} onClick={() => setFilter(f)}>
               {f === "unnamed" ? `unnamed (${unnamed})` : f}

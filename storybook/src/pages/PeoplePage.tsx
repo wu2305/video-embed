@@ -8,6 +8,7 @@ import { ResultCard } from "../components/molecules/ResultCard";
 import { PeopleGrid } from "../components/organisms/PeopleGrid";
 import type { PageId } from "../components/organisms/TopBar";
 import { AppShell } from "../components/templates/AppShell";
+import { useI18n } from "../i18n";
 
 export interface PeoplePageProps {
   people: readonly Person[];
@@ -46,6 +47,7 @@ interface Saved {
 export function PeoplePage({
   people: initial, samples = {}, corpus = [], selectedId = null, pendingFaces = 0, index, now, viewer, onNavigate, onName, onMerge, onUndoMerge,
 }: PeoplePageProps) {
+  const { t } = useI18n();
   const [people, setPeople] = useState<Person[]>(() => [...initial]);
   const [selected, setSelected] = useState<string | null>(selectedId);
   const [draft, setDraft] = useState(() => initial.find((p) => p.id === selectedId)?.name ?? "");
@@ -79,7 +81,7 @@ export function PeoplePage({
     if (target) { setConfirming(true); return; }
     setPeople((list) => list.map((p) => (p.id === person.id ? { ...p, name } : p)));
     onName?.(person.id, name);
-    setSaved({ tone: "good", label: "saved", text: `Named ${person.faces} appearances “${name}”.` });
+    setSaved({ tone: "good", label: t("people.saved"), text: t("people.namedText", { faces: person.faces, name }) });
   }
 
   function merge() {
@@ -92,7 +94,7 @@ export function PeoplePage({
     setConfirming(false);
     setSelected(target.id);
     setDraft(target.name ?? "");
-    setSaved({ tone: "good", label: "merged", text: `Merged ${person.id} into ${target.name}: ${faces} appearances.`, undo });
+    setSaved({ tone: "good", label: t("people.merged"), text: t("people.mergedText", { id: person.id, target: target.name ?? target.id, faces }), undo });
   }
 
   function undoMerge(undo: NonNullable<Saved["undo"]>) {
@@ -105,7 +107,7 @@ export function PeoplePage({
   }
 
   return (
-    <AppShell current="people" title="People"
+    <AppShell current="people" title={t("people.title")}
       subtitle={unnamed ? `${unnamed} of ${people.length} face clusters have no name yet. Name one and every appearance follows.` : "Every face cluster has a name."}
       index={index} now={now} viewer={viewer} onNavigate={onNavigate}>
       {pendingFaces > 0 && (
@@ -117,32 +119,32 @@ export function PeoplePage({
         <PeopleGrid people={people} samples={samples} selectedId={selected} onOpen={select} />
         <aside>
           {!person ? (
-            <Panel as="section" title="Name a person">
-              <p className="mm-hint" style={{ margin: 0 }}>Select a cluster to name it. Unnamed clusters show their id.</p>
+            <Panel as="section" title={t("people.nameHeading")}>
+              <p className="mm-hint" style={{ margin: 0 }}>{t("people.nameHint")}</p>
             </Panel>
           ) : (
             <>
-              <Panel as="section" title={person.name ?? person.id} aria-label="Selected person">
+              <Panel as="section" title={person.name ?? person.id} aria-label={t("people.selected")}>
                 <form onSubmit={apply} style={{ display: "grid", gap: 12 }}>
                   {samples[person.id] && (
-                    <div className="mm-stage" style={{ maxWidth: 200 }}><img src={samples[person.id]} alt={`Sample face from ${person.id}`} /></div>
+                    <div className="mm-stage" style={{ maxWidth: 200 }}><img src={samples[person.id]} alt={t("people.sampleFace", { id: person.id })} /></div>
                   )}
                   <div className="mm-mono"><Tag>{person.id}</Tag><Tag>{person.faces} faces</Tag></div>
-                  <Field label="name">
-                    <input type="text" list={listId} value={draft} onChange={(e) => { setDraft(e.target.value); setSaved(null); setConfirming(false); }} placeholder="Full name" autoComplete="off" />
+                  <Field label={t("people.nameField")}>
+                    <input type="text" list={listId} value={draft} onChange={(e) => { setDraft(e.target.value); setSaved(null); setConfirming(false); }} placeholder={t("people.fullName")} autoComplete="off" />
                   </Field>
                   <datalist id={listId}>{known.map((n) => <option key={n} value={n} />)}</datalist>
-                  <p className="mm-hint" style={{ margin: 0 }}>Names are shared: everyone who can see this person sees the name.</p>
-                  {target && <p className="mm-hint" role="note" style={{ margin: 0 }}><Tag tone="warn">merge</Tag>“{target.name}” already names {target.id}. Both will become one person.</p>}
+                  <p className="mm-hint" style={{ margin: 0 }}>{t("people.shared")}</p>
+                  {target && <p className="mm-hint" role="note" style={{ margin: 0 }}><Tag tone="warn">{t("face.merge")}</Tag>{t("people.mergeWarn", { name: target.name ?? target.id, id: target.id })}</p>}
                   {target && confirming ? (
-                    <div className="mm-confirm" role="group" aria-label="Confirm merge">
+                    <div className="mm-confirm" role="group" aria-label={t("people.confirmGroup")}>
                       <p role="alert" style={{ margin: 0 }}>
                         Merge <b>{person.id}</b> ({person.faces} faces) into <b>{target.id}</b>, {target.name} ({target.faces} faces)?
                         They become one person with {person.faces + target.faces} appearances, for everyone who can see either.
                       </p>
                       <div className="mm-row">
-                        <Button variant="danger" onClick={merge}>Confirm merge</Button>
-                        <Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button>
+                        <Button variant="danger" onClick={merge}>{t("people.confirm")}</Button>
+                        <Button variant="ghost" onClick={() => setConfirming(false)}>{t("people.cancel")}</Button>
                       </div>
                     </div>
                   ) : target ? (
@@ -153,14 +155,14 @@ export function PeoplePage({
                   {saved && (
                     <p className="mm-hint mm-saved" role="status" style={{ margin: 0 }}>
                       <Tag tone={saved.tone}>{saved.label}</Tag>{saved.text}
-                      {saved.undo && <> <Button onClick={() => undoMerge(saved.undo!)}>Undo merge</Button></>}
+                      {saved.undo && <> <Button onClick={() => undoMerge(saved.undo!)}>{t("people.undo")}</Button></>}
                     </p>
                   )}
                 </form>
               </Panel>
-              <Panel as="section" title={`Appears in ${appearances.length}`}>
+              <Panel as="section" title={t("people.appears", { count: appearances.length })}>
                 {appearances.length === 0 ? (
-                  <p className="mm-hint" style={{ margin: 0 }}>No hits in this sample.</p>
+                  <p className="mm-hint" style={{ margin: 0 }}>{t("people.noHits")}</p>
                 ) : (
                   <>
                     <div className="mm-grid" style={{ ["--card-min" as string]: "140px" }}>
