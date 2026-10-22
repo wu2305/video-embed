@@ -43,6 +43,10 @@
      at least 1.17x the last. --text-overlay is for scrims on media only. */
   --text-overlay: .6875rem;
   --text-xs: .75rem; --text-sm: .875rem; --text-md: 1.0625rem; --text-lg: 1.375rem; --text-xl: 1.875rem;
+  /* Decorative only: the media-kind glyph in a card with no frame. */
+  --text-glyph: 2.375rem;
+  /* Longest line of prose, inside the 60–75 character readable band. */
+  --measure: 65ch;
 
   /* space and shape */
   --space-1: 4px; --space-2: 8px; --space-3: 10px; --space-4: 14px; --space-5: 20px; --space-6: 28px;
@@ -51,6 +55,8 @@
 }
 
 * { box-sizing: border-box; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
   font: var(--text-sm)/1.5 var(--font-sans);
@@ -76,7 +82,11 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-field > label, .mm-label { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
 .mm-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); }
 .mm-panel > h2, .mm-panel > h3 { margin: 0 0 var(--space-3); font-size: var(--text-md); line-height: 1.3; }
+/* Mono is for what a machine produced (ids, scores, times, paths, OCR and ASR
+   text); a sentence a person reads is sans, as .mm-hint. */
 .mm-mono { font: var(--text-xs)/1.45 var(--mono); color: var(--muted); }
+.mm-hint { font-size: var(--text-xs); line-height: 1.5; color: var(--muted); max-width: var(--measure); text-wrap: pretty; }
+.mm-transcript { font-family: var(--mono); }
 .mm-tag {
   display: inline-block; border: 1px solid var(--line); border-radius: var(--radius-sm);
   padding: 1px 5px; margin-right: var(--space-1); font: var(--text-xs)/1.45 var(--mono); color: var(--muted);
@@ -117,7 +127,7 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-card.selected:hover { border-color: var(--accent); }
 .mm-thumb { position: relative; background: var(--thumb); aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .mm-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.mm-glyph { font-size: 38px; color: var(--muted); }
+.mm-glyph { font-size: var(--text-glyph); color: var(--muted); }
 .mm-rank, .mm-score, .mm-source {
   position: absolute; font: var(--text-overlay)/1 var(--mono); background: var(--scrim);
   border-radius: var(--radius-chip); padding: var(--space-1) 6px; color: var(--on-scrim);
@@ -133,7 +143,7 @@ button:disabled { opacity: .5; cursor: default; }
 /* The answer to "what did I get": sans at body size, louder than the filter chips. */
 .mm-status { font: var(--text-sm)/1.4 var(--font-sans); color: var(--muted); margin: 0 0 var(--space-3); min-height: 20px; }
 .mm-status.error { color: var(--bad); }
-.mm-empty { color: var(--muted); padding: var(--space-4) 0; }
+.mm-empty { color: var(--muted); padding: var(--space-4) 0; max-width: var(--measure); text-wrap: pretty; }
 .mm-notice { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--field); padding: var(--space-2) var(--space-3); margin: 0 0 var(--space-3); font-size: var(--text-xs); }
 .mm-notice.warn { border-color: var(--warn); }
 .mm-archive .mm-body { padding-top: 12px; }
@@ -210,11 +220,11 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-page { width: 100%; max-width: var(--page-max); margin: 0 auto; padding: var(--space-5); display: grid; gap: var(--space-4); align-content: start; }
 .mm-page-head { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; justify-content: space-between; }
 .mm-page-head h1 { margin: 0; font-size: var(--text-xl); line-height: 1.2; }
-.mm-page-head p { margin: var(--space-1) 0 0; color: var(--muted); }
+.mm-page-head p { margin: var(--space-1) 0 0; color: var(--muted); max-width: var(--measure); text-wrap: pretty; }
 .mm-split { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: var(--space-4); align-items: start; }
 .mm-split > aside { display: grid; gap: var(--space-4); }
 .mm-crumbs { font: var(--text-xs)/1.4 var(--mono); color: var(--muted); }
-.mm-crumbs a, .mm-mono a { color: var(--accent); text-decoration: none; }
+.mm-crumbs a, .mm-mono a, .mm-hint a { color: var(--accent); text-decoration: none; }
 .mm-toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
 .mm-toolbar .mm-mono { margin-left: auto; }
 

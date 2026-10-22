@@ -118,7 +118,7 @@ export function PeoplePage({
         <aside>
           {!person ? (
             <Panel as="section" title="Name a person">
-              <p className="mm-mono" style={{ margin: 0 }}>Select a cluster to name it. Unnamed clusters show their id.</p>
+              <p className="mm-hint" style={{ margin: 0 }}>Select a cluster to name it. Unnamed clusters show their id.</p>
             </Panel>
           ) : (
             <>
@@ -132,8 +132,8 @@ export function PeoplePage({
                     <input type="text" list={listId} value={draft} onChange={(e) => { setDraft(e.target.value); setSaved(null); setConfirming(false); }} placeholder="Full name" autoComplete="off" />
                   </Field>
                   <datalist id={listId}>{known.map((n) => <option key={n} value={n} />)}</datalist>
-                  <p className="mm-mono" style={{ margin: 0 }}>Names are shared: everyone who can see this person sees the name.</p>
-                  {target && <p className="mm-mono" role="note" style={{ margin: 0 }}><Tag tone="warn">merge</Tag>“{target.name}” already names {target.id}. Both will become one person.</p>}
+                  <p className="mm-hint" style={{ margin: 0 }}>Names are shared: everyone who can see this person sees the name.</p>
+                  {target && <p className="mm-hint" role="note" style={{ margin: 0 }}><Tag tone="warn">merge</Tag>“{target.name}” already names {target.id}. Both will become one person.</p>}
                   {target && confirming ? (
                     <div className="mm-confirm" role="group" aria-label="Confirm merge">
                       <p role="alert" style={{ margin: 0 }}>
@@ -151,7 +151,7 @@ export function PeoplePage({
                     <div><Button variant="primary" type="submit" disabled={!draft.trim() || draft.trim() === person.name}>{person.name ? "Rename" : "Apply name"}</Button></div>
                   )}
                   {saved && (
-                    <p className="mm-mono" role="status" style={{ margin: 0 }}>
+                    <p className="mm-hint" role="status" style={{ margin: 0 }}>
                       <Tag tone={saved.tone}>{saved.label}</Tag>{saved.text}
                       {saved.undo && <> <Button onClick={() => undoMerge(saved.undo!)}>Undo merge</Button></>}
                     </p>
@@ -160,14 +160,14 @@ export function PeoplePage({
               </Panel>
               <Panel as="section" title={`Appears in ${appearances.length}`}>
                 {appearances.length === 0 ? (
-                  <p className="mm-mono" style={{ margin: 0 }}>No hits in this sample.</p>
+                  <p className="mm-hint" style={{ margin: 0 }}>No hits in this sample.</p>
                 ) : (
                   <>
                     <div className="mm-grid" style={{ ["--card-min" as string]: "140px" }}>
                       {appearances.slice(0, 4).map((h, i) => <ResultCard key={h.unit_id} hit={h} rank={i + 1} people={shown} compact />)}
                     </div>
                     {appearances.length > 4 && (
-                      <p className="mm-mono" style={{ margin: "10px 0 0" }}>
+                      <p className="mm-hint" style={{ margin: "10px 0 0" }}>
                         and {appearances.length - 4} more. <a href="#search" onClick={(e) => { e.preventDefault(); onNavigate?.("search"); }}>Search for {person.name ?? person.id}</a>
                       </p>
                     )}

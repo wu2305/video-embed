@@ -62,7 +62,7 @@ export function AnnotationComposer({ time, scene = null, inFrame = [], people = 
           </Field>
         </div>
       )}
-      {rangeError && <p className="mm-mono" role="alert"><Tag tone="bad">range</Tag>{rangeError}</p>}
+      {rangeError && <p className="mm-hint" role="alert"><Tag tone="bad">range</Tag>{rangeError}</p>}
       {inFrame.length > 0 && (
         <div className="mm-field">
           <Label as="span">people in frame</Label>

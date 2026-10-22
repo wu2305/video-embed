@@ -30,4 +30,13 @@ takes focus.
 <Typeset fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
   fontSizes={[12, 11]} fontWeight={400} sampleText="sim 0.362 · unit 4 · 00:42–01:11" />
 
-Use mono for anything a machine produced: ids, scores, times, paths. Use sans for anything a person wrote or reads as prose.
+Use mono for anything a machine produced: ids, scores, times, paths, and OCR and ASR text (`.mm-transcript`).
+Use sans for anything a person wrote or reads as prose: help lines, notices and notes (`.mm-hint` for the small
+muted ones, at `--text-xs`). A sentence is never mono, even when it sits next to an id.
+
+## Measure and wrapping
+
+- Prose is capped at `--measure` (65ch): the page subtitle, `.mm-hint`, and the empty state.
+- Headings use `text-wrap: balance`, and paragraphs use `text-wrap: pretty`.
+- `--text-glyph` (2.375rem) is the media-kind glyph on cards with no frame. It is decorative and sits outside the
+  type scale. There is no `px` font size anywhere in `styles.css`.

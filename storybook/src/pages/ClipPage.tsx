@@ -68,7 +68,7 @@ export function ClipPage({
           </div>
           {(hit.ocr_text || hit.asr_text) && (
             <Panel as="section" title={hit.asr_text ? "Speech" : "On-screen text"}>
-              <p style={{ margin: 0 }}>{(hit.asr_text || hit.ocr_text).trim()}</p>
+              <p className="mm-transcript" style={{ margin: 0 }}>{(hit.asr_text || hit.ocr_text).trim()}</p>
             </Panel>
           )}
         </div>
@@ -84,7 +84,7 @@ export function ClipPage({
           </Panel>
           <Panel as="section" title={`Notes (${notes.length})`}>
             <NoteList notes={notes} people={people} playhead={still ? -1 : playhead} onSeek={setPlayhead} />
-            <p className="mm-mono" style={{ margin: "10px 0 0" }}>Notes are visible to everyone who can open this file, with the author’s name.</p>
+            <p className="mm-hint" style={{ margin: "10px 0 0" }}>Notes are visible to everyone who can open this file, with the author’s name.</p>
           </Panel>
           <AnnotationComposer key={still ? "still" : scene?.start ?? "none"} time={playhead} scene={scene} still={still}
             inFrame={inFrame} people={people}

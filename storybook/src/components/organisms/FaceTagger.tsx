@@ -51,7 +51,7 @@ export function FaceTagger({ src, faces, people, onTag }: FaceTaggerProps) {
       </div>
       <form className="mm-panel" onSubmit={submit} aria-label="Tag face">
         {!face ? (
-          <p className="mm-mono">Select a face box to name it. Dashed boxes have no cluster yet.</p>
+          <p className="mm-hint">Select a face box to name it. Dashed boxes have no cluster yet.</p>
         ) : (
           <>
             <Field label="name">
@@ -69,9 +69,9 @@ export function FaceTagger({ src, faces, people, onTag }: FaceTaggerProps) {
                 <span>This face only<small>use to correct a wrong cluster</small></span>
               </label>
             </fieldset>
-            {merging && <p className="mm-mono" role="note"><Tag tone="warn">merge</Tag>“{name.trim()}” already names another cluster. Both will become one person.</p>}
+            {merging && <p className="mm-hint" role="note"><Tag tone="warn">merge</Tag>“{name.trim()}” already names another cluster. Both will become one person.</p>}
             <Button variant="primary" type="submit" disabled={!name.trim()}>Apply name</Button>
-            {applied && <p className="mm-mono" role="status"><Tag tone="good">saved</Tag>{applied}</p>}
+            {applied && <p className="mm-hint" role="status"><Tag tone="good">saved</Tag>{applied}</p>}
           </>
         )}
       </form>

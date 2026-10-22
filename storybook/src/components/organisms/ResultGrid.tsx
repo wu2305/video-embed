@@ -74,7 +74,7 @@ export function ResultGrid({ results, query = "", people, sources, selectedId = 
         ))}
       </div>
       {!loading && !error && results.length > 0 && (
-        <p className="mm-mono" style={{ margin: "12px 0 0" }}>Only results you are allowed to open are shown.</p>
+        <p className="mm-hint" style={{ margin: "12px 0 0" }}>Only results you are allowed to open are shown.</p>
       )}
     </section>
   );

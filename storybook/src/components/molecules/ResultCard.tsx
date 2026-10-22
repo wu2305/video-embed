@@ -58,7 +58,7 @@ export function ResultCard({ hit, rank, people = [], selected = false, onOpen, c
           {!hit.is_master && <Tag tone="warn">copy</Tag>}
         </div>
         {!compact && hit.notes?.map((note) => <div key={note} className="mm-text note">{note}</div>)}
-        {!compact && machineText && <div className="mm-text">{machineText.slice(0, 180)}</div>}
+        {!compact && machineText && <div className="mm-text mm-transcript">{machineText.slice(0, 180)}</div>}
       </div>
     </article>
   );

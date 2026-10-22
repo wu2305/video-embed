@@ -107,7 +107,7 @@ export function SearchPage({
                   <Button key={q} onClick={() => { run(q); setRunKey((k) => k + 1); }}>{q}</Button>
                 ))}
               </div>
-              <p className="mm-mono" style={{ margin: "12px 0 0" }}>A capitalised name filters NAS media to that person; the rest is matched against what is on screen and sent to the Archive System as text.</p>
+              <p className="mm-hint" style={{ margin: "12px 0 0" }}>A capitalised name filters NAS media to that person; the rest is matched against what is on screen and sent to the Archive System as text.</p>
             </Panel>
             <Panel as="section" title="What this searches">
               <ul className="mm-sources">
@@ -115,7 +115,7 @@ export function SearchPage({
                 <li><b>Archive System</b><span>Archived records such as contracts and minutes. Metadata only; each result opens in the Archive System.</span></li>
                 <li><b>WeCom</b><span>Live documents are not searched here; use WeCom’s own search. Finalized material that is archived to the NAS shows up as NAS media.</span></li>
               </ul>
-              <p className="mm-mono" style={{ margin: "12px 0 0" }}>
+              <p className="mm-hint" style={{ margin: "12px 0 0" }}>
                 You only see results you are allowed to open{viewer ? `, as ${viewer.name}` : ""}. Searches are logged.
               </p>
               {indexInfo && <p style={{ margin: "8px 0 0" }}><Freshness index={indexInfo} now={now} long /></p>}
