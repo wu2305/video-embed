@@ -17,8 +17,8 @@ Use the **Theme** toolbar to switch any story, or pick **Side by side** to see b
     colors={{ bg: "#0f1115", panel: "#171a21", field: "#12151b", thumb: "#0b0d11", line: "#262b36" }} />
   <ColorItem title="Text" subtitle="text · muted · on-accent"
     colors={{ text: "#e6e9ef", muted: "#8b94a7", "on-accent": "#0b0d11" }} />
-  <ColorItem title="Signal" subtitle="accent · good · warn · bad"
-    colors={{ accent: "#6ea8fe", good: "#59d18c", warn: "#e5c07b", bad: "#ff8b8b" }} />
+  <ColorItem title="Signal" subtitle="accent · accent-strong · good · warn · bad"
+    colors={{ accent: "#6ea8fe", "accent-strong": "#a3c7ff", good: "#59d18c", warn: "#e5c07b", bad: "#ff8b8b" }} />
 </ColorPalette>
 
 ## Light
@@ -28,8 +28,8 @@ Use the **Theme** toolbar to switch any story, or pick **Side by side** to see b
     colors={{ bg: "#f5f6f8", panel: "#ffffff", field: "#f2f4f7", thumb: "#e3e6eb", line: "#d5dae2" }} />
   <ColorItem title="Text" subtitle="text · muted · on-accent"
     colors={{ text: "#171b23", muted: "#586174", "on-accent": "#ffffff" }} />
-  <ColorItem title="Signal" subtitle="accent · good · warn · bad"
-    colors={{ accent: "#1d5bd6", good: "#127a48", warn: "#8f5d00", bad: "#c42b2b" }} />
+  <ColorItem title="Signal" subtitle="accent · accent-strong · good · warn · bad"
+    colors={{ accent: "#1d5bd6", "accent-strong": "#1747a8", good: "#127a48", warn: "#8f5d00", bad: "#c42b2b" }} />
 </ColorPalette>
 
 ## On photos and video (both themes)
@@ -47,7 +47,8 @@ so they keep these values in both themes.
 - `text` on `bg`, `panel` and `field`. `muted` for labels, metadata and ghost buttons. Every text colour
   is at least 4.5:1 on all three surfaces in both themes; `npm test` checks every story in each.
 - `accent` is the single interactive colour: the primary button, the focus ring, a selected card, a named person,
-  and the brand mark (a keyframe with a face box).
+  and the brand mark (a keyframe with a face box). `accent-strong` is the primary button under hover and press;
+  feedback is a colour change, never motion.
 - `good` means *matched* (scene range, score, saved). `warn` means *look twice* (copy, merge, unnamed).
   `bad` means *blocked* (error, no such person), and outlines a `danger` button such as *Merge into Ana Ruiz*.
 - Every signal colour sits next to a word or number. Green and red are close in lightness in both themes,

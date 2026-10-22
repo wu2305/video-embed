@@ -47,6 +47,8 @@ export function SearchPage({
     initialQuery ? runSearch(initialQuery) : { results: [], sources: [] });
   const [open, setOpen] = useState<number | null>(openId);
   const [playhead, setPlayhead] = useState<number | undefined>(undefined);
+  // The mock error comes from props; Try again clears it and reruns the query.
+  const [retried, setRetried] = useState(false);
 
   // Only NAS hits preview; Archive records open in the Archive System.
   const previewable = found.results.filter((r): r is Hit => !isArchive(r));
@@ -128,8 +130,8 @@ export function SearchPage({
           <SearchBar people={people} initialQuery={query} busy={loading}
             onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
           {indexInfo?.stale && <Freshness index={indexInfo} now={now} long />}
-          <ResultGrid results={found.results} sources={found.sources} query={query} people={people} loading={loading} error={error}
-            selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }} />
+          <ResultGrid results={found.results} sources={found.sources} query={query} people={people} loading={loading} error={retried ? null : error}
+            onRetry={() => { setRetried(true); run(query); }} selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }} />
         </AppShell>
       )}
 

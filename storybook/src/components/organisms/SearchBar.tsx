@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import type { ParsedQuery, Person } from "../../types";
 import { parseQuery } from "../../lib/parseQuery";
 import { Button } from "../atoms/Button";
@@ -32,14 +32,25 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
   const [minFaces, setMinFaces] = useState(0);
   const parsed = useMemo(() => parseQuery(query, people), [query, people]);
   const hasWho = parsed.who.length > 0 || parsed.unresolved.length > 0;
+  const [tried, setTried] = useState(false);
+  const reasonId = useId();
+
+  // Why the search cannot run yet. The button stays focusable (aria-disabled,
+  // not disabled) and names this reason, so a keyboard user learns what to fix.
+  const reason = busy ? "A search is already running."
+    : !query.trim() ? "Type what to look for, such as “Ana is cooking”."
+    : parsed.unresolved.length ? `Nobody is named ${parsed.unresolved.join(" or ")}. Check the spelling or leave the name out.`
+    : null;
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!query.trim() || parsed.unresolved.length) return;
+    if (reason) { setTried(true); return; }
+    setTried(false);
     onSearch?.({ query: query.trim(), parsed, limit, min_faces: minFaces });
   }
 
-  const disabled = busy || !query.trim() || parsed.unresolved.length > 0;
+  const submitProps = { variant: "primary" as const, type: "submit" as const, "aria-disabled": reason ? true : undefined, "aria-describedby": reason ? reasonId : undefined };
+  const why = reason && <p id={reasonId} className={tried ? "mm-hint mm-why" : "mm-sr-only"} aria-live="polite">{reason}</p>;
   const readout = hasWho && (
     <div className="mm-parse" aria-live="polite">
       {parsed.who.map((name, i) => <ParseStep key={name} tone="accent">who <b>{name}</b> → {parsed.person_ids[i]}</ParseStep>)}
@@ -53,9 +64,10 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
       <form className="mm-home-search" onSubmit={submit} role="search" aria-label="Search the index">
         <div className="mm-home-field">
           <input type="search" aria-label="Search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ana Ruiz is cooking" autoComplete="off" />
-          <Button variant="primary" type="submit" disabled={disabled}>{busy ? "searching…" : "Search"}</Button>
+          <Button {...submitProps}>{busy ? "searching…" : "Search"}</Button>
         </div>
         {readout}
+        {why}
       </form>
     );
   }
@@ -72,11 +84,12 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
         <Field label="min faces">
           <input type="number" min={0} max={20} value={minFaces} onChange={(e) => setMinFaces(Number(e.target.value))} style={{ width: 90 }} />
         </Field>
-        <Button variant="primary" type="submit" disabled={disabled}>
+        <Button {...submitProps}>
           {busy ? "searching…" : "search"}
         </Button>
       </div>
       {readout}
+      {why}
     </form>
   );
 }

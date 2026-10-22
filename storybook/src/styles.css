@@ -25,6 +25,7 @@
   --text: light-dark(#171b23, #e6e9ef);
   --muted: light-dark(#586174, #8b94a7);
   --accent: light-dark(#1d5bd6, #6ea8fe);
+  --accent-strong: light-dark(#1747a8, #a3c7ff);
   --on-accent: light-dark(#ffffff, #0b0d11);
   --good: light-dark(#127a48, #59d18c);
   --warn: light-dark(#8f5d00, #e5c07b);
@@ -69,14 +70,22 @@ input:focus, select:focus, textarea:focus, button:focus-visible, [role=slider]:f
 input[aria-invalid=true] { border-color: var(--bad); }
 textarea { min-height: 72px; resize: vertical; }
 button { cursor: pointer; }
-button:disabled { opacity: .5; cursor: default; }
+button:disabled, button[aria-disabled=true] { opacity: .5; cursor: default; }
+/* Taps act at once instead of waiting out double-tap zoom. */
+a, button, input, select, textarea, summary, [role=slider] { touch-action: manipulation; }
+.mm-sr-only { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* atoms */
 .mm-button { background: var(--panel); border-color: var(--line); font-weight: 500; min-height: var(--control-min); }
 .mm-button:hover:not(:disabled) { border-color: var(--muted); }
 .mm-primary { background: var(--accent); color: var(--on-accent); border-color: transparent; font-weight: 600; padding: var(--space-2) 18px; min-height: var(--control-min); }
 .mm-ghost { background: transparent; color: var(--muted); }
+/* Feedback is a colour change only: no transitions (see Layout). */
+.mm-primary:hover:not(:disabled, [aria-disabled=true]) { background: var(--accent-strong); }
+.mm-primary:active:not(:disabled, [aria-disabled=true]) { background: var(--accent-strong); border-color: var(--text); }
 .mm-danger { background: var(--panel); color: var(--bad); border-color: var(--bad); font-weight: 600; min-height: var(--control-min); }
+.mm-danger:hover:not(:disabled) { background: var(--field); }
+.mm-danger:active:not(:disabled) { border-color: var(--text); }
 .mm-confirm { display: grid; gap: var(--space-3); border: 1px solid var(--bad); border-radius: var(--radius-md); background: var(--field); padding: var(--space-3); }
 .mm-field { display: flex; flex-direction: column; gap: 5px; }
 .mm-field > label, .mm-label { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
@@ -146,6 +155,11 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-empty { color: var(--muted); padding: var(--space-4) 0; max-width: var(--measure); text-wrap: pretty; }
 .mm-notice { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--field); padding: var(--space-2) var(--space-3); margin: 0 0 var(--space-3); font-size: var(--text-xs); }
 .mm-notice.warn { border-color: var(--warn); }
+.mm-notice.bad { border-color: var(--bad); }
+.mm-notice code { overflow-wrap: anywhere; }
+.mm-why { margin: var(--space-2) 0 0; }
+.mm-skeleton .mm-body span { display: block; height: .75rem; border-radius: var(--radius-sm); background: var(--field); }
+.mm-skeleton .mm-body span:last-child { width: 60%; }
 .mm-archive .mm-body { padding-top: 12px; }
 .mm-archive .mm-name { white-space: normal; }
 .mm-archive-head { display: flex; gap: var(--space-2); align-items: baseline; }

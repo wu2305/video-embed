@@ -47,7 +47,26 @@ export const UnknownPerson: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(/no such person/)).toBeInTheDocument();
-    await expect(canvas.getByRole("button", { name: "search" })).toBeDisabled();
+    const button = canvas.getByRole("button", { name: "search" });
+    await expect(button).toHaveAttribute("aria-disabled", "true");
+    await expect(button).toHaveAccessibleDescription(/Nobody is named Zed Marlow/);
+  },
+};
+
+/** An empty query: the button stays focusable, says why it cannot search, and shows the reason when pressed. */
+export const EmptyQuery: Story = {
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole("button", { name: "search" });
+    await userEvent.tab();
+    await userEvent.tab();
+    await userEvent.tab();
+    await userEvent.tab();
+    await expect(button).toHaveFocus();
+    await expect(button).toHaveAccessibleDescription(/Type what to look for/);
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onSearch).not.toHaveBeenCalled();
+    await expect(canvas.getByText(/Type what to look for/)).toBeVisible();
   },
 };
 

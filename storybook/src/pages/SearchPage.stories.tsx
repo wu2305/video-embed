@@ -111,8 +111,24 @@ export const StaleIndex: Story = { args: { initialQuery: "Ana is cooking", index
 
 export const NoHits: Story = { args: { initialQuery: "Ben is skydiving", corpus: [] } };
 
-export const Loading: Story = { args: { initialQuery: "Ana is cooking", loading: true } };
+/** While a search runs, placeholders stand in for results; nothing stale reads as live. */
+export const Loading: Story = {
+  args: { initialQuery: "Ana is cooking", loading: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("region", { name: "Search results" })).toHaveAttribute("aria-busy", "true");
+    await expect(canvas.queryAllByRole("article")).toHaveLength(0);
+  },
+};
 
+/** A server error says what happened in plain words, offers Try again, and keeps the raw message under Details. */
 export const ServerError: Story = {
   args: { initialQuery: "Ana is cooking", error: "ValueError: query vector has 512 dims, index has 768" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("alert")).toHaveTextContent("Something went wrong on the search server");
+    await expect(canvas.getByRole("status")).not.toHaveTextContent(/ValueError/);
+    await userEvent.click(canvas.getByRole("button", { name: "Try again" }));
+    await expect(canvas.getByRole("status")).toHaveTextContent(/results for “Ana is cooking”/);
+  },
 };
