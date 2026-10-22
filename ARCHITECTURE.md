@@ -5,6 +5,10 @@
 
 ---
 
+> This document covers the NAS multimedia pipeline only (§3.1.2 of
+> [`docs/UNIFIED_SEARCH_DESIGN.md`](./docs/UNIFIED_SEARCH_DESIGN.md)). The
+> gateway, IAM and the Archive System / WeCom integrations are described there.
+
 ## 1. What the pipeline does
 
 The pipeline consumes a flat tree of image and video files and produces a
@@ -154,6 +158,10 @@ new ingestion pipelines on smaller local libraries.
 ---
 
 ## 4. Distributed spot architecture
+
+> This topology is for the one-off historical backfill. Steady-state
+> incremental ingestion and the permission model are in §4–5 of
+> [`docs/UNIFIED_SEARCH_DESIGN.md`](./docs/UNIFIED_SEARCH_DESIGN.md).
 
 ### 4.1 Design constraints
 
