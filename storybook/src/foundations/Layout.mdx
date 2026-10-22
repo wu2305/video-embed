@@ -34,7 +34,10 @@ import { Meta } from "@storybook/addon-docs/blocks";
 - Pages use `AppShell`: the top bar, then a column at most `--page-max` (1240px) wide.
 - Detail pages split 2 : 1 (`.mm-split`). Below 760px every split stacks into one column.
 - Grids auto-fill from `--card-min` (212px for hits, 160px for people). Override the variable, not the grid.
-- No shadows, gradients or motion. Depth comes from `bg` → `panel` → `field`.
+- No shadows and no gradients. Depth comes from `bg` → `panel` → `field`.
+- Motion is opt-in and explains state. Static is the default: every transition lives inside
+  `@media (prefers-reduced-motion: no-preference)`, so a reader who asks for less movement gets the
+  whole interface with no override. Nothing animates on its own except the loading pulse.
 - Cards are size containers (`container-type: inline-size`). Below 180px a card tightens its body and clamps
   long text to three lines, whatever the page width.
 - Use logical properties (`margin-inline-start`, `inset-inline-end`, `text-align: start`) so the console mirrors
@@ -42,6 +45,26 @@ import { Meta } from "@storybook/addon-docs/blocks";
 - Below 400px the top bar shows only the brand mark; the name stays for screen readers.
 - A heading that can hold a file name (`.mm-page-head h1`, the preview `h2`) uses `overflow-wrap: anywhere`, so a
   name with no break points never widens the page.
+
+## Motion
+
+| Token | Value | Use |
+|---|---|---|
+| `--dur-1` | 100ms | Press feedback (`scale: .97`) |
+| `--dur-2` | 150ms | The baseline: hover, focus, colour and border changes |
+| `--dur-3` | 200ms | A revealed message or confirmation |
+| `--dur-4` | 250ms | The preview dialog arriving |
+| `--ease-out` | `cubic-bezier(.2, 0, 0, 1)` | Everything entering or settling |
+
+- Only `background-color`, `border-color`, `color`, `opacity`, `scale` and `translate` transition. No
+  `all`, and no width, height or margin, which jank.
+- A press gives (`scale: .97`); a card lifts one pixel toward the pointer.
+- The preview dialog enters with `@starting-style` (fade plus a 10px rise) and leaves immediately. The
+  user already knows the surface by then, and a held exit keeps the page waiting.
+- The merge confirmation and the saved message reveal in place with `mm-reveal`, because both belong to
+  the form above them rather than arriving from off-screen.
+- While a search runs, the grid section carries `aria-busy`, placeholders replace the old results so nothing
+  stale reads as live, and the status line pulses.
 
 ## Controls and touch
 
