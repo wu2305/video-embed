@@ -224,8 +224,9 @@ vendor's full-text API in parallel.
 4. If the Archive API errors or times out, the NAS results still show with a
    warning that the list is incomplete. The reverse holds too.
 
-**4d. WeCom**: *by design, not a source.* The first-visit page says live WeCom
-documents are searched in WeCom, and that finalized material archived to the NAS
+**4d. WeCom**: *by design, not a source.* The first-visit page (a centred search
+home: brand, one field, example queries, one line on scope and freshness) says
+under *What is searched?* that live WeCom documents are searched in WeCom, and that finalized material archived to the NAS
 shows up here as NAS media.
 
 **4e. Plugging into an existing search API**: *new.* Expose `/api/search` with a
@@ -318,7 +319,7 @@ folder, and a unit with an unreadable ACL appears for neither.
 **Flow**
 
 1. The top bar always shows how fresh the NAS index is: *77,412 items · updated
-   today 02:40*.
+   today 02:40*. On the search home that line sits under the search field instead.
 2. Her search finds nothing. The empty state says that files added to the NAS
    today become searchable tomorrow morning, so it does not read as broken. The
    first-visit page says the same.

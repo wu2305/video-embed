@@ -15,13 +15,36 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** First visit: examples, what each source covers, and when today's files show up. */
+/** First visit: a search home. The brand, one large field, example queries, and one line on scope and freshness. */
 export const FirstVisit: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText(/Live documents are not searched here/)).toBeInTheDocument();
+    await expect(canvas.getByRole("heading", { level: 1, name: "Unified Search" })).toBeInTheDocument();
+    await expect(canvas.queryByLabelText("limit")).toBeNull();
+    await expect(canvas.getByText(/shows only what you are allowed to open/)).toBeInTheDocument();
+    await expect(canvas.getByText("What is searched?")).toBeInTheDocument();
+  },
+};
+
+/** An example query runs and moves to the results layout, where limit and min faces appear. */
+export const ExampleQuery: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Ana is cooking" }));
     await expect(canvas.getByRole("status")).toHaveTextContent(/results for “Ana is cooking”/);
+    await expect(canvas.getByLabelText("limit")).toBeInTheDocument();
+  },
+};
+
+/** Typing on the home shows the who/what readout; submitting moves to the results layout with the query kept. */
+export const SearchFromHome: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.type(canvas.getByRole("searchbox", { name: "Search" }), "Ana and Ben are cooking");
+    await expect(canvas.getByText("Ben Okafor")).toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "Search" }));
+    await expect(canvas.getByRole("status")).toHaveTextContent(/results for “Ana and Ben are cooking”/);
+    await expect(canvas.getByLabelText("query")).toHaveValue("Ana and Ben are cooking");
   },
 };
 

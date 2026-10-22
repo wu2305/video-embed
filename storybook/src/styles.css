@@ -228,6 +228,26 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
 .mm-toolbar .mm-mono { margin-left: auto; }
 
+/* search home: the first visit, before any query. Centred, nothing but the
+   brand, one large field, a few examples and one line on scope and freshness. */
+.mm-home { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-5); padding: 18vh var(--space-5) var(--space-6); text-align: center; }
+.mm-home-page .mm-topbar { background: transparent; border-bottom-color: transparent; }
+.mm-home-brand { display: flex; align-items: center; gap: var(--space-3); margin: 0; font-size: var(--text-xl); line-height: 1.2; }
+.mm-home-brand .mm-brand-mark { width: 1.1em; height: 1.1em; }
+.mm-home-search { width: min(100%, 40rem); }
+.mm-home-field { display: flex; gap: var(--space-2); }
+.mm-home-field input { flex: 1; min-width: 0; min-height: var(--touch-min); padding: var(--space-2) var(--space-5); border-radius: var(--radius-pill); font-size: var(--text-md); }
+.mm-home-field .mm-primary { border-radius: var(--radius-pill); min-height: var(--touch-min); }
+.mm-home .mm-parse { justify-content: center; }
+.mm-home-examples { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: var(--space-1) var(--space-2); color: var(--muted); font-size: var(--text-xs); }
+.mm-link { background: none; border: 0; padding: var(--space-1) var(--space-2); color: var(--accent); font-size: var(--text-sm); }
+.mm-link:hover { text-decoration: underline; }
+.mm-home-foot { margin-top: auto; padding-top: var(--space-6); display: grid; justify-items: center; gap: var(--space-2); }
+.mm-home-foot p { margin: 0; }
+.mm-home-foot details { text-align: left; }
+.mm-home-foot summary { cursor: pointer; text-align: center; }
+.mm-home-foot .mm-sources { margin-top: var(--space-3); }
+
 /* dialog layer */
 .mm-backdrop { position: fixed; inset: 0; background: var(--backdrop); display: grid; place-items: center; padding: var(--space-5); z-index: 10; }
 .mm-backdrop > * { width: min(100%, 980px); max-height: 100%; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); }
