@@ -32,9 +32,13 @@ export function AnnotationTrack({ duration, scenes, annotations = [], playhead =
         aria-valuenow={Math.round(playhead)}
         aria-valuetext={formatTime(playhead)}
         onClick={seek}
+        aria-orientation="horizontal"
         onKeyDown={(e) => {
-          if (e.key === "ArrowRight") onSeek?.(Math.min(duration, playhead + 5));
-          if (e.key === "ArrowLeft") onSeek?.(Math.max(0, playhead - 5));
+          // Arrows step 5s, Page Up/Down 30s, Home/End jump to either end.
+          const to = { ArrowRight: playhead + 5, ArrowLeft: playhead - 5, PageUp: playhead + 30, PageDown: playhead - 30, Home: 0, End: duration }[e.key];
+          if (to === undefined) return;
+          e.preventDefault();
+          onSeek?.(Math.min(duration, Math.max(0, to)));
         }}
       >
         <div className="mm-track">

@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { isArchive, type ArchiveRecord, type Hit, type IndexInfo, type Person, type Result, type SourceStatus, type Unavailable, type Viewer } from "../types";
 import { Button } from "../components/atoms/Button";
-import { Panel } from "../components/atoms/Panel";
 import { Freshness } from "../components/molecules/Freshness";
 import { ResultGrid } from "../components/organisms/ResultGrid";
 import { PreviewPanel } from "../components/organisms/PreviewPanel";
 import { SearchBar } from "../components/organisms/SearchBar";
-import type { PageId } from "../components/organisms/TopBar";
+import { BrandMark, TopBar, type PageId } from "../components/organisms/TopBar";
 import { AppShell } from "../components/templates/AppShell";
 import { annotations, duration, hitFaces, kitchenFrame, scenes } from "../mock/data";
 import { searchGateway } from "./search";
@@ -48,7 +47,8 @@ export function SearchPage({
     initialQuery ? runSearch(initialQuery) : { results: [], sources: [] });
   const [open, setOpen] = useState<number | null>(openId);
   const [playhead, setPlayhead] = useState<number | undefined>(undefined);
-  const [runKey, setRunKey] = useState(0);
+  // The mock error comes from props; Try again clears it and reruns the query.
+  const [retried, setRetried] = useState(false);
 
   // Only NAS hits preview; Archive records open in the Archive System.
   const previewable = found.results.filter((r): r is Hit => !isArchive(r));
@@ -67,6 +67,8 @@ export function SearchPage({
   }
 
   const gone = hit ? unavailable[hit.unit_id] : undefined;
+  // Before the first query: a search home with the brand and one large field.
+  const home = !query && !loading && !error;
 
   // While the preview is open the page behind it is inert and does not scroll.
   // On close, focus goes back to the card of the hit that was last shown.
@@ -94,41 +96,44 @@ export function SearchPage({
 
   return (
     <div ref={page}>
-      <AppShell current="search" title="Search" subtitle="One search over the NAS media library and the Archive System. Name a person and say what they are doing."
-        index={indexInfo} now={now} viewer={viewer} onNavigate={onNavigate} inert={isOpen}>
-        <SearchBar key={runKey} people={people} initialQuery={query} busy={loading}
-          onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
-  
-        {!query && !loading && !error ? (
-          <>
-            <Panel as="section" title="Try a query">
-              <div className="mm-chips">
-                {EXAMPLES.map((q) => (
-                  <Button key={q} onClick={() => { run(q); setRunKey((k) => k + 1); }}>{q}</Button>
-                ))}
-              </div>
-              <p className="mm-mono" style={{ margin: "12px 0 0" }}>A capitalised name filters NAS media to that person; the rest is matched against what is on screen and sent to the Archive System as text.</p>
-            </Panel>
-            <Panel as="section" title="What this searches">
-              <ul className="mm-sources">
-                <li><b>NAS media library</b><span>Photos, video and audio on the Synology NAS: faces, on-screen text, speech and notes. Opens a preview.</span></li>
-                <li><b>Archive System</b><span>Archived records such as contracts and minutes. Metadata only; each result opens in the Archive System.</span></li>
-                <li><b>WeCom</b><span>Live documents are not searched here; use WeCom’s own search. Finalized material that is archived to the NAS shows up as NAS media.</span></li>
-              </ul>
-              <p className="mm-mono" style={{ margin: "12px 0 0" }}>
-                You only see results you are allowed to open{viewer ? `, as ${viewer.name}` : ""}. Searches are logged.
+      {home ? (
+        <div className="mm-shell mm-home-page">
+          <TopBar current="search" viewer={viewer} onNavigate={onNavigate} hideBrand />
+          <main className="mm-home">
+            <h1 className="mm-home-brand"><BrandMark />Unified Search</h1>
+            <SearchBar home people={people} busy={loading} onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
+            <div className="mm-home-examples">
+              <span>Try</span>
+              {EXAMPLES.map((q) => <button key={q} type="button" className="mm-link" onClick={() => run(q)}>{q}</button>)}
+            </div>
+            <div className="mm-home-foot">
+              <p className="mm-hint">
+                Name a person and say what they are doing. Searches the NAS media library and the Archive System, and shows only
+                what you are allowed to open{viewer ? `, as ${viewer.name}` : ""}. Searches are logged. Files added today are
+                searchable tomorrow morning.
               </p>
-              {indexInfo && <p style={{ margin: "8px 0 0" }}><Freshness index={indexInfo} now={now} long /></p>}
-            </Panel>
-          </>
-        ) : (
-          <>
-            {indexInfo?.stale && <Freshness index={indexInfo} now={now} long />}
-            <ResultGrid results={found.results} sources={found.sources} query={query} people={people} loading={loading} error={error}
-              selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }} />
-          </>
-        )}
-      </AppShell>
+              {indexInfo && <Freshness index={indexInfo} now={now} />}
+              <details className="mm-hint">
+                <summary>What is searched?</summary>
+                <ul className="mm-sources">
+                  <li><b>NAS media library</b><span>Photos, video and audio on the Synology NAS: faces, on-screen text, speech and notes. Opens a preview.</span></li>
+                  <li><b>Archive System</b><span>Archived records such as contracts and minutes. Metadata only; each result opens in the Archive System.</span></li>
+                  <li><b>WeCom</b><span>Live documents are not searched here; use WeCom’s own search. Finalized material that is archived to the NAS shows up as NAS media.</span></li>
+                </ul>
+              </details>
+            </div>
+          </main>
+        </div>
+      ) : (
+        <AppShell current="search" title="Search" subtitle="One search over the NAS media library and the Archive System. Name a person and say what they are doing."
+          index={indexInfo} now={now} viewer={viewer} onNavigate={onNavigate} inert={isOpen}>
+          <SearchBar people={people} initialQuery={query} busy={loading}
+            onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
+          {indexInfo?.stale && <Freshness index={indexInfo} now={now} long />}
+          <ResultGrid results={found.results} sources={found.sources} query={query} people={people} loading={loading} error={retried ? null : error}
+            onRetry={() => { setRetried(true); run(query); }} selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }} />
+        </AppShell>
+      )}
 
       {hit && (
         <div ref={backdrop} className="mm-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setOpen(null); }}>

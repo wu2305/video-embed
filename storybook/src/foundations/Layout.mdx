@@ -35,6 +35,13 @@ import { Meta } from "@storybook/addon-docs/blocks";
 - Detail pages split 2 : 1 (`.mm-split`). Below 760px every split stacks into one column.
 - Grids auto-fill from `--card-min` (212px for hits, 160px for people). Override the variable, not the grid.
 - No shadows, gradients or motion. Depth comes from `bg` → `panel` → `field`.
+- Cards are size containers (`container-type: inline-size`). Below 180px a card tightens its body and clamps
+  long text to three lines, whatever the page width.
+- Use logical properties (`margin-inline-start`, `inset-inline-end`, `text-align: start`) so the console mirrors
+  under `dir="rtl"`. Positions over media stay physical: frames and timelines do not mirror.
+- Below 400px the top bar shows only the brand mark; the name stays for screen readers.
+- A heading that can hold a file name (`.mm-page-head h1`, the preview `h2`) uses `overflow-wrap: anywhere`, so a
+  name with no break points never widens the page.
 
 ## Controls and touch
 
@@ -47,6 +54,10 @@ import { Meta } from "@storybook/addon-docs/blocks";
 - Buttons come in four variants. `default` has the panel fill and a resting edge, so it never reads as a
   text field (inputs use `field`). `primary` is the one submit action of a form. `ghost` is for dismissals.
   `danger` is for an action other people will see and that needs a confirm step, such as merging two people.
+- A submit that cannot run yet stays focusable (`aria-disabled`, not `disabled`) and names its reason through
+  `aria-describedby`; pressing it shows the reason. While a search runs, placeholders replace the old results.
+- Every control sets `touch-action: manipulation`, so taps don't wait for double-tap zoom. The timeline takes
+  ←/→ (5s), Page Up/Down (30s) and Home/End.
 - A card's one link is stretched over the card, so on touch the card is the target, not the line of text.
 - The preview is a modal dialog. It takes focus when it opens, keeps Tab inside, closes on Esc, makes the
   page behind it inert and stops it scrolling, and on close returns focus to the card of the hit last shown.

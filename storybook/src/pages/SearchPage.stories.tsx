@@ -15,13 +15,36 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** First visit: examples, what each source covers, and when today's files show up. */
+/** First visit: a search home. The brand, one large field, example queries, and one line on scope and freshness. */
 export const FirstVisit: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText(/Live documents are not searched here/)).toBeInTheDocument();
+    await expect(canvas.getByRole("heading", { level: 1, name: "Unified Search" })).toBeInTheDocument();
+    await expect(canvas.queryByLabelText("limit")).toBeNull();
+    await expect(canvas.getByText(/shows only what you are allowed to open/)).toBeInTheDocument();
+    await expect(canvas.getByText("What is searched?")).toBeInTheDocument();
+  },
+};
+
+/** An example query runs and moves to the results layout, where limit and min faces appear. */
+export const ExampleQuery: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Ana is cooking" }));
     await expect(canvas.getByRole("status")).toHaveTextContent(/results for “Ana is cooking”/);
+    await expect(canvas.getByLabelText("limit")).toBeInTheDocument();
+  },
+};
+
+/** Typing on the home shows the who/what readout; submitting moves to the results layout with the query kept. */
+export const SearchFromHome: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.type(canvas.getByRole("searchbox", { name: "Search" }), "Ana and Ben are cooking");
+    await expect(canvas.getByText("Ben Okafor")).toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "Search" }));
+    await expect(canvas.getByRole("status")).toHaveTextContent(/results for “Ana and Ben are cooking”/);
+    await expect(canvas.getByLabelText("query")).toHaveValue("Ana and Ben are cooking");
   },
 };
 
@@ -88,8 +111,24 @@ export const StaleIndex: Story = { args: { initialQuery: "Ana is cooking", index
 
 export const NoHits: Story = { args: { initialQuery: "Ben is skydiving", corpus: [] } };
 
-export const Loading: Story = { args: { initialQuery: "Ana is cooking", loading: true } };
+/** While a search runs, placeholders stand in for results; nothing stale reads as live. */
+export const Loading: Story = {
+  args: { initialQuery: "Ana is cooking", loading: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("region", { name: "Search results" })).toHaveAttribute("aria-busy", "true");
+    await expect(canvas.queryAllByRole("article")).toHaveLength(0);
+  },
+};
 
+/** A server error says what happened in plain words, offers Try again, and keeps the raw message under Details. */
 export const ServerError: Story = {
   args: { initialQuery: "Ana is cooking", error: "ValueError: query vector has 512 dims, index has 768" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("alert")).toHaveTextContent("Something went wrong on the search server");
+    await expect(canvas.getByRole("status")).not.toHaveTextContent(/ValueError/);
+    await userEvent.click(canvas.getByRole("button", { name: "Try again" }));
+    await expect(canvas.getByRole("status")).toHaveTextContent(/results for “Ana is cooking”/);
+  },
 };

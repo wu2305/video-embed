@@ -12,6 +12,8 @@ export interface TopBarProps {
   /** The signed-in user. Every page needs one; the gateway has no anonymous access. */
   viewer?: Viewer;
   onNavigate?: (page: PageId) => void;
+  /** Leave out the product name, for a page that shows it large itself (the search home). */
+  hideBrand?: boolean;
 }
 
 const LINKS: { id: PageId; label: string }[] = [
@@ -24,7 +26,7 @@ function initials(name: string): string {
 }
 
 /** A keyframe with a face box in it: what the console finds. */
-function BrandMark() {
+export function BrandMark() {
   return (
     <svg className="mm-brand-mark" viewBox="0 0 18 18" aria-hidden focusable="false">
       <rect x="1" y="3" width="16" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5" />
@@ -34,10 +36,10 @@ function BrandMark() {
 }
 
 /** App header: product mark, primary navigation, how fresh the NAS index is, and who is signed in. */
-export function TopBar({ current, index, now, viewer, onNavigate }: TopBarProps) {
+export function TopBar({ current, index, now, viewer, onNavigate, hideBrand = false }: TopBarProps) {
   return (
     <header className="mm-topbar">
-      <div className="mm-brand"><BrandMark />Unified Search</div>
+      {!hideBrand && <div className="mm-brand"><BrandMark /><span className="mm-brand-name">Unified Search</span></div>}
       <nav aria-label="Primary" className="mm-links">
         {LINKS.map((link) => (
           <a

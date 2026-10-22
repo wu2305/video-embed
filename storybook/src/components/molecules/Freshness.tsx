@@ -18,7 +18,7 @@ export function Freshness({ index, now = Date.now() / 1000, long = false }: Fres
   const updated = formatUpdated(index.published_at, now);
   if (index.stale) {
     return (
-      <span className="mm-mono" role={long ? "alert" : undefined}>
+      <span className={long ? "mm-hint" : "mm-mono"} role={long ? "alert" : undefined}>
         <Tag tone="warn">stale</Tag>
         {long
           ? `The NAS index has not been updated since ${formatDate(index.published_at)}. Results are still correct for files that existed then; newer files are missing. IT has been alerted.`
@@ -28,7 +28,7 @@ export function Freshness({ index, now = Date.now() / 1000, long = false }: Fres
   }
   if (!long) return <span className="mm-mono">{index.units.toLocaleString("en-US")} items · updated {updated}</span>;
   return (
-    <span className="mm-mono">
+    <span className="mm-hint">
       NAS index updated {updated}. Files added to the NAS today become searchable tomorrow morning, after the nightly update.
     </span>
   );

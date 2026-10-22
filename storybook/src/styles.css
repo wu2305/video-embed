@@ -25,6 +25,7 @@
   --text: light-dark(#171b23, #e6e9ef);
   --muted: light-dark(#586174, #8b94a7);
   --accent: light-dark(#1d5bd6, #6ea8fe);
+  --accent-strong: light-dark(#1747a8, #a3c7ff);
   --on-accent: light-dark(#ffffff, #0b0d11);
   --good: light-dark(#127a48, #59d18c);
   --warn: light-dark(#8f5d00, #e5c07b);
@@ -43,6 +44,10 @@
      at least 1.17x the last. --text-overlay is for scrims on media only. */
   --text-overlay: .6875rem;
   --text-xs: .75rem; --text-sm: .875rem; --text-md: 1.0625rem; --text-lg: 1.375rem; --text-xl: 1.875rem;
+  /* Decorative only: the media-kind glyph in a card with no frame. */
+  --text-glyph: 2.375rem;
+  /* Longest line of prose, inside the 60–75 character readable band. */
+  --measure: 65ch;
 
   /* space and shape */
   --space-1: 4px; --space-2: 8px; --space-3: 10px; --space-4: 14px; --space-5: 20px; --space-6: 28px;
@@ -51,6 +56,8 @@
 }
 
 * { box-sizing: border-box; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
   font: var(--text-sm)/1.5 var(--font-sans);
@@ -63,23 +70,35 @@ input:focus, select:focus, textarea:focus, button:focus-visible, [role=slider]:f
 input[aria-invalid=true] { border-color: var(--bad); }
 textarea { min-height: 72px; resize: vertical; }
 button { cursor: pointer; }
-button:disabled { opacity: .5; cursor: default; }
+button:disabled, button[aria-disabled=true] { opacity: .5; cursor: default; }
+/* Taps act at once instead of waiting out double-tap zoom. */
+a, button, input, select, textarea, summary, [role=slider] { touch-action: manipulation; }
+.mm-sr-only { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* atoms */
 .mm-button { background: var(--panel); border-color: var(--line); font-weight: 500; min-height: var(--control-min); }
 .mm-button:hover:not(:disabled) { border-color: var(--muted); }
 .mm-primary { background: var(--accent); color: var(--on-accent); border-color: transparent; font-weight: 600; padding: var(--space-2) 18px; min-height: var(--control-min); }
 .mm-ghost { background: transparent; color: var(--muted); }
+/* Feedback is a colour change only: no transitions (see Layout). */
+.mm-primary:hover:not(:disabled, [aria-disabled=true]) { background: var(--accent-strong); }
+.mm-primary:active:not(:disabled, [aria-disabled=true]) { background: var(--accent-strong); border-color: var(--text); }
 .mm-danger { background: var(--panel); color: var(--bad); border-color: var(--bad); font-weight: 600; min-height: var(--control-min); }
+.mm-danger:hover:not(:disabled) { background: var(--field); }
+.mm-danger:active:not(:disabled) { border-color: var(--text); }
 .mm-confirm { display: grid; gap: var(--space-3); border: 1px solid var(--bad); border-radius: var(--radius-md); background: var(--field); padding: var(--space-3); }
 .mm-field { display: flex; flex-direction: column; gap: 5px; }
 .mm-field > label, .mm-label { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
 .mm-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); }
 .mm-panel > h2, .mm-panel > h3 { margin: 0 0 var(--space-3); font-size: var(--text-md); line-height: 1.3; }
+/* Mono is for what a machine produced (ids, scores, times, paths, OCR and ASR
+   text); a sentence a person reads is sans, as .mm-hint. */
 .mm-mono { font: var(--text-xs)/1.45 var(--mono); color: var(--muted); }
+.mm-hint { font-size: var(--text-xs); line-height: 1.5; color: var(--muted); max-width: var(--measure); text-wrap: pretty; }
+.mm-transcript { font-family: var(--mono); }
 .mm-tag {
   display: inline-block; border: 1px solid var(--line); border-radius: var(--radius-sm);
-  padding: 1px 5px; margin-right: var(--space-1); font: var(--text-xs)/1.45 var(--mono); color: var(--muted);
+  padding: 1px 5px; margin-inline-end: var(--space-1); font: var(--text-xs)/1.45 var(--mono); color: var(--muted);
 }
 .mm-tag.warn { color: var(--warn); }
 .mm-tag.accent { color: var(--accent); border-color: var(--accent); }
@@ -105,7 +124,7 @@ button:disabled { opacity: .5; cursor: default; }
 
 /* result card and grid */
 .mm-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr)); }
-.mm-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; text-align: left; padding: 0; color: inherit; }
+.mm-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; text-align: start; padding: 0; color: inherit; container-type: inline-size; }
 .mm-card.selected { border-color: var(--accent); }
 /* The card's one button stretches over the whole card; focus shows on the card. */
 .mm-card, .mm-note { position: relative; }
@@ -117,14 +136,14 @@ button:disabled { opacity: .5; cursor: default; }
 .mm-card.selected:hover { border-color: var(--accent); }
 .mm-thumb { position: relative; background: var(--thumb); aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .mm-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.mm-glyph { font-size: 38px; color: var(--muted); }
+.mm-glyph { font-size: var(--text-glyph); color: var(--muted); }
 .mm-rank, .mm-score, .mm-source {
   position: absolute; font: var(--text-overlay)/1 var(--mono); background: var(--scrim);
   border-radius: var(--radius-chip); padding: var(--space-1) 6px; color: var(--on-scrim);
 }
-.mm-rank { top: var(--space-2); left: var(--space-2); }
-.mm-score { bottom: var(--space-2); right: var(--space-2); color: var(--image-good); }
-.mm-source { top: var(--space-2); right: var(--space-2); color: var(--image-warn); }
+.mm-rank { top: var(--space-2); inset-inline-start: var(--space-2); }
+.mm-score { bottom: var(--space-2); inset-inline-end: var(--space-2); color: var(--image-good); }
+.mm-source { top: var(--space-2); inset-inline-end: var(--space-2); color: var(--image-warn); }
 .mm-body { padding: var(--space-3) 12px 12px; display: grid; gap: 6px; }
 .mm-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mm-text { font-size: var(--text-xs); color: var(--muted); }
@@ -133,9 +152,14 @@ button:disabled { opacity: .5; cursor: default; }
 /* The answer to "what did I get": sans at body size, louder than the filter chips. */
 .mm-status { font: var(--text-sm)/1.4 var(--font-sans); color: var(--muted); margin: 0 0 var(--space-3); min-height: 20px; }
 .mm-status.error { color: var(--bad); }
-.mm-empty { color: var(--muted); padding: var(--space-4) 0; }
+.mm-empty { color: var(--muted); padding: var(--space-4) 0; max-width: var(--measure); text-wrap: pretty; }
 .mm-notice { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--field); padding: var(--space-2) var(--space-3); margin: 0 0 var(--space-3); font-size: var(--text-xs); }
 .mm-notice.warn { border-color: var(--warn); }
+.mm-notice.bad { border-color: var(--bad); }
+.mm-notice code { overflow-wrap: anywhere; }
+.mm-why { margin: var(--space-2) 0 0; }
+.mm-skeleton .mm-body span { display: block; height: .75rem; border-radius: var(--radius-sm); background: var(--field); }
+.mm-skeleton .mm-body span:last-child { width: 60%; }
 .mm-archive .mm-body { padding-top: 12px; }
 .mm-archive .mm-name { white-space: normal; }
 .mm-archive-head { display: flex; gap: var(--space-2); align-items: baseline; }
@@ -194,33 +218,68 @@ button:disabled { opacity: .5; cursor: default; }
 
 /* organisms: top bar */
 .mm-topbar { display: flex; align-items: center; gap: var(--space-5); padding: 0 var(--space-5); height: 52px; border-bottom: 1px solid var(--line); background: var(--panel); }
-.mm-brand { font-weight: 700; letter-spacing: -.2px; display: flex; align-items: center; gap: var(--space-2); }
+.mm-brand { font-weight: 700; letter-spacing: -.2px; display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; white-space: nowrap; }
 .mm-brand-mark { display: block; width: 18px; height: 18px; color: var(--accent); }
 .mm-links { display: flex; gap: var(--space-1); }
 .mm-links a { display: inline-flex; align-items: center; color: var(--muted); text-decoration: none; padding: 6px var(--space-3); border-radius: var(--radius-md); }
 .mm-links a:hover { color: var(--text); }
 .mm-links a[aria-current=page] { color: var(--text); background: var(--field); }
 .mm-links a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.mm-topbar .mm-mono { margin-left: auto; }
-.mm-topbar .mm-viewer { margin-left: auto; }
-.mm-topbar .mm-mono + .mm-viewer { margin-left: 0; }
+.mm-topbar .mm-mono { margin-inline-start: auto; }
+.mm-topbar .mm-viewer { margin-inline-start: auto; }
+.mm-topbar .mm-mono + .mm-viewer { margin-inline-start: 0; }
 
 /* templates: app shell and page header */
 .mm-shell { min-height: 100vh; display: flex; flex-direction: column; }
 .mm-page { width: 100%; max-width: var(--page-max); margin: 0 auto; padding: var(--space-5); display: grid; gap: var(--space-4); align-content: start; }
 .mm-page-head { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; justify-content: space-between; }
-.mm-page-head h1 { margin: 0; font-size: var(--text-xl); line-height: 1.2; }
-.mm-page-head p { margin: var(--space-1) 0 0; color: var(--muted); }
+.mm-page-head > div { min-width: 0; }
+/* Clip titles are file names with no break points; let them break anywhere. */
+.mm-page-head h1 { margin: 0; font-size: var(--text-xl); line-height: 1.2; overflow-wrap: anywhere; }
+.mm-page-head p { margin: var(--space-1) 0 0; color: var(--muted); max-width: var(--measure); text-wrap: pretty; }
 .mm-split { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: var(--space-4); align-items: start; }
 .mm-split > aside { display: grid; gap: var(--space-4); }
 .mm-crumbs { font: var(--text-xs)/1.4 var(--mono); color: var(--muted); }
-.mm-crumbs a, .mm-mono a { color: var(--accent); text-decoration: none; }
+.mm-crumbs a, .mm-mono a, .mm-hint a { color: var(--accent); text-decoration: none; }
 .mm-toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
-.mm-toolbar .mm-mono { margin-left: auto; }
+.mm-toolbar .mm-mono { margin-inline-start: auto; }
+
+/* search home: the first visit, before any query. Centred, nothing but the
+   brand, one large field, a few examples and one line on scope and freshness. */
+.mm-home { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-5); padding: 18vh var(--space-5) var(--space-6); text-align: center; }
+.mm-home-page .mm-topbar { background: transparent; border-bottom-color: transparent; }
+.mm-home-brand { display: flex; align-items: center; gap: var(--space-3); margin: 0; font-size: var(--text-xl); line-height: 1.2; }
+.mm-home-brand .mm-brand-mark { width: 1.1em; height: 1.1em; }
+.mm-home-search { width: min(100%, 40rem); }
+.mm-home-field { display: flex; gap: var(--space-2); }
+.mm-home-field input { flex: 1; min-width: 0; min-height: var(--touch-min); padding: var(--space-2) var(--space-5); border-radius: var(--radius-pill); font-size: var(--text-md); }
+.mm-home-field .mm-primary { border-radius: var(--radius-pill); min-height: var(--touch-min); }
+.mm-home .mm-parse { justify-content: center; }
+.mm-home-examples { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: var(--space-1) var(--space-2); color: var(--muted); font-size: var(--text-xs); }
+.mm-link { background: none; border: 0; padding: var(--space-1) var(--space-2); color: var(--accent); font-size: var(--text-sm); }
+.mm-link:hover { text-decoration: underline; }
+.mm-home-foot { margin-top: auto; padding-top: var(--space-6); display: grid; justify-items: center; gap: var(--space-2); }
+.mm-home-foot p { margin: 0; }
+.mm-home-foot details { text-align: start; }
+.mm-home-foot summary { cursor: pointer; text-align: center; }
+.mm-home-foot .mm-sources { margin-top: var(--space-3); }
 
 /* dialog layer */
 .mm-backdrop { position: fixed; inset: 0; background: var(--backdrop); display: grid; place-items: center; padding: var(--space-5); z-index: 10; }
 .mm-backdrop > * { width: min(100%, 980px); max-height: 100%; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); }
+
+/* Cards respond to their own width, not the page's: a narrow grid cell gets a
+   tighter body and clamps the longer text. */
+@container (max-width: 180px) {
+  .mm-body { padding: var(--space-2) var(--space-2) var(--space-3); gap: var(--space-1); }
+  .mm-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  .mm-rank, .mm-score, .mm-source { padding: 3px 5px; }
+}
+
+/* Below 400px the top bar keeps only the brand mark; the name stays for screen readers. */
+@media (max-width: 400px) {
+  .mm-brand-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
 
 @media (max-width: 760px) {
   .mm-tagger, .mm-preview, .mm-split { grid-template-columns: 1fr; }
