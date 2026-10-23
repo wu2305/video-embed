@@ -23,6 +23,7 @@ export const FirstVisit: Story = {
     await expect(canvas.queryByLabelText("limit")).toBeNull();
     // No explanatory paragraph: brand, field, examples and the freshness line only.
     await expect(canvas.queryByText(/allowed to open/)).toBeNull();
+    await expect(canvasElement.querySelectorAll(".mm-home .mm-hint")).toHaveLength(0);
     // One example says it finds an Archive record, so the first visit shows both sources.
     await expect(canvas.getByRole("button", { name: "Q3 budget · Archive" })).toBeInTheDocument();
   },
