@@ -19,10 +19,9 @@ export const Short: Story = {
   },
 };
 
-/** First visit and empty results: says when today's files will show up. */
+/** The long form, as a full sentence. */
 export const Long: Story = { args: { long: true } };
 
 /** Nothing published for longer than the nightly cadence. */
 export const Stale: Story = { args: { index: staleIndexInfo, long: true } };
 
-export const StaleShort: Story = { args: { index: staleIndexInfo } };

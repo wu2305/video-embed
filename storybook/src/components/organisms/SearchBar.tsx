@@ -65,7 +65,7 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
   return (
     <form className="mm-panel" onSubmit={submit} role="search" aria-label={t("search.region")}>
       <div className="mm-search">
-        <Field label={t("search.query")} grow>
+        <Field label={t("search.fieldLabel")} grow hideLabel>
           <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search.placeholder")} autoComplete="off" />
         </Field>
         <Field label={t("search.limit")}>

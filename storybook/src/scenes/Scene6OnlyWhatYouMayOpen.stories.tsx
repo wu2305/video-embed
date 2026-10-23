@@ -1,18 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, within } from "storybook/test";
 import { Panel } from "../components/atoms/Panel";
-import { PreviewPanel } from "../components/organisms/PreviewPanel";
 import { ResultGrid } from "../components/organisms/ResultGrid";
-import { TopBar } from "../components/organisms/TopBar";
 import { fuseByRank } from "../lib/fuse";
-import { archiveRecords, cookingHit, copyHit, indexInfo, kitchenFrame, now, people, photoHit, presentingHit, viewer } from "../mock/data";
+import { archiveRecords, cookingHit, copyHit, people, photoHit, presentingHit, viewer } from "../mock/data";
 import type { Viewer } from "../types";
 
 const meta = {
   title: "Scenes/6 · Only what you may open",
   parameters: {
     layout: "fullscreen",
-    docs: { description: { component: "Mei and Raj run the same query. The gateway filters every result against each caller's groups, so each sees only what they could open directly. Status: **new** (design doc §5; no ACL capture or sign-in exists yet)." } },
+    docs: { description: { component: "Mei and Raj run the same query and each sees only what they may open." } },
   },
 } satisfies Meta;
 
@@ -42,27 +40,4 @@ export const TwoUsers: Story = {
     await expect(grids).toHaveLength(2);
     await expect(grids[0]!.textContent).not.toBe(grids[1]!.textContent);
   },
-};
-
-/** A file's folder permissions changed after last night's update. The preview fails closed. */
-export const AccessChangedToday: Story = {
-  render: () => (
-    <div style={{ padding: 20 }}>
-      <PreviewPanel hit={cookingHit} position={1} total={3} frameSrc={kitchenFrame} people={people} unavailable="forbidden" />
-    </div>
-  ),
-};
-
-/** Hovering the name shows the groups the gateway resolved, for "why can't I see it" questions. */
-export const WhoAmI: Story = {
-  render: () => (
-    <div>
-      <TopBar current="search" index={indexInfo} now={now} viewer={viewer} />
-      <div style={{ padding: 20 }}>
-        <Panel as="section" title="Signed in">
-          <p className="mm-mono" style={{ margin: 0 }}>{viewer.name} · groups: {viewer.groups.join(", ")}. Membership is read from the directory on every search, so a change applies at once.</p>
-        </Panel>
-      </div>
-    </div>
-  ),
 };

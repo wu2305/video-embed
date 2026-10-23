@@ -55,7 +55,7 @@ export function AnnotationComposer({ time, scene = null, inFrame = [], people = 
     event.preventDefault();
     if (blocked()) return;
     onSave?.({ t_start: still ? 0 : t_start!, t_end: still ? null : t_end, text: text.trim(), person_ids: chosen });
-    setSaved(still ? t("note.addedStill") : t_end === null ? t("note.addedFrom", { start: formatTime(t_start!) }) : t("note.addedRange", { start: formatTime(t_start!), end: formatTime(t_end) }));
+    setSaved(t("note.added"));
     setText("");
     setChosen([]);
   }
@@ -75,7 +75,7 @@ export function AnnotationComposer({ time, scene = null, inFrame = [], people = 
           </Field>
         </div>
       )}
-      {rangeError && <p id={rangeErrorId} className="mm-hint" role="alert"><Tag tone="bad">{t("note.range")}</Tag>{rangeError}</p>}
+      {rangeError && <p id={rangeErrorId} className="mm-hint" role="alert">{rangeError}</p>}
       {inFrame.length > 0 && (
         <div className="mm-field">
           <Label as="span">{t("note.peopleInFrame")}</Label>

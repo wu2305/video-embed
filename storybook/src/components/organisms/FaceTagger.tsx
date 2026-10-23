@@ -2,7 +2,6 @@ import { useId, useRef, useState } from "react";
 import type { Face, Person, TagScope } from "../../types";
 import { Button } from "../atoms/Button";
 import { Label } from "../atoms/Label";
-import { Tag } from "../atoms/Tag";
 import { Field } from "../molecules/Field";
 import { FaceOverlay } from "./FaceOverlay";
 import { useI18n } from "../../i18n";
@@ -29,7 +28,7 @@ export function FaceTagger({ src, faces, people, initialSelected = null, initial
   const [selected, setSelected] = useState<number | null>(initialSelected);
   const [name, setName] = useState(initialName);
   const [scope, setScope] = useState<TagScope>(() => (faces.find((f) => f.face_index === initialSelected)?.person_id === null ? "face" : "cluster"));
-  const [applied, setApplied] = useState<{ tone: "good" | "warn"; label: string; text: string; undo?: FaceTag } | null>(null);
+  const [applied, setApplied] = useState<{ text: string; undo?: FaceTag } | null>(null);
   const [confirming, setConfirming] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
   const listId = useId();
@@ -66,13 +65,12 @@ export function FaceTagger({ src, faces, people, initialSelected = null, initial
     const tag = { face_index: face.face_index, name: name.trim(), scope };
     onTag?.(tag);
     setConfirming(false);
-    if (target) setApplied({ tone: "good", label: t("people.merged"), text: t("face.mergedText", { from: moving.label, name: tag.name, faces: moving.faces + target.faces }), undo: tag });
-    else setApplied({ tone: "good", label: t("face.saved"), text: scope === "cluster" && cluster ? t("face.namedAll", { faces: cluster.faces, name: tag.name }) : t("face.namedOne", { name: tag.name }) });
+    setApplied(target ? { text: t("face.mergedText", { from: moving.label }), undo: tag } : { text: t("people.saved") });
   }
 
   function undo(tag: FaceTag) {
     onUndoTag?.(tag);
-    setApplied({ tone: "warn", label: t("people.undone"), text: t("face.undoneText", { from: moving.label }) });
+    setApplied({ text: t("face.undoneText", { from: moving.label }) });
   }
 
   return (
@@ -87,14 +85,14 @@ export function FaceTagger({ src, faces, people, initialSelected = null, initial
         ) : (
           <>
             <Field label={t("face.name")}>
-              <input id={nameId} ref={nameRef} type="text" list={listId} value={name} onChange={(e) => { setName(e.target.value); setConfirming(false); setApplied(null); }} placeholder="Ana Ruiz" autoComplete="off" />
+              <input id={nameId} ref={nameRef} type="text" list={listId} value={name} onChange={(e) => { setName(e.target.value); setConfirming(false); setApplied(null); }} autoComplete="off" />
             </Field>
             <datalist id={listId}>{known.map((n) => <option key={n} value={n} />)}</datalist>
             <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: 8 }}>
               <legend><Label as="span">{t("face.applyTo")}</Label></legend>
               <label className="mm-radio">
                 <input type="radio" name="scope" checked={scope === "cluster"} disabled={!cluster} onChange={() => setScope("cluster")} />
-                <span>{t("face.all")}{cluster && <small>{cluster.id} · {t("card.faces", { count: cluster.faces })}</small>}{!cluster && <small>{t("face.needsCluster")}</small>}</span>
+                <span>{t("face.all")}{cluster && <small>{t("card.faces", { count: cluster.faces })}</small>}{!cluster && <small>{t("face.needsCluster")}</small>}</span>
               </label>
               <label className="mm-radio">
                 <input type="radio" name="scope" checked={scope === "face"} onChange={() => setScope("face")} />

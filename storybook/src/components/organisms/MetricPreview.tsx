@@ -51,14 +51,10 @@ export function MetricPreview({ metric, reports = null, error = false, onRetry, 
   const shown = wanted
     ? all.filter((r) => `${r.title} ${r.folder ?? ""} ${r.owner ?? ""}`.toLowerCase().includes(wanted))
     : all;
-  const count = metric.report_count === 1 ? t("card.usedInOne") : t("card.usedIn", { count: metric.report_count });
 
   return (
     <div ref={dialog} className="mm-metric-preview" role="dialog" aria-modal={modal || undefined}
       aria-label={t("preview.label", { name: metric.name })} tabIndex={-1} onKeyDown={keys}>
-      <div className="mm-archive-head mm-mono">
-        <span className="mm-source-name">{t("card.biSource")}</span><span>{t("card.metric")}</span>
-      </div>
       <h2>{metric.name}</h2>
       <div className="mm-mono">
         <Tag>{metric.metric_id}</Tag>
@@ -69,7 +65,7 @@ export function MetricPreview({ metric, reports = null, error = false, onRetry, 
 
       <section aria-label={t("metric.reports")} aria-busy={loading || undefined}>
         <div className="mm-metric-bar">
-          <h3>{metric.report_count === 0 ? t("card.noReports") : count}</h3>
+          <h3>{metric.report_count === 0 ? t("card.noReports") : t("metric.reports")}</h3>
           {metric.report_count >= FILTER_FROM && !error && (
             <Field label={t("metric.filter")}>
               <input type="search" value={filter} onChange={(e) => setFilter(e.target.value)} />
@@ -88,7 +84,7 @@ export function MetricPreview({ metric, reports = null, error = false, onRetry, 
               <li key={r.report_id}>
                 <a href={r.deep_link} target="_blank" rel="noopener noreferrer">{r.title} ↗</a>
                 <span className="mm-mono mm-text">
-                  {[t(r.kind === "dashboard" ? "metric.dashboard" : "metric.report"), r.folder, r.owner,
+                  {[r.kind === "dashboard" && t("metric.dashboard"), r.folder, r.owner,
                     r.charts === 1 ? t("metric.chart") : t("metric.charts", { count: r.charts }), formatDate(r.updated_at)]
                     .filter(Boolean).join(" · ")}
                 </span>

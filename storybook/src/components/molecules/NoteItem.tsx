@@ -19,7 +19,7 @@ export function NoteItem({ note, people = [], current = false, onSeek }: NoteIte
       <button type="button" className="mm-note-text mm-card-link" aria-current={current} onClick={() => onSeek?.(note.t_start)}>{note.text}</button>
       <span className="mm-note-meta mm-mono">
         {note.person_ids.map((id) => <Tag key={id} tone="accent">{displayName(id, people)}</Tag>)}
-        by {note.author}
+        {note.author}
       </span>
     </div>
   );

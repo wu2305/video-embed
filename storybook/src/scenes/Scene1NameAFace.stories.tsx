@@ -4,7 +4,7 @@ import { kitchenFaces, kitchenFrame, people } from "../mock/data";
 
 const meta = {
   title: "Scenes/1 · Name a face",
-  parameters: { docs: { description: { component: "Mei opens a result, clicks a face box and names the whole cluster. Status: **new** (the index stores no face boxes yet)." } } },
+  parameters: { docs: { description: { component: "Mei opens a result, clicks a face box and names the whole cluster." } } },
 } satisfies Meta;
 
 export default meta;

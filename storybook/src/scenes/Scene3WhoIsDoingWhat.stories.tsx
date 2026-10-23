@@ -6,7 +6,7 @@ import { hits, people } from "../mock/data";
 
 const meta = {
   title: "Scenes/3 · Who is doing what",
-  parameters: { docs: { description: { component: "Type a name and an action; results are filtered to that person and ranked by the action. Status: **partial** (card and grid match the console; naming people in the query is new)." } } },
+  parameters: { docs: { description: { component: "Type a name and an action; results are filtered to that person and ranked by the action." } } },
 } satisfies Meta;
 
 export default meta;

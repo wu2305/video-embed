@@ -54,6 +54,6 @@ export const Phone320Chinese: Story = {
   play: async ({ canvasElement }) => {
     const box = canvasElement.querySelector<HTMLElement>(".mm-metric-preview")!;
     await expect(box.scrollWidth).toBeLessThanOrEqual(320);
-    await expect(box).toHaveTextContent("被 7 个报表使用");
+    await expect(within(box).getByRole("heading", { level: 3 })).toHaveTextContent("报表");
   },
 };

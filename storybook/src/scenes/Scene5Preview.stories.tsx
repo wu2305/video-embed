@@ -6,7 +6,7 @@ import { annotations, duration, hitFaces, hits, kitchenFrame, people, scenes } f
 
 const meta = {
   title: "Scenes/5 · Preview",
-  parameters: { layout: "fullscreen", docs: { description: { component: "Open a hit to see the matched moment, step with ← →, close with Esc. Status: **partial** (the console plays the file but does not seek to the scene)." } } },
+  parameters: { layout: "fullscreen", docs: { description: { component: "Open a hit to see the matched moment, step with ← →, close with Esc." } } },
 } satisfies Meta;
 
 export default meta;

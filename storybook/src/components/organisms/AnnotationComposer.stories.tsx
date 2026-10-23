@@ -23,7 +23,7 @@ export const Default: Story = {
     await expect(args.onSave).toHaveBeenCalledWith({
       t_start: 42, t_end: 71, text: "Ana is presenting the Q3 budget", person_ids: ["person-0003"],
     });
-    await expect(canvas.getByRole("status")).toHaveTextContent("Note added at 00:42–01:11.");
+    await expect(canvas.getByRole("status")).toHaveTextContent("Note added.");
   },
 };
 

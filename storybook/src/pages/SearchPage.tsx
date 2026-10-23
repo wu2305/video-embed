@@ -117,7 +117,7 @@ export function SearchPage({
         <div className="mm-shell mm-home-page">
           <TopBar current="search" viewer={viewer} onNavigate={onNavigate} hideBrand />
           <main className="mm-home">
-            <h1 className="mm-home-brand"><BrandMark />Unified Search</h1>
+            <h1 className="mm-home-brand"><BrandMark />{t("brand.name")}</h1>
             <SearchBar home people={people} busy={loading} onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
             <div className="mm-home-foot">
               {indexInfo && <Freshness index={indexInfo} now={now} />}
@@ -129,7 +129,6 @@ export function SearchPage({
           index={indexInfo} now={now} viewer={viewer} onNavigate={onNavigate} inert={isOpen}>
           <SearchBar people={people} initialQuery={query} busy={loading}
             onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
-          {indexInfo?.stale && <Freshness index={indexInfo} now={now} long />}
           <ResultGrid results={found.results} sources={found.sources} query={query} people={people} loading={loading} error={retried ? null : error}
             onRetry={() => { setRetried(true); run(query); }} selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }}
             selectedMetricId={openMetric} onOpenMetric={(m) => setOpenMetric(m.metric_id)} />

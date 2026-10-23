@@ -8,7 +8,7 @@ import type { Annotation } from "../types";
 
 const meta = {
   title: "Scenes/2 · Write on the video",
-  parameters: { docs: { description: { component: "Seek on the timeline, then attach a note to the scene under the playhead. Status: **new** (needs a sidecar notes store)." } } },
+  parameters: { docs: { description: { component: "Seek on the timeline, then attach a note to the scene under the playhead." } } },
 } satisfies Meta;
 
 export default meta;
