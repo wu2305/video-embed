@@ -6,7 +6,7 @@ import { hits, people } from "../mock/data";
 
 const meta = {
   title: "Scenes/3 · Who is doing what",
-  parameters: { docs: { description: { component: "Type a name and an action; the read-out shows what is filtered and what is embedded. Status: **partial** (card and grid match the console; the who/what split is new)." } } },
+  parameters: { docs: { description: { component: "Type a name and an action; results are filtered to that person and ranked by the action. Status: **partial** (card and grid match the console; naming people in the query is new)." } } },
 } satisfies Meta;
 
 export default meta;

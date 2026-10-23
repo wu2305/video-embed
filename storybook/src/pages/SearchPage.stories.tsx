@@ -28,12 +28,11 @@ export const FirstVisit: Story = {
   },
 };
 
-/** Typing on the home shows the who/what readout; submitting moves to the results layout with the query kept. */
+/** Submitting from the home moves to the results layout with the query kept. */
 export const SearchFromHome: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.type(canvas.getByRole("searchbox", { name: "Search" }), "Ana and Ben are cooking");
-    await expect(canvas.getByText("Ben Okafor")).toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: "Search" }));
     await expect(canvas.getByRole("status")).toHaveTextContent(/results for “Ana and Ben are cooking”/);
     await expect(canvas.getByLabelText("query")).toHaveValue("Ana and Ben are cooking");

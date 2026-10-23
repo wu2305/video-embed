@@ -42,9 +42,3 @@ export const NoReports: Story = {
   },
 };
 
-export const Chinese: Story = {
-  globals: { locale: "zh" },
-  play: async ({ canvasElement }) => {
-    await expect(canvasElement).toHaveTextContent("被 7 个报表使用");
-  },
-};

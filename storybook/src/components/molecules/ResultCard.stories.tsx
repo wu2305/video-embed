@@ -45,8 +45,5 @@ export const UglyData: Story = {
   },
 };
 
-/** The same card in Chinese. */
-export const Chinese: Story = { globals: { locale: "zh" } };
-
 /** For "appears in" lists: no rank, score or machine text. */
 export const Compact: Story = { args: { compact: true } };

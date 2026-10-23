@@ -33,9 +33,6 @@ const en = {
   "search.reason.busy": "A search is already running.",
   "search.reason.empty": "Type something to search for.",
   "search.reason.unresolved": "Nobody is named {names}. Check the spelling or leave the name out.",
-  "search.parse.who": "who",
-  "search.parse.what": "what",
-  "search.parse.unknown": "no such person",
 
 
   "page.search.title": "Search",
@@ -205,9 +202,6 @@ const zh: Partial<Record<MessageKey, string>> = {
   "search.reason.busy": "已有一个搜索正在进行。",
   "search.reason.empty": "请输入要搜索的内容。",
   "search.reason.unresolved": "没有名为 {names} 的人。请检查拼写，或去掉这个名字。",
-  "search.parse.who": "谁",
-  "search.parse.what": "什么",
-  "search.parse.unknown": "无此人",
 
 
   "page.search.title": "搜索",
