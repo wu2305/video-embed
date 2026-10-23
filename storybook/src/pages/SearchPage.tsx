@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { isArchive, type ArchiveRecord, type Hit, type IndexInfo, type Person, type Result, type SourceStatus, type Unavailable, type Viewer } from "../types";
+import { isHit, isMetric, type ArchiveRecord, type Hit, type MetricRecord, type MetricReport, type IndexInfo, type Person, type Result, type SourceStatus, type Unavailable, type Viewer } from "../types";
 import { Button } from "../components/atoms/Button";
 import { Freshness } from "../components/molecules/Freshness";
 import { ResultGrid } from "../components/organisms/ResultGrid";
+import { MetricPreview } from "../components/organisms/MetricPreview";
 import { PreviewPanel } from "../components/organisms/PreviewPanel";
 import { SearchBar } from "../components/organisms/SearchBar";
 import { BrandMark, TopBar, type PageId } from "../components/organisms/TopBar";
@@ -19,6 +20,16 @@ export interface SearchPageProps {
   archive?: readonly ArchiveRecord[];
   /** The Archive System times out on every query. */
   archiveDown?: boolean;
+  /** BI metrics the mock metric search can return, each with the reports that use it. */
+  metrics?: readonly MetricRecord[];
+  /** The BI platform times out on every query. */
+  biDown?: boolean;
+  /** Every report per metric id, as the reports endpoint returns them. Omit to show the reports still loading. */
+  metricReports?: Readonly<Record<string, readonly MetricReport[]>>;
+  /** The reports endpoint fails. */
+  metricReportsError?: boolean;
+  /** Open the preview on this metric at load. */
+  openMetricId?: string | null;
   /** NAS hits whose file the source route refuses, by unit id. */
   unavailable?: Readonly<Record<number, Unavailable>>;
   /** A query already run when the page opens. Omit for the first-visit state. */
@@ -37,29 +48,33 @@ export interface SearchPageProps {
 
 /** Page: query every source at once, scan the fused results, preview the matched moment, open the clip. */
 export function SearchPage({
-  people, corpus, archive = [], archiveDown = false, unavailable = {}, initialQuery, openId = null, loading = false, error = null,
+  people, corpus, archive = [], archiveDown = false, metrics = [], biDown = false, metricReports, metricReportsError = false, openMetricId = null, unavailable = {}, initialQuery, openId = null, loading = false, error = null,
   index: indexInfo, now, viewer, onNavigate, onOpenClip,
 }: SearchPageProps) {
   const { t } = useI18n();
   const runSearch = (q: string, extra: { min_faces?: number; limit?: number } = {}) =>
-    searchGateway(corpus, archive, people, { query: q, ...extra }, archiveDown);
+    searchGateway(corpus, archive, people, { query: q, ...extra }, { archive: archiveDown, bi: biDown }, metrics);
   const [query, setQuery] = useState(initialQuery ?? "");
   const [found, setFound] = useState<{ results: Result[]; sources: SourceStatus[] }>(() =>
     initialQuery ? runSearch(initialQuery) : { results: [], sources: [] });
   const [open, setOpen] = useState<number | null>(openId);
+  const [openMetric, setOpenMetric] = useState<string | null>(openMetricId);
   const [playhead, setPlayhead] = useState<number | undefined>(undefined);
   // The mock error comes from props; Try again clears it and reruns the query.
   const [retried, setRetried] = useState(false);
 
-  // Only NAS hits preview; Archive records open in the Archive System.
-  const previewable = found.results.filter((r): r is Hit => !isArchive(r));
+  // Only NAS hits preview; Archive records and BI metrics open in their own systems.
+  const previewable = found.results.filter(isHit);
   const position = open === null ? -1 : previewable.findIndex((h) => h.unit_id === open);
   const hit = position >= 0 ? previewable[position]! : null;
+  const metric = openMetric === null ? null : found.results.filter(isMetric).find((m) => m.metric_id === openMetric) ?? null;
+  const [reportsRetried, setReportsRetried] = useState(false);
 
   function run(q: string, extra: { min_faces?: number; limit?: number } = {}) {
     setQuery(q);
     setFound(runSearch(q, extra));
     setOpen(null);
+    setOpenMetric(null);
   }
 
   function step(delta: number) {
@@ -72,13 +87,14 @@ export function SearchPage({
   const home = !query && !loading && !error;
 
   // While the preview is open the page behind it is inert and does not scroll.
-  // On close, focus goes back to the card of the hit that was last shown.
+  // On close, focus goes back to the card of the hit or metric that was last shown.
   const page = useRef<HTMLDivElement>(null);
-  const lastOpen = useRef<number | null>(null);
-  const isOpen = hit !== null;
+  const lastOpen = useRef<string | null>(null);
+  const isOpen = hit !== null || metric !== null;
   useEffect(() => {
-    if (hit) lastOpen.current = hit.unit_id;
-  }, [hit?.unit_id]);
+    if (hit) lastOpen.current = `[data-unit-id="${hit.unit_id}"]`;
+    else if (metric) lastOpen.current = `[data-metric-id="${metric.metric_id}"]`;
+  }, [hit?.unit_id, metric?.metric_id]);
   const backdrop = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (isOpen) {
@@ -90,9 +106,9 @@ export function SearchPage({
       body.style.overflow = "hidden";
       return () => { body.style.overflow = overflow; };
     }
-    const id = lastOpen.current;
+    const card = lastOpen.current;
     lastOpen.current = null;
-    if (id !== null) page.current?.querySelector<HTMLElement>(`[data-unit-id="${id}"] .mm-card-link`)?.focus();
+    if (card !== null) page.current?.querySelector<HTMLElement>(`${card} .mm-card-link`)?.focus();
   }, [isOpen]);
 
   return (
@@ -115,8 +131,16 @@ export function SearchPage({
             onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
           {indexInfo?.stale && <Freshness index={indexInfo} now={now} long />}
           <ResultGrid results={found.results} sources={found.sources} query={query} people={people} loading={loading} error={retried ? null : error}
-            onRetry={() => { setRetried(true); run(query); }} selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }} />
+            onRetry={() => { setRetried(true); run(query); }} selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }}
+            selectedMetricId={openMetric} onOpenMetric={(m) => setOpenMetric(m.metric_id)} />
         </AppShell>
+      )}
+
+      {metric && (
+        <div ref={backdrop} className="mm-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setOpenMetric(null); }}>
+          <MetricPreview modal metric={metric} reports={metricReports?.[metric.metric_id] ?? null}
+            error={metricReportsError && !reportsRetried} onRetry={() => setReportsRetried(true)} onClose={() => setOpenMetric(null)} />
+        </div>
       )}
 
       {hit && (

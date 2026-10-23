@@ -53,10 +53,51 @@ export interface ArchiveRecord {
   vendor_rank: number;
 }
 
-/** One row of a gateway result list. */
-export type Result = Hit | ArchiveRecord;
+/** A BI report or dashboard that uses a metric (docs/BI_METRIC_API.md). */
+export interface MetricReport {
+  report_id: string;
+  title: string;
+  kind: "report" | "dashboard";
+  /** Workspace or folder the report lives in. */
+  folder?: string;
+  owner?: string;
+  /** Charts or tables in the report that use the metric. */
+  charts: number;
+  /** Last modified, epoch seconds. */
+  updated_at: number;
+  /** Opens the report in the BI platform. */
+  deep_link: string;
+}
 
-export type SourceId = "nas" | "archive";
+/**
+ * One metric from the gateway's BI metric search (docs/BI_METRIC_API.md).
+ * `reports` is the first few reports only; the preview loads the full list
+ * from `/api/bi/metrics/{metric_id}/reports`. Reports the caller may not
+ * open are left out of both the list and `report_count`.
+ */
+export interface MetricRecord {
+  source: "bi";
+  metric_id: string;
+  name: string;
+  /** Business domain or owning team, e.g. "Finance". */
+  domain?: string;
+  owner?: string;
+  /** The platform's own definition text. */
+  definition?: string;
+  /** The top reports, at most three. */
+  reports: MetricReport[];
+  /** Reports the caller may open that use the metric. */
+  report_count: number;
+  /** Opens the metric's page in the BI platform. */
+  deep_link: string;
+  /** Position in the platform's own ranking. */
+  vendor_rank: number;
+}
+
+/** One row of a gateway result list. */
+export type Result = Hit | ArchiveRecord | MetricRecord;
+
+export type SourceId = "nas" | "archive" | "bi";
 
 export function sourceOf(result: Result): SourceId {
   return result.source ?? "nas";
@@ -66,9 +107,20 @@ export function isArchive(result: Result): result is ArchiveRecord {
   return result.source === "archive";
 }
 
+export function isMetric(result: Result): result is MetricRecord {
+  return result.source === "bi";
+}
+
+/** Only NAS hits have a file and a preview. */
+export function isHit(result: Result): result is Hit {
+  return sourceOf(result) === "nas";
+}
+
 /** A stable key across sources: unit ids and record ids can collide. */
 export function resultKey(result: Result): string {
-  return isArchive(result) ? `archive:${result.record_id}` : `nas:${result.unit_id}`;
+  if (isArchive(result)) return `archive:${result.record_id}`;
+  if (isMetric(result)) return `bi:${result.metric_id}`;
+  return `nas:${result.unit_id}`;
 }
 
 /** How each source answered one query. */

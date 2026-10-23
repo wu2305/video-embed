@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { isArchive, resultKey, sourceOf, type Hit, type Person, type Result, type SourceId, type SourceStatus } from "../../types";
+import { isArchive, isMetric, resultKey, sourceOf, type Hit, type MetricRecord, type Person, type Result, type SourceId, type SourceStatus } from "../../types";
 import { countBySource } from "../../lib/fuse";
 import { Button } from "../atoms/Button";
 import { Chip } from "../atoms/Chip";
 import { ArchiveCard } from "../molecules/ArchiveCard";
+import { MetricCard } from "../molecules/MetricCard";
 import { ResultCard } from "../molecules/ResultCard";
 import { useI18n, type MessageKey } from "../../i18n";
 
@@ -21,27 +22,35 @@ export interface ResultGridProps {
   label?: string;
   /** Runs the same query again after an error. */
   onRetry?: () => void;
-  /** Opens a NAS hit's preview. Archive records are links and open in the Archive System. */
+  /** Opens a NAS hit's preview. Archive records are links into the Archive System. */
   onOpen?: (hit: Hit) => void;
+  /** Opens a BI metric's preview. */
+  onOpenMetric?: (metric: MetricRecord) => void;
+  selectedMetricId?: string | null;
 }
 
 type Filter = "all" | SourceId;
 
-const LABEL: Record<SourceId, MessageKey> = { nas: "results.sourceNas", archive: "results.sourceArchive" };
-const NAME: Record<SourceId, MessageKey> = { nas: "results.nasIndex", archive: "results.archiveSystem" };
+const SOURCES: readonly SourceId[] = ["nas", "archive", "bi"];
+const LABEL: Record<SourceId, MessageKey> = { nas: "results.sourceNas", archive: "results.sourceArchive", bi: "results.sourceBi" };
+const NAME: Record<SourceId, MessageKey> = { nas: "results.nasIndex", archive: "results.archiveSystem", bi: "results.biPlatform" };
 
 /**
  * Status line, source filter and the card grid. Covers the loading, error,
  * empty, partial (one source down) and populated states.
  */
-export function ResultGrid({ results, query = "", people, sources, selectedId = null, loading = false, error = null, label, onRetry, onOpen }: ResultGridProps) {
+export function ResultGrid({ results, query = "", people, sources, selectedId = null, loading = false, error = null, label, onRetry, onOpen, onOpenMetric, selectedMetricId = null }: ResultGridProps) {
   const { t, rich } = useI18n();
   const [filter, setFilter] = useState<Filter>("all");
   const sectionLabel = label ?? t("results.label");
   const counts = countBySource(results);
   const down = (sources ?? []).filter((s) => s.state === "unavailable");
-  const mixed = counts.nas > 0 && counts.archive > 0;
-  const shown = filter === "all" ? results : results.filter((r) => sourceOf(r) === filter);
+  // The filter only offers sources that returned something.
+  const present = SOURCES.filter((s) => counts[s] > 0);
+  const mixed = present.length > 1;
+  // A source picked for an earlier query may be absent from this one.
+  const active: Filter = mixed && present.includes(filter as SourceId) ? filter : "all";
+  const shown = active === "all" ? results : results.filter((r) => sourceOf(r) === active);
 
   // The count and the query are the answer, so they take the text colour; the rest stays muted.
   let status: React.ReactNode = "";
@@ -71,8 +80,8 @@ export function ResultGrid({ results, query = "", people, sources, selectedId = 
       ))}
       {!loading && !error && mixed && (
         <div className="mm-chips" role="group" aria-label={t("results.filter")} style={{ marginBottom: 14 }}>
-          {(["all", "nas", "archive"] as const).map((f) => (
-            <Chip key={f} pressed={filter === f} onClick={() => setFilter(f)}>
+          {(["all", ...present] as const).map((f) => (
+            <Chip key={f} pressed={active === f} onClick={() => setFilter(f)}>
               {f === "all" ? t("results.filterAll", { count: results.length }) : `${t(LABEL[f])} (${counts[f]})`}
             </Chip>
           ))}
@@ -93,6 +102,8 @@ export function ResultGrid({ results, query = "", people, sources, selectedId = 
         ))}
         {!loading && !error && shown.map((r, index) => (isArchive(r)
           ? <ArchiveCard key={resultKey(r)} record={r} rank={index + 1} />
+          : isMetric(r)
+          ? <MetricCard key={resultKey(r)} metric={r} rank={index + 1} selected={r.metric_id === selectedMetricId} onOpen={onOpenMetric} />
           : <ResultCard key={resultKey(r)} hit={r} rank={index + 1} people={people} showSource={mixed} selected={r.unit_id === selectedId} onOpen={onOpen} />
         ))}
       </div>

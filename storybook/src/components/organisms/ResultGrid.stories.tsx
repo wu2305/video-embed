@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, within } from "storybook/test";
 import { ResultGrid } from "./ResultGrid";
-import { archiveRecords, hits, people } from "../../mock/data";
+import { archiveRecords, hits, metricRecords, people } from "../../mock/data";
 import { fuseByRank } from "../../lib/fuse";
 import type { Hit, SourceStatus } from "../../types";
 
@@ -33,6 +33,8 @@ export const Populated: Story = {
 };
 /** NAS and Archive results fused by rank; source badges and a source filter appear. */
 export const BothSources: Story = { args: { results: fuseByRank([hits, archiveRecords.slice(0, 2)]), query: "cooking" } };
+/** BI metrics with the reports that use them, fused with NAS hits and Archive records. */
+export const WithMetrics: Story = { args: { results: fuseByRank([hits, archiveRecords.slice(0, 1), metricRecords.slice(0, 2)]), query: "revenue" } };
 /** One source failed: show what the other returned, and say the list is incomplete. */
 export const SourceDown: Story = { args: { sources: archiveDown, query: "cooking" } };
 export const Loading: Story = { args: { loading: true, results: [] } };
@@ -42,7 +44,7 @@ export const NoHits: Story = { args: { results: [], query: "Ana Ruiz is skydivin
  * Nothing scrolls sideways.
  */
 export const Zoom200Chinese: Story = {
-  args: { results: fuseByRank([hits, archiveRecords.slice(0, 2)]), query: "做饭" },
+  args: { results: fuseByRank([hits, archiveRecords.slice(0, 2), metricRecords.slice(0, 1)]), query: "做饭" },
   globals: { locale: "zh" },
   decorators: [(Story) => <div style={{ width: 320 }}><Story /></div>],
   play: async ({ canvasElement }) => {

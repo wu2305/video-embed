@@ -2,8 +2,9 @@
 
 User stories for the console of the Unified Search Gateway
 ([`docs/UNIFIED_SEARCH_DESIGN.md`](docs/UNIFIED_SEARCH_DESIGN.md)). The console
-is one search box over two sources: the NAS media library, which `mmindex`
-indexes, and the Archive System, which is searched live through its vendor API.
+is one search box over the NAS media library, which `mmindex` indexes, the
+Archive System, searched live through its vendor API, and a BI platform's
+metric catalogue (scene 4f), also searched live.
 Within the NAS it turns "search by what the pixels look like" into "search by
 who is doing what". Each scene gives the user's goal, the flow, what the repo
 does today, and what is missing. Status tags: **exists**, **partial**, **new**.
@@ -233,6 +234,27 @@ stable, versioned response (`/v1/search`), the same name/person/note fields, and
 a documented error shape, so another product can call the gateway. The caller
 must pass the end user's identity, and results are filtered for that user exactly
 as in scene 6; a service account alone gets nothing back.
+
+**4f. BI metrics**: *new.* A customer asked to search a BI platform's metrics
+and see which reports use each one. The gateway sends the *what* of the query to
+its BI metric search and fuses the metrics into the same list by rank. The API
+is specified in [`docs/BI_METRIC_API.md`](docs/BI_METRIC_API.md).
+
+1. A metric card shows the metric name, id, domain and definition, then "Used
+   in N reports", the top three reports (folder and last-modified date) and
+   "+N more". A metric no report the user may open says "No reports use it."
+2. The metric name opens the **metric preview** on the search page, as a
+   dialog like the media preview: owner, every report with its type, folder,
+   owner, charts that use the metric and date, a filter field from six reports
+   up, and *Open in BI*. Esc closes it and returns focus to the card.
+3. Each report link, on the card and in the preview, opens the report in the
+   BI platform, which checks access again.
+4. While the full list loads, the top three stay and a placeholder follows. If
+   it fails, the preview says so and offers Try again.
+5. The source filter gains a *BI metrics* chip. Only sources that returned
+   something get a chip.
+6. If the BI search times out, the other sources still show with a warning
+   that the list is incomplete.
 
 ---
 
