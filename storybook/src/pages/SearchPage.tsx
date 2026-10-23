@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { isHit, isMetric, type ArchiveRecord, type Hit, type MetricRecord, type MetricReport, type IndexInfo, type Person, type Result, type SourceStatus, type Unavailable, type Viewer } from "../types";
+import { isHit, isMetric, type ArchiveRecord, type Hit, type MetricRecord, type MetricReport, type IndexInfo, type Person, type Result, type SearchType, type SourceStatus, type Unavailable, type Viewer } from "../types";
 import { Button } from "../components/atoms/Button";
 import { Freshness } from "../components/molecules/Freshness";
 import { ResultGrid } from "../components/organisms/ResultGrid";
@@ -52,9 +52,11 @@ export function SearchPage({
   index: indexInfo, now, viewer, onNavigate, onOpenClip,
 }: SearchPageProps) {
   const { t } = useI18n();
-  const runSearch = (q: string, extra: { min_faces?: number; limit?: number } = {}) =>
+  const runSearch = (q: string, extra: { type?: SearchType; limit?: number } = {}) =>
     searchGateway(corpus, archive, people, { query: q, ...extra }, { archive: archiveDown, bi: biDown }, metrics);
   const [query, setQuery] = useState(initialQuery ?? "");
+  // The type picked on the home carries over to the results bar.
+  const [type, setType] = useState<SearchType>("all");
   const [found, setFound] = useState<{ results: Result[]; sources: SourceStatus[] }>(() =>
     initialQuery ? runSearch(initialQuery) : { results: [], sources: [] });
   const [open, setOpen] = useState<number | null>(openId);
@@ -70,8 +72,9 @@ export function SearchPage({
   const metric = openMetric === null ? null : found.results.filter(isMetric).find((m) => m.metric_id === openMetric) ?? null;
   const [reportsRetried, setReportsRetried] = useState(false);
 
-  function run(q: string, extra: { min_faces?: number; limit?: number } = {}) {
+  function run(q: string, extra: { type?: SearchType; limit?: number } = {}) {
     setQuery(q);
+    if (extra.type) setType(extra.type);
     setFound(runSearch(q, extra));
     setOpen(null);
     setOpenMetric(null);
@@ -118,7 +121,7 @@ export function SearchPage({
           <TopBar current="search" viewer={viewer} onNavigate={onNavigate} hideBrand />
           <main className="mm-home">
             <h1 className="mm-home-brand"><BrandMark />{t("brand.name")}</h1>
-            <SearchBar home people={people} busy={loading} onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
+            <SearchBar home people={people} busy={loading} onSearch={(p) => run(p.query, { type: p.type, limit: p.limit })} />
             <div className="mm-home-foot">
               {indexInfo && <Freshness index={indexInfo} now={now} />}
             </div>
@@ -127,10 +130,10 @@ export function SearchPage({
       ) : (
         <AppShell current="search" title={t("page.search.title")} hideTitle
           index={indexInfo} now={now} viewer={viewer} onNavigate={onNavigate} inert={isOpen}>
-          <SearchBar people={people} initialQuery={query} busy={loading}
-            onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
+          <SearchBar people={people} initialQuery={query} initialType={type} busy={loading}
+            onSearch={(p) => run(p.query, { type: p.type, limit: p.limit })} />
           <ResultGrid results={found.results} sources={found.sources} query={query} people={people} loading={loading} error={retried ? null : error}
-            onRetry={() => { setRetried(true); run(query); }} selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }}
+            onRetry={() => { setRetried(true); run(query, { type }); }} selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }}
             selectedMetricId={openMetric} onOpenMetric={(m) => setOpenMetric(m.metric_id)} />
         </AppShell>
       )}

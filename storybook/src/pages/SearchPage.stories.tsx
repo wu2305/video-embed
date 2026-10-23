@@ -39,6 +39,21 @@ export const SearchFromHome: Story = {
   },
 };
 
+/** The type picked on the home narrows the search and stays picked in the results bar. */
+export const TypeFromHome: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.type(canvas.getByRole("searchbox", { name: "Search" }), "cooking");
+    await userEvent.selectOptions(canvas.getByRole("combobox", { name: "type" }), "Videos");
+    await userEvent.click(canvas.getByRole("button", { name: "Search" }));
+    await expect(canvas.getByLabelText("type")).toHaveValue("video");
+    await expect(canvas.queryByRole("group", { name: "Filter by source" })).toBeNull();
+    const cards = canvas.getAllByRole("article");
+    await expect(cards.length).toBeGreaterThan(0);
+    await expect(canvasElement.querySelectorAll(".mm-card[data-unit-id]")).toHaveLength(cards.length);
+  },
+};
+
 /** A name plus an action: NAS clips with Ana, fused with Archive records about cooking. */
 export const Results: Story = { args: { initialQuery: "Ana is cooking" } };
 

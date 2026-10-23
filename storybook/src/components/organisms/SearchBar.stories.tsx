@@ -78,3 +78,15 @@ export const Busy: Story = {
     await expect(button.querySelector(".mm-spinner")).not.toBeNull();
   },
 };
+
+/** A user with a clear aim narrows the search to one type before it runs. */
+export const PickType: Story = {
+  args: { initialQuery: "revenue" },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.queryByLabelText("min faces")).toBeNull();
+    await userEvent.selectOptions(canvas.getByLabelText("type"), "BI metrics");
+    await userEvent.click(canvas.getByRole("button", { name: "search" }));
+    await expect(args.onSearch).toHaveBeenCalledWith(expect.objectContaining({ query: "revenue", type: "bi" }));
+  },
+};
