@@ -98,7 +98,7 @@ export function FaceTagger({ src, faces, people, initialSelected = null, initial
               </label>
               <label className="mm-radio">
                 <input type="radio" name="scope" checked={scope === "face"} onChange={() => setScope("face")} />
-                <span>{t("face.thisOnly")}<small>{t("face.correct")}</small></span>
+                <span>{t("face.thisOnly")}</span>
               </label>
             </fieldset>
             {merging && <p className="mm-hint" role="note"><Tag tone="warn">{t("face.merge")}</Tag>“{name.trim()}” {t("face.mergeWarn")}</p>}

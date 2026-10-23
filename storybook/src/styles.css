@@ -193,9 +193,6 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 .mm-unavailable strong { color: var(--text); }
 .mm-viewer { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-xs); }
 .mm-avatar { width: 24px; height: 24px; border-radius: var(--radius-pill); background: var(--field); border: 1px solid var(--line); display: grid; place-items: center; font: var(--text-xs)/1 var(--mono); color: var(--text); }
-.mm-sources { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); }
-.mm-sources li { display: grid; grid-template-columns: 10rem 1fr; gap: var(--space-3); }
-.mm-sources b { font-weight: 600; }
 
 /* stage and face boxes (scene 1) */
 .mm-stage { position: relative; background: var(--thumb); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
@@ -279,7 +276,7 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 .mm-toolbar .mm-mono { margin-inline-start: auto; }
 
 /* search home: the first visit, before any query. Centred, nothing but the
-   brand, one large field, a few examples and one line on scope and freshness. */
+   brand, one large field, a few examples and the freshness line. */
 .mm-home { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-5); padding: 18vh var(--space-5) var(--space-6); text-align: center; }
 .mm-home-page .mm-topbar { background: transparent; border-bottom-color: transparent; }
 .mm-home-brand { display: flex; align-items: center; gap: var(--space-3); margin: 0; font-size: var(--text-xl); line-height: 1.2; }
@@ -294,10 +291,6 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 .mm-link:hover { text-decoration: underline; }
 .mm-example-source { color: var(--muted); }
 .mm-home-foot { margin-top: auto; padding-top: var(--space-6); display: grid; justify-items: center; gap: var(--space-2); }
-.mm-home-foot p { margin: 0; }
-.mm-home-foot details { text-align: start; }
-.mm-home-foot summary { cursor: pointer; text-align: center; }
-.mm-home-foot .mm-sources { margin-top: var(--space-3); }
 
 /* dialog layer */
 .mm-backdrop { position: fixed; inset: 0; background: var(--backdrop); display: grid; place-items: center; padding: var(--space-5); z-index: 10; }
@@ -321,7 +314,6 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
   .mm-topbar { gap: var(--space-3); padding: 0 var(--space-4); overflow-x: auto; }
   .mm-topbar .mm-mono { display: none; }
   .mm-viewer .mm-viewer-name { display: none; }
-  .mm-sources li { grid-template-columns: 1fr; gap: 0; }
   .mm-page { padding: var(--space-4); }
   .mm-grid { --card-min: 150px; }
 }

@@ -15,14 +15,15 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** First visit: a search home. The brand, one large field, example queries, and one line on scope and freshness. */
+/** First visit: a search home. The brand, one large field, example queries, and when the index was last updated. */
 export const FirstVisit: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole("heading", { level: 1, name: "Unified Search" })).toBeInTheDocument();
     await expect(canvas.queryByLabelText("limit")).toBeNull();
-    await expect(canvas.getByText(/shows only what you are allowed to open/)).toBeInTheDocument();
-    await expect(canvas.getByText("What is searched?")).toBeInTheDocument();
+    // No explanatory paragraph: brand, field, examples and the freshness line only.
+    await expect(canvas.queryByText(/allowed to open/)).toBeNull();
+    await expect(canvasElement.querySelectorAll(".mm-home .mm-hint")).toHaveLength(0);
     // One example says it finds an Archive record, so the first visit shows both sources.
     await expect(canvas.getByRole("button", { name: "Q3 budget · Archive" })).toBeInTheDocument();
   },
@@ -128,7 +129,7 @@ export const ServerError: Story = {
   args: { initialQuery: "Ana is cooking", error: "ValueError: query vector has 512 dims, index has 768" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole("alert")).toHaveTextContent("Something went wrong on the search server");
+    await expect(canvas.getByRole("alert")).toHaveTextContent("The search server failed.");
     await expect(canvas.getByRole("status")).not.toHaveTextContent(/ValueError/);
     await userEvent.click(canvas.getByRole("button", { name: "Try again" }));
     await expect(canvas.getByRole("status")).toHaveTextContent(/results for “Ana is cooking”/);

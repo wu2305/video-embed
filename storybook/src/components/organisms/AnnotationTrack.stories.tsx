@@ -36,7 +36,7 @@ export const WithMatch: Story = {
   args: { matched: { start: 42, end: 71 } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole("list", { name: "Timeline key" })).toHaveTextContent("the scene that matched, 00:42–01:11");
+    await expect(canvas.getByRole("list", { name: "Timeline key" })).toHaveTextContent("Matched scene 00:42–01:11");
     const slider = canvas.getByRole("slider");
     const track = canvasElement.querySelector<HTMLElement>(".mm-track")!.getBoundingClientRect();
     // A touch tap at 0:56, inside the match: the browser turns it into a click at that point.

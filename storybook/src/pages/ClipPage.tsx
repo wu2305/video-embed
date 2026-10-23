@@ -86,7 +86,6 @@ export function ClipPage({
           </Panel>
           <Panel as="section" title={t("notes.count", { count: notes.length })}>
             <NoteList notes={notes} people={people} playhead={still ? -1 : playhead} onSeek={setPlayhead} />
-            <p className="mm-hint" style={{ margin: "10px 0 0" }}>{t("notes.visible")}</p>
           </Panel>
           <AnnotationComposer key={still ? "still" : scene?.start ?? "none"} time={playhead} scene={scene} still={still}
             inFrame={inFrame} people={people}

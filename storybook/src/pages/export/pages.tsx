@@ -24,7 +24,7 @@ const corpus = [...hits, audioHit, documentHit];
 export const PAGES: ExportedPage[] = [
   {
     name: "SearchStartPage", title: "Search · first visit", story: "pages-search--first-visit", width: 1280,
-    summary: "The search home before any query: the brand, one large search field, example queries, and one line on what is searched, who sees what and when new files show up.",
+    summary: "The search home before any query: the brand, one large search field, example queries and when the index was last updated.",
     element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} />,
   },
   {

@@ -63,10 +63,10 @@ export const EmptyQuery: Story = {
     await userEvent.tab();
     await userEvent.tab();
     await expect(button).toHaveFocus();
-    await expect(button).toHaveAccessibleDescription(/Type what to look for/);
+    await expect(button).toHaveAccessibleDescription(/Type something to search for/);
     await userEvent.keyboard("{Enter}");
     await expect(args.onSearch).not.toHaveBeenCalled();
-    await expect(canvas.getByText(/Type what to look for/)).toBeVisible();
+    await expect(canvas.getByText(/Type something to search for/)).toBeVisible();
   },
 };
 

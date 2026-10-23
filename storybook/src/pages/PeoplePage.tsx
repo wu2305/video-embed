@@ -112,11 +112,11 @@ export function PeoplePage({
 
   return (
     <AppShell current="people" title={t("people.title")}
-      subtitle={unnamed ? `${unnamed} of ${people.length} face clusters have no name yet. Name one and every appearance follows.` : "Every face cluster has a name."}
+      subtitle={unnamed ? t("people.unnamedCount", { unnamed, total: people.length }) : undefined}
       index={index} now={now} viewer={viewer} onNavigate={onNavigate}>
       {pendingFaces > 0 && (
         <div className="mm-notice" role="note">
-          {pendingFaces} new faces from recent uploads did not match anyone yet. They join a person, or become a new one, at the next full regroup.
+          {t("people.pending", { count: pendingFaces })}
         </div>
       )}
       <div className="mm-split">
@@ -138,7 +138,6 @@ export function PeoplePage({
                     <input ref={nameRef} type="text" list={listId} value={draft} onChange={(e) => { setDraft(e.target.value); setSaved(null); setConfirming(false); }} placeholder={t("people.fullName")} autoComplete="off" />
                   </Field>
                   <datalist id={listId}>{known.map((n) => <option key={n} value={n} />)}</datalist>
-                  <p className="mm-hint" style={{ margin: 0 }}>{t("people.shared")}</p>
                   {target && <p className="mm-hint" role="note" style={{ margin: 0 }}><Tag tone="warn">{t("face.merge")}</Tag>{t("people.mergeWarn", { name: target.name ?? target.id, id: target.id })}</p>}
                   {target && confirming ? (
                     <div className="mm-confirm" role="group" aria-label={t("people.confirmGroup")}>
