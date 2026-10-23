@@ -24,22 +24,22 @@ Every story renders in a dark and a light theme. Switch with the **Theme** toolb
 | **Organisms** | `TopBar`, `SearchBar`, `ResultGrid`, `PeopleGrid`, `FaceOverlay`, `FaceTagger`, `AnnotationTrack`, `AnnotationComposer`, `NoteList`, `PreviewPanel` | molecules and atoms |
 | **Templates** | `AppShell` | top bar, page header, body slot |
 | **Pages** | `Overview` (live previews), `Prototype`, `Search`, `People`, `Clip` | organisms in the shell, with mock state |
-| **Scenes** | one per user story in `STORYBOOK.md` | the flow each story describes |
+| **Scenes** | scenes 6 and 7 of `STORYBOOK.md`, which no page shows | organisms |
 
 Every story is also a test: `npm test` runs each one in Chromium, once per theme, including its `play`
 steps and an accessibility check that fails on any axe violation (colour contrast included).
 
-Component stories hold the states and the interaction tests; scene stories show the whole flow.
+Component stories hold the states and the interaction tests; the pages show each scene's flow.
 
-| Scene | Organisms | Status in the repo |
+| Scene | Where to see it | Status in the repo |
 |---|---|---|
-| 1 · Name a face | `FaceTagger` | **new.** The index stores no face boxes yet. |
-| 2 · Write on the video | `AnnotationTrack`, `AnnotationComposer` | **new.** Needs a sidecar notes store. |
-| 3 · Who is doing what | `SearchBar`, `ResultGrid` | **partial.** The card and grid match the console. Naming people in the query is new. |
-| 4 · More media, more sources | `ResultGrid`, `ArchiveCard` | **partial.** Images exist. Audio, documents and the Archive System are new. |
-| 5 · Preview | `PreviewPanel` | **partial.** The console plays the source file but does not seek to the scene. |
-| 6 · Only what you may open | `TopBar`, `ResultGrid`, `PreviewPanel` | **new.** No sign-in, ACL capture or query-time filtering yet. |
-| 7 · Today's files, tomorrow morning | `Freshness`, `ResultGrid`, `PreviewPanel` | **new.** The nightly incremental cycle is not built yet. |
+| 1 · Name a face | Organisms/FaceTagger, Pages/People | **new.** The index stores no face boxes yet. |
+| 2 · Write on the video | Pages/Clip | **new.** Needs a sidecar notes store. |
+| 3 · Who is doing what | Pages/Search | **partial.** The card and grid match the console. Naming people in the query is new. |
+| 4 · More media, more sources | Pages/Search (Mixed media, Three sources) | **partial.** Images exist. Audio, documents and the Archive System are new. |
+| 5 · Preview | Pages/Search (Preview open) | **partial.** The console plays the source file but does not seek to the scene. |
+| 6 · Only what you may open | Scenes/6 | **new.** No sign-in, ACL capture or query-time filtering yet. |
+| 7 · Today's files, tomorrow morning | Scenes/7 | **new.** The nightly incremental cycle is not built yet. |
 
 `src/types.ts` marks which `Hit` fields do not exist in `SearchHit.to_dict()` today. `ArchiveRecord`, `Viewer`
 and `IndexInfo` are all proposals: the Archive vendor's response shape is still to be confirmed.
