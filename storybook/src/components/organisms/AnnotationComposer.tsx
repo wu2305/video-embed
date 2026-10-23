@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { Annotation, Person, Scene } from "../../types";
 import { displayName, formatTime, parseTime } from "../../lib/format";
 import { Button } from "../atoms/Button";
@@ -7,6 +7,7 @@ import { Label } from "../atoms/Label";
 import { Tag } from "../atoms/Tag";
 import { Field } from "../molecules/Field";
 import { useI18n } from "../../i18n";
+import { useSubmitReason } from "../../lib/useSubmitReason";
 
 export interface AnnotationComposerProps {
   /** Playhead position in seconds. */
@@ -35,18 +36,22 @@ export function AnnotationComposer({ time, scene = null, inFrame = [], people = 
   const textId = useId();
   const fromId = useId();
   const toId = useId();
+  const textRef = useRef<HTMLTextAreaElement>(null);
+  const fromRef = useRef<HTMLInputElement>(null);
 
   const t_start = parseTime(from);
   const t_end = to.trim() === "" ? null : parseTime(to);
   const rangeError = still ? null
-    : t_start === null || (to.trim() !== "" && t_end === null) ? "Use mm:ss or seconds."
-    : t_end !== null && t_end <= t_start ? "End must be after start."
+    : t_start === null || (to.trim() !== "" && t_end === null) ? t("note.reason.format")
+    : t_end !== null && t_end <= t_start ? t("note.reason.order")
     : null;
-  const canSave = text.trim() !== "" && !rangeError;
+  // Save stays focusable; pressing it while blocked says why and focuses the field to fix.
+  const reason = text.trim() === "" ? t("note.reason.empty") : rangeError;
+  const { blocked, buttonProps, why } = useSubmitReason(reason, () => (text.trim() === "" ? textRef.current : fromRef.current));
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!canSave) return;
+    if (blocked()) return;
     onSave?.({ t_start: still ? 0 : t_start!, t_end: still ? null : t_end, text: text.trim(), person_ids: chosen });
     setText("");
     setChosen([]);
@@ -55,12 +60,12 @@ export function AnnotationComposer({ time, scene = null, inFrame = [], people = 
   return (
     <form className="mm-panel mm-note-form" onSubmit={submit} aria-label={t("note.form")}>
       <Field label={t("note.field")}>
-        <textarea id={textId} value={text} onChange={(e) => setText(e.target.value)} placeholder={t("note.placeholder")} />
+        <textarea id={textId} ref={textRef} value={text} onChange={(e) => setText(e.target.value)} placeholder={t("note.placeholder")} />
       </Field>
       {!still && (
         <div className="mm-row">
           <Field label={t("note.from")}>
-            <input id={fromId} type="text" value={from} onChange={(e) => setFrom(e.target.value)} style={{ width: 90 }} aria-invalid={rangeError !== null} />
+            <input id={fromId} ref={fromRef} type="text" value={from} onChange={(e) => setFrom(e.target.value)} style={{ width: 90 }} aria-invalid={rangeError !== null} />
           </Field>
           <Field label={t("note.to")}>
             <input id={toId} type="text" value={to} onChange={(e) => setTo(e.target.value)} style={{ width: 90 }} aria-invalid={rangeError !== null} />
@@ -80,7 +85,8 @@ export function AnnotationComposer({ time, scene = null, inFrame = [], people = 
           </div>
         </div>
       )}
-      <div><Button variant="primary" type="submit" disabled={!canSave}>{t("note.save")}</Button></div>
+      <div><Button variant="primary" type="submit" {...buttonProps}>{t("note.save")}</Button></div>
+      {why}
     </form>
   );
 }

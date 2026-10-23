@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { Hit, IndexInfo, Person, Viewer } from "../types";
 import { Button } from "../components/atoms/Button";
 import { Panel } from "../components/atoms/Panel";
@@ -9,6 +9,7 @@ import { PeopleGrid } from "../components/organisms/PeopleGrid";
 import type { PageId } from "../components/organisms/TopBar";
 import { AppShell } from "../components/templates/AppShell";
 import { useI18n } from "../i18n";
+import { useSubmitReason } from "../lib/useSubmitReason";
 
 export interface PeoplePageProps {
   people: readonly Person[];
@@ -47,7 +48,7 @@ interface Saved {
 export function PeoplePage({
   people: initial, samples = {}, corpus = [], selectedId = null, pendingFaces = 0, index, now, viewer, onNavigate, onName, onMerge, onUndoMerge,
 }: PeoplePageProps) {
-  const { t } = useI18n();
+  const { t, rich } = useI18n();
   const [people, setPeople] = useState<Person[]>(() => [...initial]);
   const [selected, setSelected] = useState<string | null>(selectedId);
   const [draft, setDraft] = useState(() => initial.find((p) => p.id === selectedId)?.name ?? "");
@@ -56,6 +57,7 @@ export function PeoplePage({
   /** Clusters merged away, by id, mapped to the person they joined. */
   const [merged, setMerged] = useState<Record<string, string>>({});
   const listId = useId();
+  const nameRef = useRef<HTMLInputElement>(null);
 
   const person = people.find((p) => p.id === selected) ?? null;
   const known = people.filter((p) => p.name && p.id !== selected).map((p) => p.name!);
@@ -65,6 +67,8 @@ export function PeoplePage({
   // Merged-away ids still appear on hits; show them under the name they joined.
   const shown = [...people, ...Object.entries(merged).map(([id, into]) => ({ id, name: people.find((p) => p.id === into)?.name, faces: 0 }))];
   const unnamed = people.filter((p) => !p.name).length;
+  const reason = !person ? null : !draft.trim() ? t("people.reason.empty") : draft.trim() === person.name ? t("people.reason.same") : null;
+  const { blocked, buttonProps, why } = useSubmitReason(reason, () => nameRef.current);
 
   function select(p: Person) {
     setSelected(p.id);
@@ -76,7 +80,7 @@ export function PeoplePage({
   function apply(event: React.FormEvent) {
     event.preventDefault();
     const name = draft.trim();
-    if (!person || !name) return;
+    if (!person || blocked()) return;
     // Reusing a name merges two people: that needs its own confirmation.
     if (target) { setConfirming(true); return; }
     setPeople((list) => list.map((p) => (p.id === person.id ? { ...p, name } : p)));
@@ -103,7 +107,7 @@ export function PeoplePage({
     onUndoMerge?.(undo.from.id, undo.into.id);
     setSelected(undo.from.id);
     setDraft(undo.from.name ?? "");
-    setSaved({ tone: "warn", label: "undone", text: `${undo.from.id} is its own person again.` });
+    setSaved({ tone: "warn", label: t("people.undone"), text: t("people.undoneText", { id: undo.from.id }) });
   }
 
   return (
@@ -131,7 +135,7 @@ export function PeoplePage({
                   )}
                   <div className="mm-mono"><Tag>{person.id}</Tag><Tag>{person.faces} faces</Tag></div>
                   <Field label={t("people.nameField")}>
-                    <input type="text" list={listId} value={draft} onChange={(e) => { setDraft(e.target.value); setSaved(null); setConfirming(false); }} placeholder={t("people.fullName")} autoComplete="off" />
+                    <input ref={nameRef} type="text" list={listId} value={draft} onChange={(e) => { setDraft(e.target.value); setSaved(null); setConfirming(false); }} placeholder={t("people.fullName")} autoComplete="off" />
                   </Field>
                   <datalist id={listId}>{known.map((n) => <option key={n} value={n} />)}</datalist>
                   <p className="mm-hint" style={{ margin: 0 }}>{t("people.shared")}</p>
@@ -139,8 +143,7 @@ export function PeoplePage({
                   {target && confirming ? (
                     <div className="mm-confirm" role="group" aria-label={t("people.confirmGroup")}>
                       <p role="alert" style={{ margin: 0 }}>
-                        Merge <b>{person.id}</b> ({person.faces} faces) into <b>{target.id}</b>, {target.name} ({target.faces} faces)?
-                        They become one person with {person.faces + target.faces} appearances, for everyone who can see either.
+                        {rich("merge.confirm", { from: <b>{person.id}</b>, fromFaces: person.faces, to: <b>{target.id}</b>, name: target.name, toFaces: target.faces, total: person.faces + target.faces })}
                       </p>
                       <div className="mm-row">
                         <Button variant="danger" onClick={merge}>{t("people.confirm")}</Button>
@@ -148,10 +151,11 @@ export function PeoplePage({
                       </div>
                     </div>
                   ) : target ? (
-                    <div><Button variant="danger" type="submit">Merge into {target.name}</Button></div>
+                    <div><Button variant="danger" type="submit">{t("people.mergeInto", { name: target.name ?? target.id })}</Button></div>
                   ) : (
-                    <div><Button variant="primary" type="submit" disabled={!draft.trim() || draft.trim() === person.name}>{person.name ? "Rename" : "Apply name"}</Button></div>
+                    <div><Button variant="primary" type="submit" {...buttonProps}>{person.name ? t("people.rename") : t("people.applyName")}</Button></div>
                   )}
+                  {!target && why}
                   {saved && (
                     <p className="mm-hint mm-saved" role="status" style={{ margin: 0 }}>
                       <Tag tone={saved.tone}>{saved.label}</Tag>{saved.text}

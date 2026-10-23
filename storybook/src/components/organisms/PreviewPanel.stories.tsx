@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
+import { expect, userEvent, within } from "storybook/test";
 import { PreviewPanel } from "./PreviewPanel";
 import { annotations, cookingHit, duration, hitFaces, hits, kitchenFaces, kitchenFrame, people, photoHit, presentingHit, scenes } from "../../mock/data";
 import type { Hit } from "../../types";
@@ -62,4 +63,43 @@ export const AccessRevoked: Story = {
 /** The file was deleted or moved on the NAS after the snapshot was published. */
 export const FileGone: Story = {
   args: { hit: presentingHit, position: 2, total: 4, frameSrc: kitchenFrame, people, unavailable: "gone" },
+};
+
+/** Swaps navigator.clipboard for the length of a play function. */
+async function withClipboard(writeText: (text: string) => Promise<void>, run: () => Promise<void>) {
+  const original = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+  Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+  try { await run(); } finally {
+    if (original) Object.defineProperty(navigator, "clipboard", original);
+    else delete (navigator as { clipboard?: unknown }).clipboard;
+  }
+}
+
+/** Copy path confirms the copy. */
+export const PathCopied: Story = {
+  args: { hit: cookingHit, position: 1, total: hits.length, frameSrc: kitchenFrame },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    let copied = "";
+    await withClipboard(async (text) => { copied = text; }, async () => {
+      await userEvent.click(canvas.getByRole("button", { name: "Copy path" }));
+      await expect(await canvas.findByText("Path copied")).toBeInTheDocument();
+    });
+    await expect(copied).toBe(cookingHit.path);
+  },
+};
+
+/** When the clipboard is refused, the path appears selected in a field, ready for Ctrl+C. */
+export const PathCopyFailed: Story = {
+  args: { hit: cookingHit, position: 1, total: hits.length, frameSrc: kitchenFrame },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await withClipboard(() => Promise.reject(new Error("denied")), async () => {
+      await userEvent.click(canvas.getByRole("button", { name: "Copy path" }));
+      await expect(await canvas.findByText(/Could not copy/)).toBeInTheDocument();
+    });
+    const field = canvas.getByLabelText<HTMLInputElement>("File path");
+    await expect(field).toHaveValue(cookingHit.path);
+    await expect(field.selectionEnd! - field.selectionStart!).toBe(cookingHit.path.length);
+  },
 };

@@ -78,7 +78,12 @@ import { Meta } from "@storybook/addon-docs/blocks";
   text field (inputs use `field`). `primary` is the one submit action of a form. `ghost` is for dismissals.
   `danger` is for an action other people will see and that needs a confirm step, such as merging two people.
 - A submit that cannot run yet stays focusable (`aria-disabled`, not `disabled`) and names its reason through
-  `aria-describedby`; pressing it shows the reason. While a search runs, placeholders replace the old results.
+  `aria-describedby`; pressing it shows the reason and focuses the field to fix. `useSubmitReason` does this for
+  every form (search, note, face name, person name). While a search runs, placeholders replace the old results.
+- A merge, from the People page or from the face tagger, takes a confirm step naming both sides and the combined
+  count, then offers Undo.
+- Every action ends in a visible result. Copy path says "Path copied", or, when the clipboard is refused, shows
+  the path selected in a field.
 - Every control sets `touch-action: manipulation`, so taps don't wait for double-tap zoom. The timeline takes
   ←/→ (5s), Page Up/Down (30s) and Home/End.
 - A card's one link is stretched over the card, so on touch the card is the target, not the line of text.

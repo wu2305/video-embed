@@ -6,7 +6,7 @@ import { kitchenFaces, kitchenFrame, people } from "../../mock/data";
 const meta = {
   title: "Organisms/FaceTagger",
   component: FaceTagger,
-  args: { src: kitchenFrame, faces: kitchenFaces, people, onTag: fn() },
+  args: { src: kitchenFrame, faces: kitchenFaces, people, onTag: fn(), onUndoTag: fn() },
 } satisfies Meta<typeof FaceTagger>;
 
 export default meta;
@@ -47,5 +47,36 @@ export const MergeWarning: Story = {
     await userEvent.click(canvas.getByRole("button", { name: /Face 3: person-0011/ }));
     await userEvent.type(canvas.getByLabelText("name"), "Ana Ruiz");
     await expect(canvas.getByRole("note")).toHaveTextContent("already names another cluster");
+  },
+};
+
+/** A merge gets the same confirm step and undo as on the People page. */
+export const ConfirmAndUndoMerge: Story = {
+  args: { initialSelected: 2, initialName: "Ana Ruiz" },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Merge into Ana Ruiz" }));
+    await expect(args.onTag).not.toHaveBeenCalled();
+    await expect(canvas.getByRole("alert")).toHaveTextContent("Merge person-0011 (41 faces) into person-0003, Ana Ruiz (212 faces)?");
+    await userEvent.click(canvas.getByRole("button", { name: "Confirm merge" }));
+    await expect(args.onTag).toHaveBeenCalledWith({ face_index: 2, name: "Ana Ruiz", scope: "cluster" });
+    await expect(canvas.getByRole("status")).toHaveTextContent("Merged person-0011 into Ana Ruiz: 253 appearances.");
+    await userEvent.click(canvas.getByRole("button", { name: "Undo merge" }));
+    await expect(args.onUndoTag).toHaveBeenCalledWith({ face_index: 2, name: "Ana Ruiz", scope: "cluster" });
+    await expect(canvas.getByRole("status")).toHaveTextContent("person-0011 is no longer merged.");
+  },
+};
+
+/** Applying with no name says so and puts the cursor in the field. */
+export const EmptyName: Story = {
+  args: { initialSelected: 3 },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const apply = canvas.getByRole("button", { name: "Apply name" });
+    await expect(apply).toHaveAttribute("aria-disabled", "true");
+    await userEvent.click(apply);
+    await expect(args.onTag).not.toHaveBeenCalled();
+    await expect(canvas.getByText("Type a name first.")).toBeVisible();
+    await expect(canvas.getByLabelText("name")).toHaveFocus();
   },
 };

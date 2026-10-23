@@ -1,10 +1,11 @@
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ParsedQuery, Person } from "../../types";
 import { parseQuery } from "../../lib/parseQuery";
 import { Button } from "../atoms/Button";
 import { Field } from "../molecules/Field";
 import { ParseStep } from "../molecules/ParseStep";
 import { useI18n } from "../../i18n";
+import { useSubmitReason } from "../../lib/useSubmitReason";
 
 export interface SearchParams {
   query: string;
@@ -34,25 +35,21 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
   const [minFaces, setMinFaces] = useState(0);
   const parsed = useMemo(() => parseQuery(query, people), [query, people]);
   const hasWho = parsed.who.length > 0 || parsed.unresolved.length > 0;
-  const [tried, setTried] = useState(false);
-  const reasonId = useId();
-
   // Why the search cannot run yet. The button stays focusable (aria-disabled,
   // not disabled) and names this reason, so a keyboard user learns what to fix.
   const reason = busy ? t("search.reason.busy")
     : !query.trim() ? t("search.reason.empty")
     : parsed.unresolved.length ? t("search.reason.unresolved", { names: parsed.unresolved.join(t("list.sep")) })
     : null;
+  const { blocked, buttonProps, why } = useSubmitReason(reason);
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (reason) { setTried(true); return; }
-    setTried(false);
+    if (blocked()) return;
     onSearch?.({ query: query.trim(), parsed, limit, min_faces: minFaces });
   }
 
-  const submitProps = { variant: "primary" as const, type: "submit" as const, "aria-disabled": reason ? true : undefined, "aria-describedby": reason ? reasonId : undefined };
-  const why = reason && <p id={reasonId} className={tried ? "mm-hint mm-why" : "mm-sr-only"} aria-live="polite">{reason}</p>;
+  const submitProps = { variant: "primary" as const, type: "submit" as const, ...buttonProps };
   const readout = hasWho && (
     <div className="mm-parse" aria-live="polite">
       {parsed.who.map((name, i) => <ParseStep key={name} tone="accent">{t("search.parse.who")} <b>{name}</b> → {parsed.person_ids[i]}</ParseStep>)}
