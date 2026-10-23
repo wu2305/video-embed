@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { ParsedQuery, Person } from "../../types";
+import type { ParsedQuery, Person, SearchType } from "../../types";
 import { parseQuery } from "../../lib/parseQuery";
 import { Button } from "../atoms/Button";
 import { Field } from "../molecules/Field";
@@ -10,14 +10,17 @@ export interface SearchParams {
   query: string;
   parsed: ParsedQuery;
   limit: number;
-  min_faces: number;
+  type: SearchType;
 }
+
+const TYPES: readonly SearchType[] = ["all", "video", "image", "archive", "bi"];
 
 export interface SearchBarProps {
   people: readonly Person[];
   initialQuery?: string;
+  initialType?: SearchType;
   busy?: boolean;
-  /** The search home: one large field and the button, no limit or face filters. */
+  /** The search home: one large field, the type and the button, no limit. */
   home?: boolean;
   onSearch?: (params: SearchParams) => void;
 }
@@ -26,11 +29,11 @@ export interface SearchBarProps {
  * The console form. People are named in the query itself ("Ana and Ben are
  * cooking"), never picked by cluster id; an unknown name blocks the search.
  */
-export function SearchBar({ people, initialQuery = "", busy = false, home = false, onSearch }: SearchBarProps) {
+export function SearchBar({ people, initialQuery = "", initialType = "all", busy = false, home = false, onSearch }: SearchBarProps) {
   const { t } = useI18n();
   const [query, setQuery] = useState(initialQuery);
   const [limit, setLimit] = useState(12);
-  const [minFaces, setMinFaces] = useState(0);
+  const [type, setType] = useState<SearchType>(initialType);
   const parsed = useMemo(() => parseQuery(query, people), [query, people]);
   // Why the search cannot run yet. The button stays focusable (aria-disabled,
   // not disabled) and names this reason, so a keyboard user learns what to fix.
@@ -43,18 +46,24 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
   function submit(event: React.FormEvent) {
     event.preventDefault();
     if (blocked()) return;
-    onSearch?.({ query: query.trim(), parsed, limit, min_faces: minFaces });
+    onSearch?.({ query: query.trim(), parsed, limit, type });
   }
 
   // Busy keeps the label and adds a spinner; aria-disabled and the status line carry the state.
   const submitProps = { variant: "primary" as const, type: "submit" as const, className: busy ? "mm-busy" : undefined, ...buttonProps };
   const spinner = busy && <span className="mm-spinner" aria-hidden="true" />;
+  const typeSelect = (
+    <select value={type} onChange={(e) => setType(e.target.value as SearchType)} {...(home && { "aria-label": t("search.type") })}>
+      {TYPES.map((k) => <option key={k} value={k}>{t(`search.type.${k}`)}</option>)}
+    </select>
+  );
 
   if (home) {
     return (
       <form className="mm-home-search" onSubmit={submit} role="search" aria-label={t("search.region")}>
         <div className="mm-home-field">
           <input type="search" aria-label={t("search.fieldLabel")} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search.placeholder")} autoComplete="off" />
+          {typeSelect}
           <Button {...submitProps}>{spinner}{t("search.submitHome")}</Button>
         </div>
         {why}
@@ -71,9 +80,7 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
         <Field label={t("search.limit")}>
           <input type="number" min={1} max={60} value={limit} onChange={(e) => setLimit(Number(e.target.value))} style={{ width: 80 }} />
         </Field>
-        <Field label={t("search.minFaces")}>
-          <input type="number" min={0} max={20} value={minFaces} onChange={(e) => setMinFaces(Number(e.target.value))} style={{ width: 90 }} />
-        </Field>
+        <Field label={t("search.type")}>{typeSelect}</Field>
         <Button {...submitProps}>{spinner}{t("search.submit")}</Button>
       </div>
       {why}

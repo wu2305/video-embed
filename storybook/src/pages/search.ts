@@ -1,16 +1,17 @@
-import type { ArchiveRecord, Hit, MetricRecord, Person, Result, SourceStatus } from "../types";
+import type { ArchiveRecord, Hit, MetricRecord, Person, Result, SearchType, SourceStatus } from "../types";
 import { fuseByRank } from "../lib/fuse";
 import { parseQuery } from "../lib/parseQuery";
 
 export interface Filters {
   query: string;
-  min_faces?: number;
+  /** Omit for every source. */
+  type?: SearchType;
   limit?: number;
 }
 
 /**
  * Stand-in for the NAS side of `/api/search` over mock hits: every person
- * the query names must appear in the hit, and the face floor applies.
+ * the query names must appear in the hit, and a video or image type keeps that kind only.
  * The corpus is taken to be already filtered to what the viewer may open.
  * Ranking is the mock score, so the order is stable.
  */
@@ -18,7 +19,7 @@ export function searchMock(corpus: readonly Hit[], people: readonly Person[], f:
   const parsed = parseQuery(f.query, people);
   return corpus
     .filter((h) => parsed.person_ids.every((id) => h.person_ids.includes(id)))
-    .filter((h) => h.face_count >= (f.min_faces ?? 0))
+    .filter((h) => f.type !== "video" && f.type !== "image" || h.kind === f.type)
     .sort((a, b) => b.score - a.score)
     .slice(0, f.limit ?? 12);
 }
@@ -53,20 +54,22 @@ export interface Down {
   bi?: boolean;
 }
 
-/** Every source for one query, fused by rank. A source that is down contributes nothing. */
+/**
+ * Every source the search type asks for, fused by rank. A source that is down
+ * contributes nothing; a source the type leaves out is not asked and not listed.
+ */
 export function searchGateway(
   nas: readonly Hit[], archive: readonly ArchiveRecord[], people: readonly Person[], f: Filters,
   down: Down = {}, bi: readonly MetricRecord[] = [],
 ): { results: Result[]; sources: SourceStatus[] } {
-  const fromNas = searchMock(nas, people, f);
-  const fromArchive = down.archive ? [] : searchArchiveMock(archive, people, f);
-  const fromBi = down.bi ? [] : searchBiMock(bi, people, f);
-  return {
-    results: fuseByRank([fromNas, fromArchive, fromBi], f.limit ?? 12),
-    sources: [
-      { source: "nas", state: "ok", count: fromNas.length },
-      { source: "archive", state: down.archive ? "unavailable" : "ok", count: fromArchive.length },
-      { source: "bi", state: down.bi ? "unavailable" : "ok", count: fromBi.length },
-    ],
-  };
+  const type = f.type ?? "all";
+  const asks = { nas: type === "all" || type === "video" || type === "image", archive: type === "all" || type === "archive", bi: type === "all" || type === "bi" };
+  const fromNas = asks.nas ? searchMock(nas, people, f) : [];
+  const fromArchive = asks.archive && !down.archive ? searchArchiveMock(archive, people, f) : [];
+  const fromBi = asks.bi && !down.bi ? searchBiMock(bi, people, f) : [];
+  const sources: SourceStatus[] = [];
+  if (asks.nas) sources.push({ source: "nas", state: "ok", count: fromNas.length });
+  if (asks.archive) sources.push({ source: "archive", state: down.archive ? "unavailable" : "ok", count: fromArchive.length });
+  if (asks.bi) sources.push({ source: "bi", state: down.bi ? "unavailable" : "ok", count: fromBi.length });
+  return { results: fuseByRank([fromNas, fromArchive, fromBi], f.limit ?? 12), sources };
 }
