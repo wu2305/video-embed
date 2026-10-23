@@ -52,14 +52,11 @@ export function ResultGrid({ results, query = "", people, sources, selectedId = 
   const active: Filter = mixed && present.includes(filter as SourceId) ? filter : "all";
   const shown = active === "all" ? results : results.filter((r) => sourceOf(r) === active);
 
-  // The count and the query are the answer, so they take the text colour; the rest stays muted.
+  // The count is the answer, so it takes the text colour; the rest stays muted.
+  // The query itself is not repeated: it is still in the field above.
   let status: React.ReactNode = "";
   if (loading) status = t("results.searching");
-  else if (error) status = t("results.failed");
-  else if (query) {
-    const vars = { count: <b>{results.length}</b>, query: <b>{query}</b> };
-    status = <>{rich(results.length ? "results.count" : "results.none", vars)}</>;
-  }
+  else if (!error && query) status = results.length ? <>{rich("results.count", { count: <b>{results.length}</b> })}</> : t("results.none");
 
   return (
     <section aria-label={sectionLabel} aria-busy={loading || undefined}>
@@ -67,10 +64,7 @@ export function ResultGrid({ results, query = "", people, sources, selectedId = 
       {error && (
         <div className="mm-notice bad" role="alert">
           <p style={{ margin: 0 }}>{t("results.serverError")}</p>
-          <div className="mm-row" style={{ marginTop: 8 }}>
-            {onRetry && <Button onClick={onRetry}>{t("results.retry")}</Button>}
-            <details className="mm-hint"><summary>{t("results.details")}</summary><code className="mm-mono">{error}</code></details>
-          </div>
+          {onRetry && <div className="mm-row" style={{ marginTop: 8 }}><Button onClick={onRetry}>{t("results.retry")}</Button></div>}
         </div>
       )}
       {!loading && !error && down.map((s) => (
@@ -82,14 +76,9 @@ export function ResultGrid({ results, query = "", people, sources, selectedId = 
         <div className="mm-chips" role="group" aria-label={t("results.filter")} style={{ marginBottom: 14 }}>
           {(["all", ...present] as const).map((f) => (
             <Chip key={f} pressed={active === f} onClick={() => setFilter(f)}>
-              {f === "all" ? t("results.filterAll", { count: results.length }) : `${t(LABEL[f])} (${counts[f]})`}
+              {f === "all" ? t("results.filterAll") : `${t(LABEL[f])} (${counts[f]})`}
             </Chip>
           ))}
-        </div>
-      )}
-      {!loading && !error && results.length === 0 && query && (
-        <div className="mm-empty">
-          {t("results.empty")}
         </div>
       )}
       <div className="mm-grid">

@@ -17,7 +17,7 @@ export interface MetricCardProps {
  * One BI metric and its top reports (scene 4f). The metric name is the
  * button that opens the preview; it stretches over the card, and the report
  * links sit above it, so each report still opens straight in the BI platform.
- * Like the Archive card, it leads with rank, source and type.
+ * Like the Archive card, it leads with source and type.
  */
 export function MetricCard({ metric, rank, maxReports = 3, selected = false, onOpen }: MetricCardProps) {
   const { t } = useI18n();
@@ -27,7 +27,7 @@ export function MetricCard({ metric, rank, maxReports = 3, selected = false, onO
     <article className={`mm-card mm-archive mm-metric${selected ? " selected" : ""}`} aria-label={t("card.result", { rank })} data-metric-id={metric.metric_id}>
       <div className="mm-body">
         <div className="mm-archive-head mm-mono">
-          <span>{rank}</span><span className="mm-source-name">{t("card.biSource")}</span><span>{t("card.metric")}</span>
+          <span className="mm-source-name">{t("card.biSource")}</span><span>{t("card.metric")}</span>
         </div>
         <button type="button" className="mm-name mm-card-link" onClick={() => onOpen?.(metric)}>{metric.name}</button>
         <div className="mm-mono">
@@ -39,7 +39,6 @@ export function MetricCard({ metric, rank, maxReports = 3, selected = false, onO
           <div className="mm-text">{t("card.noReports")}</div>
         ) : (
           <>
-            <div className="mm-metric-count">{metric.report_count === 1 ? t("card.usedInOne") : t("card.usedIn", { count: metric.report_count })}</div>
             <ul className="mm-reports">
               {listed.map((r) => (
                 <li key={r.report_id}>

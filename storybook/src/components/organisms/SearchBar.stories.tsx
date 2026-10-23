@@ -20,7 +20,7 @@ export const NamedPerson: Story = {
   args: { initialQuery: "Ana is cooking" },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText("Ana Ruiz")).toBeInTheDocument();
+    await expect(canvasElement.querySelector(".mm-parse")).toBeNull();
     await userEvent.click(canvas.getByRole("button", { name: "search" }));
     await expect(args.onSearch).toHaveBeenCalledWith(
       expect.objectContaining({ parsed: expect.objectContaining({ person_ids: ["person-0003"], what: "cooking" }) }),
@@ -46,7 +46,6 @@ export const UnknownPerson: Story = {
   args: { initialQuery: "Zed Marlow is cooking" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText(/no such person/)).toBeInTheDocument();
     const button = canvas.getByRole("button", { name: "search" });
     await expect(button).toHaveAttribute("aria-disabled", "true");
     await expect(button).toHaveAccessibleDescription(/Nobody is named Zed Marlow/);
@@ -77,17 +76,5 @@ export const Busy: Story = {
     const button = within(canvasElement).getByRole("button", { name: "search" });
     await expect(button).toHaveAttribute("aria-disabled", "true");
     await expect(button.querySelector(".mm-spinner")).not.toBeNull();
-  },
-};
-
-/** The same form in Chinese: the labels, the button and the reason all switch with the language. */
-export const Chinese: Story = {
-  args: { initialQuery: "Zed Marlow is cooking" },
-  globals: { locale: "zh" },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByRole("button", { name: "搜索" })).toBeInTheDocument();
-    await expect(canvas.getByText(/没有名为 Zed Marlow 的人/)).toBeInTheDocument();
-    await expect(canvas.getByText(/无此人/)).toBeInTheDocument();
   },
 };

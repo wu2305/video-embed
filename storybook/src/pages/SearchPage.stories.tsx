@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { SearchPage } from "./SearchPage";
-import { archiveRecords, metricRecords, metricReports, audioHit, documentHit, hits, indexInfo, now, people, staleIndexInfo, viewer } from "../mock/data";
+import { archiveRecords, metricRecords, metricReports, audioHit, documentHit, hits, indexInfo, now, people, viewer } from "../mock/data";
 
 const corpus = [...hits, audioHit, documentHit];
 
@@ -28,15 +28,14 @@ export const FirstVisit: Story = {
   },
 };
 
-/** Typing on the home shows the who/what readout; submitting moves to the results layout with the query kept. */
+/** Submitting from the home moves to the results layout with the query kept. */
 export const SearchFromHome: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.type(canvas.getByRole("searchbox", { name: "Search" }), "Ana and Ben are cooking");
-    await expect(canvas.getByText("Ben Okafor")).toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: "Search" }));
-    await expect(canvas.getByRole("status")).toHaveTextContent(/results for “Ana and Ben are cooking”/);
-    await expect(canvas.getByLabelText("query")).toHaveValue("Ana and Ben are cooking");
+    await expect(canvas.getByRole("status")).toHaveTextContent(/^\d+ results$/);
+    await expect(canvas.getByLabelText("Search")).toHaveValue("Ana and Ben are cooking");
   },
 };
 
@@ -94,9 +93,8 @@ export const MetricSearch: Story = {
   args: { initialQuery: "revenue", corpus: [] },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole("status")).toHaveTextContent(/2 results for “revenue”/);
+    await expect(canvas.getByRole("status")).toHaveTextContent("2 results");
     const card = canvas.getByRole("button", { name: "Net revenue" }).closest("article")!;
-    await expect(card).toHaveTextContent("Used in 7 reports");
     await expect(card).toHaveTextContent("+4 more");
     // A report link opens the report in BI; it is not covered by the card's button.
     await expect(within(card as HTMLElement).getByRole("link", { name: "Monthly P&L" })).toHaveAttribute("href", "https://bi.example.internal/reports/R-1042");
@@ -169,14 +167,6 @@ export const ArchiveDown: Story = {
   },
 };
 
-/** The file's permissions changed after last night's update: the preview fails closed. */
-export const AccessRevoked: Story = { args: { initialQuery: "Ana is cooking", openId: 101, unavailable: { 101: "forbidden" } } };
-
-/** No nightly update for days: results carry a stale warning. */
-export const StaleIndex: Story = { args: { initialQuery: "Ana is cooking", index: staleIndexInfo } };
-
-export const NoHits: Story = { args: { initialQuery: "Ben is skydiving", corpus: [] } };
-
 /** While a search runs, placeholders stand in for results; nothing stale reads as live. */
 export const Loading: Story = {
   args: { initialQuery: "Ana is cooking", loading: true },
@@ -187,14 +177,14 @@ export const Loading: Story = {
   },
 };
 
-/** A server error says what happened in plain words, offers Try again, and keeps the raw message under Details. */
+/** A server error says what happened in plain words, offers Try again, and never shows the raw message. */
 export const ServerError: Story = {
   args: { initialQuery: "Ana is cooking", error: "ValueError: query vector has 512 dims, index has 768" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole("alert")).toHaveTextContent("The search server failed.");
-    await expect(canvas.getByRole("status")).not.toHaveTextContent(/ValueError/);
+    await expect(canvas.getByRole("alert")).toHaveTextContent("The search failed.");
+    await expect(canvasElement).not.toHaveTextContent(/ValueError/);
     await userEvent.click(canvas.getByRole("button", { name: "Try again" }));
-    await expect(canvas.getByRole("status")).toHaveTextContent(/results for “Ana is cooking”/);
+    await expect(canvas.getByRole("status")).toHaveTextContent(/^\d+ results$/);
   },
 };

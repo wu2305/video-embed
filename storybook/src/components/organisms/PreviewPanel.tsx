@@ -57,6 +57,8 @@ export function PreviewPanel({
   const video = useRef<HTMLVideoElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
   const range: Scene | null = hit.scene_start != null && hit.scene_end != null ? { start: hit.scene_start, end: hit.scene_end } : null;
+  // The track's key already names the matched range; the tag stands in only when there is no track.
+  const showTrack = !unavailable && hit.kind === "video" && duration > 0;
   const now = playhead ?? range?.start ?? 0;
   const activeNote = annotations.find((a) => now >= a.t_start && (a.t_end === null || now <= a.t_end));
 
@@ -110,7 +112,7 @@ export function PreviewPanel({
             </>
           )}
         </div>
-        {!unavailable && hit.kind === "video" && duration > 0 && (
+        {showTrack && (
           <div style={{ marginTop: 10 }}>
             <AnnotationTrack duration={duration} scenes={scenes} annotations={annotations} playhead={now} matched={range} onSeek={onSeek} />
           </div>
@@ -125,7 +127,7 @@ export function PreviewPanel({
         <h2 title={hit.path}>{name}</h2>
         <div className="mm-mono">
           <Tag>{hit.kind}</Tag>
-          {range && <Tag tone="good">{formatTime(range.start)}–{formatTime(range.end)}</Tag>}
+          {range && !showTrack && <Tag tone="good">{formatTime(range.start)}–{formatTime(range.end)}</Tag>}
           {!unavailable && hit.person_ids.map((id) => <Tag key={id} tone="accent">{displayName(id, people)}</Tag>)}
         </div>
         {!unavailable && text && <div className="mm-text mm-transcript">{text}</div>}

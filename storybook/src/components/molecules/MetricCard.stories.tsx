@@ -28,7 +28,7 @@ export const ManyReports: Story = {
 export const OneReport: Story = {
   args: { metric: metricRecords[2]! },
   play: async ({ canvasElement }) => {
-    await expect(canvasElement).toHaveTextContent("Used in 1 report");
+    await expect(within(canvasElement).getAllByRole("listitem")).toHaveLength(1);
     await expect(within(canvasElement).queryByText(/more/)).toBeNull();
   },
 };
@@ -42,9 +42,3 @@ export const NoReports: Story = {
   },
 };
 
-export const Chinese: Story = {
-  globals: { locale: "zh" },
-  play: async ({ canvasElement }) => {
-    await expect(canvasElement).toHaveTextContent("被 7 个报表使用");
-  },
-};

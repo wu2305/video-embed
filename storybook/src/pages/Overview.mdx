@@ -5,14 +5,11 @@ import { PageGallery } from "./gallery/PageGallery";
 
 # Page previews
 
-Every page, live, in both themes. Each preview is the real story, so it changes when the components do.
-Click a preview to open it full size; use the Theme toolbar there to switch, or pick **Side by side**.
-Some previews end in an interaction state because their story plays one, such as a typed name or an
-open dialog.
+Every page, live, in both themes.
 
 <PageGallery groups={[
   { title: "Start here", pages: [
-    { id: "pages-prototype--click-through", title: "Prototype", note: "All three pages wired together for demos" },
+    { id: "pages-prototype--click-through", title: "Prototype" },
   ] },
   { title: "Search", pages: [
     { id: "pages-search--first-visit", title: "First visit", note: "A search home: brand and one field" },
@@ -21,9 +18,6 @@ open dialog.
     { id: "pages-search--mixed-media", title: "Mixed media", note: "Video, photo, audio and documents" },
     { id: "pages-search--both-sources", title: "Both sources", note: "NAS and Archive fused by rank" },
     { id: "pages-search--archive-down", title: "Archive down", note: "Partial results, with a warning" },
-    { id: "pages-search--access-revoked", title: "Access revoked", note: "The preview fails closed" },
-    { id: "pages-search--stale-index", title: "Stale index", note: "No nightly update for days" },
-    { id: "pages-search--no-hits", title: "No hits" },
     { id: "pages-search--server-error", title: "Server error" },
   ] },
   { title: "People", pages: [

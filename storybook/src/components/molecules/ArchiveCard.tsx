@@ -12,7 +12,7 @@ export interface ArchiveCardProps {
  * One Archive System record (scene 4c). Metadata only: there is no preview,
  * because the gateway never fetches the document. The title is a link that
  * opens the record in the Archive System, which checks access again itself.
- * It has no thumbnail frame: it leads with rank, source and record type.
+ * It has no thumbnail frame: it leads with source and record type.
  */
 export function ArchiveCard({ record, rank }: ArchiveCardProps) {
   const { t } = useI18n();
@@ -20,7 +20,7 @@ export function ArchiveCard({ record, rank }: ArchiveCardProps) {
     <article className="mm-card mm-archive" aria-label={t("card.result", { rank })}>
       <div className="mm-body">
         <div className="mm-archive-head mm-mono">
-          <span>{rank}</span><span className="mm-source-name">{t("card.archiveSource")}</span><span>{record.doc_type}</span>
+          <span className="mm-source-name">{t("card.archiveSource")}</span><span>{record.doc_type}</span>
         </div>
         <a className="mm-name mm-card-link" href={record.deep_link} target="_blank" rel="noopener noreferrer" title={record.title}>
           {record.title}
@@ -30,7 +30,6 @@ export function ArchiveCard({ record, rank }: ArchiveCardProps) {
           {record.department && <Tag>{record.department}</Tag>}
         </div>
         {record.summary && <div className="mm-text">{record.summary}</div>}
-        <div className="mm-mono">{t("card.archiveFoot", { id: record.record_id })}</div>
       </div>
     </article>
   );

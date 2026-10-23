@@ -29,7 +29,7 @@ export const PAGES: ExportedPage[] = [
   },
   {
     name: "SearchResultsPage", title: "Search · results", story: "pages-search--results", width: 1280,
-    summary: "The Search page after “Ana is cooking”: the who/what read-out, the status line and NAS, Archive and BI results fused into one grid.",
+    summary: "The Search page after “Ana is cooking”: the status line and NAS, Archive and BI results fused into one grid.",
     element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} metrics={metricRecords} initialQuery="Ana is cooking" />,
   },
   {

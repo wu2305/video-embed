@@ -2,7 +2,6 @@ import { useId, useRef, useState } from "react";
 import type { Hit, IndexInfo, Person, Viewer } from "../types";
 import { Button } from "../components/atoms/Button";
 import { Panel } from "../components/atoms/Panel";
-import { Tag } from "../components/atoms/Tag";
 import { Field } from "../components/molecules/Field";
 import { ResultCard } from "../components/molecules/ResultCard";
 import { PeopleGrid } from "../components/organisms/PeopleGrid";
@@ -34,8 +33,6 @@ export interface PeoplePageProps {
 
 interface Saved {
   text: string;
-  tone: "good" | "warn";
-  label: string;
   /** Set right after a merge: what Undo puts back. */
   undo?: { people: Person[]; merged: Record<string, string>; from: Person; into: Person };
 }
@@ -66,7 +63,6 @@ export function PeoplePage({
   const appearances = person ? corpus.filter((h) => h.person_ids.some((id) => owner(id) === person.id)) : [];
   // Merged-away ids still appear on hits; show them under the name they joined.
   const shown = [...people, ...Object.entries(merged).map(([id, into]) => ({ id, name: people.find((p) => p.id === into)?.name, faces: 0 }))];
-  const unnamed = people.filter((p) => !p.name).length;
   const reason = !person ? null : !draft.trim() ? t("people.reason.empty") : draft.trim() === person.name ? t("people.reason.same") : null;
   const { blocked, buttonProps, why } = useSubmitReason(reason, () => nameRef.current);
 
@@ -85,7 +81,7 @@ export function PeoplePage({
     if (target) { setConfirming(true); return; }
     setPeople((list) => list.map((p) => (p.id === person.id ? { ...p, name } : p)));
     onName?.(person.id, name);
-    setSaved({ tone: "good", label: t("people.saved"), text: t("people.namedText", { faces: person.faces, name }) });
+    setSaved({ text: t("people.saved") });
   }
 
   function merge() {
@@ -98,7 +94,7 @@ export function PeoplePage({
     setConfirming(false);
     setSelected(target.id);
     setDraft(target.name ?? "");
-    setSaved({ tone: "good", label: t("people.merged"), text: t("people.mergedText", { id: person.id, target: target.name ?? target.id, faces }), undo });
+    setSaved({ text: t("people.mergedText", { id: person.id }), undo });
   }
 
   function undoMerge(undo: NonNullable<Saved["undo"]>) {
@@ -107,7 +103,7 @@ export function PeoplePage({
     onUndoMerge?.(undo.from.id, undo.into.id);
     setSelected(undo.from.id);
     setDraft(undo.from.name ?? "");
-    setSaved({ tone: "warn", label: t("people.undone"), text: t("people.undoneText", { id: undo.from.id }) });
+    setSaved({ text: t("people.undoneText", { id: undo.from.id }) });
   }
 
   return (
@@ -122,19 +118,18 @@ export function PeoplePage({
         <PeopleGrid people={people} samples={samples} selectedId={selected} onOpen={select} />
         <aside>
           {!person ? (
-            <Panel as="section" title={t("people.nameHeading")}>
+            <Panel as="section" aria-label={t("people.selected")}>
               <p className="mm-hint" style={{ margin: 0 }}>{t("people.nameHint")}</p>
             </Panel>
           ) : (
             <>
-              <Panel as="section" title={person.name ?? person.id} aria-label={t("people.selected")}>
+              <Panel as="section" aria-label={t("people.selected")}>
                 <form onSubmit={apply} style={{ display: "grid", gap: 12 }}>
                   {samples[person.id] && (
                     <div className="mm-stage" style={{ maxWidth: 200 }}><img src={samples[person.id]} alt={t("people.sampleFace", { id: person.id })} /></div>
                   )}
-                  <div className="mm-mono"><Tag>{person.id}</Tag><Tag>{t("card.faces", { count: person.faces })}</Tag></div>
                   <Field label={t("people.nameField")}>
-                    <input ref={nameRef} type="text" list={listId} value={draft} onChange={(e) => { setDraft(e.target.value); setSaved(null); setConfirming(false); }} placeholder={t("people.fullName")} autoComplete="off" />
+                    <input ref={nameRef} type="text" list={listId} value={draft} onChange={(e) => { setDraft(e.target.value); setSaved(null); setConfirming(false); }} autoComplete="off" />
                   </Field>
                   <datalist id={listId}>{known.map((n) => <option key={n} value={n} />)}</datalist>
                   {target && confirming ? (
@@ -161,7 +156,7 @@ export function PeoplePage({
                   )}
                 </form>
               </Panel>
-              <Panel as="section" title={t("people.appears", { count: appearances.length })}>
+              <Panel as="section" title={t("people.appears")}>
                 {appearances.length === 0 ? (
                   <p className="mm-hint" style={{ margin: 0 }}>{t("people.noHits")}</p>
                 ) : (

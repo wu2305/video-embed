@@ -24,11 +24,11 @@ const archiveDown: SourceStatus[] = [
   { source: "archive", state: "unavailable", count: 0 },
 ];
 
-/** The count and the query in the status line take the text colour; the rest stays muted. */
+/** The count in the status line takes the text colour; the query is not repeated. */
 export const Populated: Story = {
   play: async ({ canvasElement }) => {
     const bold = [...within(canvasElement).getByRole("status").querySelectorAll("b")].map((b) => b.textContent);
-    await expect(bold).toEqual([String(hits.length), "Ana Ruiz is cooking"]);
+    await expect(bold).toEqual([String(hits.length)]);
   },
 };
 /** NAS and Archive results fused by rank; source badges and a source filter appear. */

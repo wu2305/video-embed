@@ -27,7 +27,7 @@ export const NameACluster: Story = {
     await userEvent.type(canvas.getByLabelText("name"), "Chidi Eze");
     await userEvent.click(canvas.getByRole("button", { name: "Apply name" }));
     await expect(args.onName).toHaveBeenCalledWith("person-0011", "Chidi Eze");
-    await expect(canvas.getByRole("status")).toHaveTextContent("Named 41 appearances");
+    await expect(canvas.getByRole("status")).toHaveTextContent("Saved.");
     await expect(canvas.getByRole("button", { name: "Chidi Eze" })).toBeInTheDocument();
   },
 };
@@ -59,7 +59,7 @@ export const ConfirmAndUndoMerge: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Confirm merge" }));
     await expect(args.onMerge).toHaveBeenCalledWith("person-0019", "person-0003");
     await expect(args.onName).not.toHaveBeenCalled();
-    await expect(canvas.getByRole("status")).toHaveTextContent("Merged person-0019 into Ana Ruiz: 229 appearances.");
+    await expect(canvas.getByRole("status")).toHaveTextContent("Merged person-0019.");
     await expect(canvas.queryByRole("button", { name: "person-0019" })).toBeNull();
     await userEvent.click(canvas.getByRole("button", { name: "Undo merge" }));
     await expect(args.onUndoMerge).toHaveBeenCalledWith("person-0019", "person-0003");

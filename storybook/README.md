@@ -52,11 +52,11 @@ not redistribute them.
 |---|---|
 | `src/foundations/` | Colour, type, space and shape docs (MDX) |
 | `src/components/atoms/` | Button, Tag, Label, Chip, Kbd, Panel |
-| `src/components/molecules/` | Field, ParseStep, FaceBox, ResultCard, ArchiveCard, Freshness, PersonCard, NoteItem, MetaList |
+| `src/components/molecules/` | Field, FaceBox, ResultCard, ArchiveCard, Freshness, PersonCard, NoteItem, MetaList |
 | `src/components/organisms/` | TopBar, SearchBar, ResultGrid, PeopleGrid, FaceOverlay, FaceTagger, AnnotationTrack, AnnotationComposer, NoteList, PreviewPanel |
 | `src/components/templates/` | AppShell |
 | `src/pages/` | Search, People and Clip pages, and a click-through prototype for demos |
-| `src/scenes/` | One story per scene in `../STORYBOOK.md`, composed from organisms |
+| `src/scenes/` | Scenes 6 and 7 of `../STORYBOOK.md`, which no page shows |
 | `scripts/fetch_media.py` | Fetches the real keyframes from Hugging Face; `--select` picks new ones |
 | `src/types.ts` | `Hit` mirrors `SearchHit.to_dict()`. Fields under "proposed" do not exist in the Python code yet. `ArchiveRecord`, `Viewer` and `IndexInfo` are proposals for the gateway |
 | `src/lib/parseQuery.ts` | Rule-based "who is what" splitter used by `SearchBar` |

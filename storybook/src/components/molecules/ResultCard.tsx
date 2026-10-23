@@ -43,9 +43,7 @@ export function ResultCard({ hit, rank, people = [], selected = false, onOpen, c
     <article className={`mm-card${selected ? " selected" : ""}`} aria-label={t("card.result", { rank })} data-unit-id={hit.unit_id}>
       <div className="mm-thumb">
         {src ? <img loading="lazy" src={src} alt="" onError={() => setThumbFailed(true)} /> : <span className="mm-glyph" aria-hidden>{GLYPH[hit.kind]}</span>}
-        {!compact && <span className="mm-rank">{rank}</span>}
         {showSource && <span className="mm-source">NAS</span>}
-        {!compact && <span className="mm-score">{hit.score.toFixed(3)}</span>}
       </div>
       <div className="mm-body">
         <button type="button" className="mm-name mm-card-link" title={hit.path} onClick={() => onOpen?.(hit)}>{name}</button>

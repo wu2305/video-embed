@@ -12,10 +12,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Neutral: Story = {};
-export const Good: Story = { args: { tone: "good", children: "00:42–01:11" } };
-export const Accent: Story = { args: { tone: "accent", children: "Ana Ruiz" } };
-export const Warn: Story = { args: { tone: "warn", children: "copy" } };
-export const Bad: Story = { args: { tone: "bad", children: "range" } };
 
 export const AllTones: Story = {
   render: () => (

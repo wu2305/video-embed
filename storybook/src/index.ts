@@ -11,7 +11,6 @@ export * from "./components/molecules/Freshness";
 export * from "./components/molecules/MetaList";
 export * from "./components/molecules/MetricCard";
 export * from "./components/molecules/NoteItem";
-export * from "./components/molecules/ParseStep";
 export * from "./components/molecules/PersonCard";
 export * from "./components/molecules/ResultCard";
 export * from "./components/organisms/AnnotationComposer";

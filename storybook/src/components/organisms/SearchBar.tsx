@@ -3,7 +3,6 @@ import type { ParsedQuery, Person } from "../../types";
 import { parseQuery } from "../../lib/parseQuery";
 import { Button } from "../atoms/Button";
 import { Field } from "../molecules/Field";
-import { ParseStep } from "../molecules/ParseStep";
 import { useI18n } from "../../i18n";
 import { useSubmitReason } from "../../lib/useSubmitReason";
 
@@ -24,9 +23,8 @@ export interface SearchBarProps {
 }
 
 /**
- * The console form plus scene 3's "who / what" readout. People are named in
- * the query itself ("Ana and Ben are cooking"), never picked by cluster id;
- * the readout shows who will be filtered and what will be embedded.
+ * The console form. People are named in the query itself ("Ana and Ben are
+ * cooking"), never picked by cluster id; an unknown name blocks the search.
  */
 export function SearchBar({ people, initialQuery = "", busy = false, home = false, onSearch }: SearchBarProps) {
   const { t } = useI18n();
@@ -34,7 +32,6 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
   const [limit, setLimit] = useState(12);
   const [minFaces, setMinFaces] = useState(0);
   const parsed = useMemo(() => parseQuery(query, people), [query, people]);
-  const hasWho = parsed.who.length > 0 || parsed.unresolved.length > 0;
   // Why the search cannot run yet. The button stays focusable (aria-disabled,
   // not disabled) and names this reason, so a keyboard user learns what to fix.
   const reason = busy ? t("search.reason.busy")
@@ -52,13 +49,6 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
   // Busy keeps the label and adds a spinner; aria-disabled and the status line carry the state.
   const submitProps = { variant: "primary" as const, type: "submit" as const, className: busy ? "mm-busy" : undefined, ...buttonProps };
   const spinner = busy && <span className="mm-spinner" aria-hidden="true" />;
-  const readout = hasWho && (
-    <div className="mm-parse" aria-live="polite">
-      {parsed.who.map((name, i) => <ParseStep key={name} tone="accent">{t("search.parse.who")} <b>{name}</b></ParseStep>)}
-      {parsed.unresolved.map((name) => <ParseStep key={name} tone="bad">{t("search.parse.unknown")} <b>{name}</b></ParseStep>)}
-      {parsed.unresolved.length === 0 && <ParseStep>{t("search.parse.what")} <b>{parsed.what}</b></ParseStep>}
-    </div>
-  );
 
   if (home) {
     return (
@@ -67,7 +57,6 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
           <input type="search" aria-label={t("search.fieldLabel")} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search.placeholder")} autoComplete="off" />
           <Button {...submitProps}>{spinner}{t("search.submitHome")}</Button>
         </div>
-        {readout}
         {why}
       </form>
     );
@@ -76,7 +65,7 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
   return (
     <form className="mm-panel" onSubmit={submit} role="search" aria-label={t("search.region")}>
       <div className="mm-search">
-        <Field label={t("search.query")} grow>
+        <Field label={t("search.fieldLabel")} grow hideLabel>
           <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search.placeholder")} autoComplete="off" />
         </Field>
         <Field label={t("search.limit")}>
@@ -87,7 +76,6 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
         </Field>
         <Button {...submitProps}>{spinner}{t("search.submit")}</Button>
       </div>
-      {readout}
       {why}
     </form>
   );

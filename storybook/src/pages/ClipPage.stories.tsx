@@ -25,11 +25,9 @@ export const AddNote: Story = {
     const canvas = within(canvasElement);
     await userEvent.type(canvas.getByLabelText("note"), "Ben tastes the sauce");
     await userEvent.click(canvas.getByRole("button", { name: "Save note" }));
-    await expect(canvas.getByRole("heading", { name: "Notes (4)" })).toBeInTheDocument();
+    await expect(canvas.getAllByText("Ben tastes the sauce").length).toBeGreaterThan(0);
   },
 };
-
-export const NoNotes: Story = { args: { annotations: [] } };
 
 /** A photo: no timeline, notes have no time range. */
 export const Photo: Story = { args: { hit: photoHit, frameSrc: photoHit.thumb_url!, faces: hitFaces(photoHit), annotations: [] } };

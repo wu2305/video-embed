@@ -43,6 +43,9 @@ export function ClipPage({
   const scene = scenes.find((s) => playhead >= s.start && playhead < s.end) ?? null;
   const name = hit.path.split("/").pop() ?? hit.path;
   const activeNote = notes.find((a) => playhead >= a.t_start && (a.t_end === null || playhead <= a.t_end));
+  // The track's key already names the matched range; the tag stands in only when there is no track.
+  const showTrack = !still && duration > 0;
+  const facesDrawn = hasFrame && faces.length > 0;
   const inFrame = people.filter((p) => faces.some((f) => f.person_id === p.id));
 
   return (
@@ -60,11 +63,11 @@ export function ClipPage({
             {hasFrame && <FaceOverlay faces={faces} people={people} />}
             {!still && activeNote && <div className="mm-overlay-note">{activeNote.text}</div>}
           </div>
-          {!still && duration > 0 && (
+          {showTrack && (
             <AnnotationTrack duration={duration} scenes={scenes} annotations={notes} playhead={playhead} matched={matched} onSeek={setPlayhead} />
           )}
           <div className="mm-mono">
-            {matched && <Tag tone="good">{t("clip.matched", { start: formatTime(matched.start), end: formatTime(matched.end) })}</Tag>}
+            {matched && !showTrack && <Tag tone="good">{formatTime(matched.start)}–{formatTime(matched.end)}</Tag>}
             {hit.person_ids.map((id) => <Tag key={id} tone={displayName(id, people) !== id ? "accent" : "neutral"}>{displayName(id, people)}</Tag>)}
             {!hit.is_master && <Tag tone="warn">{t("card.copy")}</Tag>}
           </div>
@@ -75,14 +78,12 @@ export function ClipPage({
           )}
         </div>
         <aside>
-          <Panel as="section" title={t("clip.details")}>
-            <MetaList items={[
-              [t("clip.kind"), <Tag>{hit.kind}</Tag>],
-              ...(duration && !still ? [[t("clip.duration"), formatTime(duration)] as const] : []),
-              [t("clip.faces"), String(hasFrame && faces.length ? faces.length : hit.face_count)],
-            ]} />
-          </Panel>
-          <Panel as="section" title={t("notes.count", { count: notes.length })}>
+          {!facesDrawn && (
+            <Panel as="section" title={t("clip.details")}>
+              <MetaList items={[[t("clip.faces"), String(hit.face_count)]]} />
+            </Panel>
+          )}
+          <Panel as="section" title={t("notes.label")}>
             <NoteList notes={notes} people={people} playhead={still ? -1 : playhead} onSeek={setPlayhead} />
           </Panel>
           <AnnotationComposer key={still ? "still" : scene?.start ?? "none"} time={playhead} scene={scene} still={still}
