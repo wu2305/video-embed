@@ -16,8 +16,8 @@ export interface MetricCardProps {
 /**
  * One BI metric and its top reports (scene 4f). The metric name is the
  * button that opens the preview; it stretches over the card, and the report
- * links sit above it, so each report still opens straight in the BI platform.
- * Like the Archive card, it leads with source and type.
+ * links and "+N more" sit above it, so each report still opens straight in
+ * the BI platform. Like the Archive card, it leads with source and type.
  */
 export function MetricCard({ metric, rank, maxReports = 3, selected = false, onOpen }: MetricCardProps) {
   const { t } = useI18n();
@@ -34,7 +34,7 @@ export function MetricCard({ metric, rank, maxReports = 3, selected = false, onO
           <Tag>{metric.metric_id}</Tag>
           {metric.domain && <Tag>{metric.domain}</Tag>}
         </div>
-        {metric.definition && <div className="mm-text">{metric.definition}</div>}
+        {metric.definition && <div className="mm-text mm-definition">{metric.definition}</div>}
         {metric.report_count === 0 ? (
           <div className="mm-text">{t("card.noReports")}</div>
         ) : (
@@ -42,12 +42,18 @@ export function MetricCard({ metric, rank, maxReports = 3, selected = false, onO
             <ul className="mm-reports">
               {listed.map((r) => (
                 <li key={r.report_id}>
-                  <a href={r.deep_link} target="_blank" rel="noopener noreferrer">{r.title}</a>
-                  <span className="mm-mono mm-text">{r.folder ? `${r.folder} · ` : ""}{formatDate(r.updated_at)}</span>
+                  <a href={r.deep_link} target="_blank" rel="noopener noreferrer" title={r.title}>
+                    <span className="mm-report-title">{r.title}</span><span aria-hidden>↗</span>
+                  </a>
+                  <span className="mm-report-meta mm-mono mm-text">
+                    {[formatDate(r.updated_at), r.folder].filter(Boolean).join(" · ")}
+                  </span>
                 </li>
               ))}
             </ul>
-            {more > 0 && <div className="mm-text">{t("card.moreReports", { count: more })}</div>}
+            {more > 0 && (
+              <button type="button" className="mm-more" onClick={() => onOpen?.(metric)}>{t("card.moreReports", { count: more })}</button>
+            )}
           </>
         )}
       </div>
