@@ -1,10 +1,11 @@
-/* Docs-page chrome for the page gallery. It sits on Storybook's docs page, not the product theme. */
-.pg { --pg-line: #d9dde3; --pg-muted: #5b6372; --pg-ink: #1b1f27; --pg-accent: #1d5bd6; font-family: inherit; }
-.pg-bar { display: inline-flex; border: 1px solid var(--pg-line); border-radius: 8px; overflow: hidden; margin: 8px 0 24px; }
-.pg-bar button { all: unset; cursor: pointer; padding: 6px 14px; font-size: 13px; color: var(--pg-muted); }
-.pg-bar button + button { border-left: 1px solid var(--pg-line); }
-.pg-bar button[aria-pressed=true] { background: var(--pg-ink); color: #fff; }
-.pg-bar button:focus-visible { outline: 2px solid var(--pg-accent); outline-offset: -2px; }
+/* Docs-page chrome for the page gallery. It uses the product tokens; PageGallery pins .pg to the light
+   theme to match Storybook's docs page, and each .pg-screen to dark, the default story theme. */
+.pg { font-family: inherit; }
+.pg-bar { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; margin: 8px 0 24px; }
+.pg-bar button { all: unset; cursor: pointer; padding: 6px 14px; font-size: 13px; color: var(--muted); }
+.pg-bar button + button { border-left: 1px solid var(--line-strong); }
+.pg-bar button[aria-pressed=true] { background: var(--text); color: var(--bg); }
+.pg-bar button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .pg-group { margin: 0 0 32px; }
 .pg-group h2 { font-size: 15px; margin: 0 0 12px; border: 0; padding: 0; }
 .pg-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); }
@@ -12,13 +13,13 @@
 .pg-grid.phone { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
 .pg-grid.phone.single { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 .pg a.pg-tile, .pg a.pg-tile:hover, .pg a.pg-tile * { text-decoration: none; }
-.pg a.pg-tile { display: grid; gap: 8px; color: var(--pg-ink); border-radius: 10px; padding: 8px; border: 1px solid transparent; }
-.pg-tile:hover { border-color: var(--pg-line); }
-.pg-tile:focus-visible { outline: 2px solid var(--pg-accent); outline-offset: 2px; }
+.pg a.pg-tile { display: grid; gap: 8px; color: var(--text); border-radius: 10px; padding: 8px; border: 1px solid transparent; }
+.pg-tile:hover { border-color: var(--line-strong); }
+.pg-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pg-frames { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
 .pg-frame { margin: 0; display: grid; gap: 4px; }
-.pg-frame figcaption { font-size: 11px; color: var(--pg-muted); text-transform: uppercase; letter-spacing: .5px; }
-.pg-screen { position: relative; overflow: hidden; border-radius: 6px; border: 1px solid var(--pg-line); background: #0f1115; }
+.pg-frame figcaption { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.pg-screen { position: relative; overflow: hidden; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--bg); }
 .pg-screen iframe { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; pointer-events: none; }
 .pg-meta { display: grid; gap: 2px; font-size: 13px; }
-.pg-meta span { color: var(--pg-muted); }
+.pg-meta span { color: var(--muted); }

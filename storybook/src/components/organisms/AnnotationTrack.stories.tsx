@@ -31,7 +31,20 @@ export const Default: Story = {
   },
 };
 
-/** The green band is the scene the search matched. */
-export const WithMatch: Story = { args: { matched: { start: 42, end: 71 } } };
+/** The outlined green band is the scene the search matched; the key under the track names it. A tap seeks, and the slider says when the playhead is inside the match. */
+export const WithMatch: Story = {
+  args: { matched: { start: 42, end: 71 } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("list", { name: "Timeline key" })).toHaveTextContent("the scene that matched, 00:42–01:11");
+    const slider = canvas.getByRole("slider");
+    const track = canvasElement.querySelector<HTMLElement>(".mm-track")!.getBoundingClientRect();
+    // A touch tap at 0:56, inside the match: the browser turns it into a click at that point.
+    const x = track.left + (track.width * 56) / duration;
+    await userEvent.pointer({ keys: "[TouchA]", target: slider, coords: { clientX: x, clientY: track.top + track.height / 2 } });
+    await expect(slider).toHaveAttribute("aria-valuenow", "56");
+    await expect(slider).toHaveAttribute("aria-valuetext", "00:56, in the matched scene");
+  },
+};
 
 export const NoNotes: Story = { args: { annotations: [] } };

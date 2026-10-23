@@ -1,12 +1,14 @@
 import type { Face } from "../types";
 
+/* Fixture colours, deliberately not the theme tokens: an overlay must be tested
+   against scenery that does not share its hue. */
 interface Palette { sky: string; floor: string; props: string[] }
 
 const PALETTES: Record<string, Palette> = {
   kitchen: { sky: "#6b4a2f", floor: "#3a2a1c", props: ["#c9863c", "#8f5a2a", "#d9b27c"] },
-  office: { sky: "#243b5e", floor: "#16233a", props: ["#6ea8fe", "#3b5d93", "#cfd9ea"] },
-  park: { sky: "#2d5a45", floor: "#1b3a2c", props: ["#59d18c", "#2f7a55", "#d9e8a2"] },
-  night: { sky: "#1b1f33", floor: "#0e1020", props: ["#8b94a7", "#4a5170", "#e5c07b"] },
+  office: { sky: "#243b5e", floor: "#16233a", props: ["#9fb4d6", "#3b5d93", "#cfd9ea"] },
+  park: { sky: "#2d5a45", floor: "#1b3a2c", props: ["#8fc79a", "#2f7a55", "#d9e8a2"] },
+  night: { sky: "#1b1f33", floor: "#0e1020", props: ["#767d93", "#4a5170", "#d8a85a"] },
 };
 
 export type Scenery = keyof typeof PALETTES;
