@@ -41,7 +41,6 @@ export const MergeWarning: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.type(canvas.getByLabelText("name"), "Ana Ruiz");
-    await expect(canvas.getByRole("note")).toHaveTextContent("already names person-0003");
     await expect(canvas.getByRole("button", { name: "Merge into Ana Ruiz" })).toBeInTheDocument();
     await expect(canvas.queryByRole("button", { name: "Apply name" })).toBeNull();
   },

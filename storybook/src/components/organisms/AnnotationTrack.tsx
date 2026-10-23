@@ -57,13 +57,12 @@ export function AnnotationTrack({ duration, scenes, annotations = [], playhead =
       </div>
       <div className="mm-track-legend mm-mono">
         <span>{formatTime(0)}</span>
-        <span>{t("timeline.summary", { time: formatTime(playhead), scenes: scenes.length, notes: annotations.length })}</span>
+        <span>{formatTime(playhead)}</span>
         <span>{formatTime(duration)}</span>
       </div>
-      {(matched || annotations.length > 0) && (
+      {matched && (
         <ul className="mm-track-key mm-hint" aria-label={t("timeline.key")}>
-          {matched && <li><span className="mm-key matched" aria-hidden="true" />{t("timeline.key.matched", { start: formatTime(matched.start), end: formatTime(matched.end) })}</li>}
-          {annotations.length > 0 && <li><span className="mm-key note" aria-hidden="true" />{t("timeline.key.note")}</li>}
+          <li><span className="mm-key matched" aria-hidden="true" />{t("timeline.key.matched", { start: formatTime(matched.start), end: formatTime(matched.end) })}</li>
         </ul>
       )}
     </div>

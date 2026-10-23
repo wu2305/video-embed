@@ -23,7 +23,6 @@ export function PersonCard({ person, sampleSrc, selected = false, onOpen }: Pers
       <div className="mm-body">
         <button type="button" className="mm-name mm-card-link" title={label} onClick={() => onOpen?.(person)}>{label}</button>
         <div className="mm-mono">
-          {person.name ? <Tag tone="accent">{t("card.named")}</Tag> : <Tag tone="warn">{t("card.unnamed")}</Tag>}
           {person.name && <Tag>{person.id}</Tag>}
         </div>
       </div>

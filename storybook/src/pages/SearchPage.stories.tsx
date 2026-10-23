@@ -21,21 +21,10 @@ export const FirstVisit: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole("heading", { level: 1, name: "Unified Search" })).toBeInTheDocument();
     await expect(canvas.queryByLabelText("limit")).toBeNull();
-    // No explanatory paragraph: brand, field, examples and the freshness line only.
+    // Brand, field and the freshness line only: no explanation, no example queries.
     await expect(canvas.queryByText(/allowed to open/)).toBeNull();
     await expect(canvasElement.querySelectorAll(".mm-home .mm-hint")).toHaveLength(0);
-    // One example says it finds an Archive record, so the first visit shows both sources.
-    await expect(canvas.getByRole("button", { name: "Q3 budget · Archive" })).toBeInTheDocument();
-  },
-};
-
-/** An example query runs and moves to the results layout, where limit and min faces appear. */
-export const ExampleQuery: Story = {
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: "Ana is cooking" }));
-    await expect(canvas.getByRole("status")).toHaveTextContent(/results for “Ana is cooking”/);
-    await expect(canvas.getByLabelText("limit")).toBeInTheDocument();
+    await expect(canvas.getAllByRole("button").map((b) => b.textContent)).not.toContain("Ana is cooking");
   },
 };
 
@@ -92,7 +81,9 @@ export const BothSources: Story = {
   args: { initialQuery: "cooking" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole("status")).toHaveTextContent(/NAS 6 · Archive 2/);
+    // The source split lives on the filter chips, not repeated in the status line.
+    await expect(canvas.getByRole("status")).not.toHaveTextContent(/NAS \d/);
+    await expect(canvas.getByRole("button", { name: /^NAS media \(6\)/ })).toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: /^Archive \(2\)/ }));
     await expect(canvas.getAllByRole("article")).toHaveLength(2);
   },

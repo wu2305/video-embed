@@ -78,7 +78,7 @@ export function FaceTagger({ src, faces, people, initialSelected = null, initial
   return (
     <div className="mm-tagger">
       <div className="mm-stage">
-        <img src={src} alt="Keyframe with detected faces" />
+        <img src={src} alt={t("face.frameAlt")} />
         <FaceOverlay faces={faces} people={people} selectedIndex={selected} onSelect={select} />
       </div>
       <form className="mm-panel" onSubmit={submit} aria-label={t("face.tagForm")}>
@@ -94,14 +94,13 @@ export function FaceTagger({ src, faces, people, initialSelected = null, initial
               <legend><Label as="span">{t("face.applyTo")}</Label></legend>
               <label className="mm-radio">
                 <input type="radio" name="scope" checked={scope === "cluster"} disabled={!cluster} onChange={() => setScope("cluster")} />
-                <span>{t("face.all")}{cluster && <small>{cluster.id} · {cluster.faces} faces</small>}{!cluster && <small>{t("face.needsCluster")}</small>}</span>
+                <span>{t("face.all")}{cluster && <small>{cluster.id} · {t("card.faces", { count: cluster.faces })}</small>}{!cluster && <small>{t("face.needsCluster")}</small>}</span>
               </label>
               <label className="mm-radio">
                 <input type="radio" name="scope" checked={scope === "face"} onChange={() => setScope("face")} />
                 <span>{t("face.thisOnly")}</span>
               </label>
             </fieldset>
-            {merging && <p className="mm-hint" role="note"><Tag tone="warn">{t("face.merge")}</Tag>“{name.trim()}” {t("face.mergeWarn")}</p>}
             {target && confirming ? (
               <div className="mm-confirm" role="group" aria-label={t("people.confirmGroup")}>
                 <p role="alert" style={{ margin: 0 }}>
@@ -120,7 +119,7 @@ export function FaceTagger({ src, faces, people, initialSelected = null, initial
             {why}
             {applied && (
               <p className="mm-hint mm-saved" role="status">
-                <Tag tone={applied.tone}>{applied.label}</Tag>{applied.text}
+                {applied.text}
                 {applied.undo && <> <Button onClick={() => undo(applied.undo!)}>{t("people.undo")}</Button></>}
               </p>
             )}

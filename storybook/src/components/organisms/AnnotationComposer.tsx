@@ -90,7 +90,7 @@ export function AnnotationComposer({ time, scene = null, inFrame = [], people = 
       )}
       <div><Button variant="primary" type="submit" {...buttonProps}>{t("note.save")}</Button></div>
       {why}
-      {saved && <p className="mm-hint mm-saved" role="status"><Tag tone="good">{t("note.saved")}</Tag>{saved}</p>}
+      {saved && <p className="mm-hint mm-saved" role="status">{saved}</p>}
     </form>
   );
 }

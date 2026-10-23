@@ -39,14 +39,15 @@ export const UntaggedFace: Story = {
   },
 };
 
-/** Reusing an existing name warns that two clusters will merge. */
+/** Reusing an existing name turns Apply into a merge action; no separate warning line. */
 export const MergeWarning: Story = {
   args: { initialSelected: 2, initialName: "Ana Ruiz" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: /Face 3: person-0011/ }));
     await userEvent.type(canvas.getByLabelText("name"), "Ana Ruiz");
-    await expect(canvas.getByRole("note")).toHaveTextContent("already names another cluster");
+    await expect(canvas.getByRole("button", { name: "Merge into Ana Ruiz" })).toBeInTheDocument();
+    await expect(canvas.queryByRole("note")).toBeNull();
   },
 };
 

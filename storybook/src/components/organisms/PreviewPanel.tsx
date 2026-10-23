@@ -139,7 +139,6 @@ export function PreviewPanel({
           {range && <Tag tone="good">{formatTime(range.start)}–{formatTime(range.end)}</Tag>}
           {!unavailable && hit.person_ids.map((id) => <Tag key={id} tone="accent">{displayName(id, people)}</Tag>)}
         </div>
-        <div className="mm-mono">score {hit.score.toFixed(3)} = sim {hit.similarity.toFixed(3)} + text {hit.text_bonus.toFixed(2)}{hit.note_bonus ? ` + note ${hit.note_bonus.toFixed(2)}` : ""}</div>
         {!unavailable && text && <div className="mm-text mm-transcript">{text}</div>}
         {!unavailable && hit.notes?.map((n) => <div key={n} className="mm-text note">{n}</div>)}
         <div className="mm-row">

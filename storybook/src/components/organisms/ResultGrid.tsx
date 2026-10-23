@@ -49,7 +49,7 @@ export function ResultGrid({ results, query = "", people, sources, selectedId = 
   else if (error) status = t("results.failed");
   else if (query) {
     const vars = { count: <b>{results.length}</b>, query: <b>{query}</b> };
-    status = <>{rich(results.length ? "results.count" : "results.none", vars)}{mixed && t("results.bySource", { nas: counts.nas, archive: counts.archive })}</>;
+    status = <>{rich(results.length ? "results.count" : "results.none", vars)}</>;
   }
 
   return (

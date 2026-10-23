@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { Face, Person } from "../../types";
 import { displayName } from "../../lib/format";
 import { FaceBox, type LabelPlace } from "../molecules/FaceBox";
+import { useI18n } from "../../i18n";
 
 export interface FaceOverlayProps {
   faces: readonly Face[];
@@ -102,6 +103,7 @@ const same = (a: Map<number, LabelPlace>, b: Map<number, LabelPlace>) => a.size 
  * is re-checked whenever the stage resizes, so narrow stages are handled too.
  */
 export function FaceOverlay({ faces, people = [], selectedIndex = null, onSelect }: FaceOverlayProps) {
+  const { t } = useI18n();
   const root = useRef<HTMLDivElement>(null);
   const [place, setPlace] = useState(() => guess(faces));
 
@@ -121,7 +123,7 @@ export function FaceOverlay({ faces, people = [], selectedIndex = null, onSelect
   return (
     <div className="mm-faces" ref={root}>
       {faces.map((face) => (
-        <FaceBox key={face.face_index} face={face} label={face.person_id ? displayName(face.person_id, people) : "untagged"}
+        <FaceBox key={face.face_index} face={face} label={face.person_id ? displayName(face.person_id, people) : t("face.untagged")}
           selected={face.face_index === selectedIndex} labelPlace={place.get(face.face_index)} onSelect={onSelect} />
       ))}
     </div>

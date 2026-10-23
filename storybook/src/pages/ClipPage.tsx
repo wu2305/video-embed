@@ -47,13 +47,13 @@ export function ClipPage({
 
   return (
     <AppShell current="clip" title={name} index={index} now={now} viewer={viewer} onNavigate={onNavigate}
-      crumbs={<><a href="#search" onClick={(e) => { e.preventDefault(); onBack?.(); }}>← Search results</a> / {hit.kind}</>}
+      crumbs={<><a href="#search" onClick={(e) => { e.preventDefault(); onBack?.(); }}>← {t("clip.back")}</a> / {hit.kind}</>}
       subtitle={<span className="mm-mono">{hit.path}</span>}>
       <div className="mm-split">
         <div style={{ display: "grid", gap: 14 }}>
           <div className="mm-stage">
             {hasFrame ? (
-              <img src={frameSrc} alt={`${name} at ${formatTime(playhead)}`} />
+              <img src={frameSrc} alt={t("clip.frameAlt", { name, time: formatTime(playhead) })} />
             ) : (
               <div className="mm-thumb" style={{ aspectRatio: "16 / 6" }}><span className="mm-glyph" aria-hidden>{hit.kind === "audio" ? "♪" : "▤"}</span></div>
             )}
@@ -64,12 +64,12 @@ export function ClipPage({
             <AnnotationTrack duration={duration} scenes={scenes} annotations={notes} playhead={playhead} matched={matched} onSeek={setPlayhead} />
           )}
           <div className="mm-mono">
-            {matched && <Tag tone="good">matched {formatTime(matched.start)}–{formatTime(matched.end)}</Tag>}
+            {matched && <Tag tone="good">{t("clip.matched", { start: formatTime(matched.start), end: formatTime(matched.end) })}</Tag>}
             {hit.person_ids.map((id) => <Tag key={id} tone={displayName(id, people) !== id ? "accent" : "neutral"}>{displayName(id, people)}</Tag>)}
             {!hit.is_master && <Tag tone="warn">{t("card.copy")}</Tag>}
           </div>
           {(hit.ocr_text || hit.asr_text) && (
-            <Panel as="section" title={hit.asr_text ? "Speech" : "On-screen text"}>
+            <Panel as="section" title={hit.asr_text ? t("clip.speech") : t("clip.ocr")}>
               <p className="mm-transcript" style={{ margin: 0 }}>{(hit.asr_text || hit.ocr_text).trim()}</p>
             </Panel>
           )}
@@ -77,11 +77,9 @@ export function ClipPage({
         <aside>
           <Panel as="section" title={t("clip.details")}>
             <MetaList items={[
-              ["kind", <Tag>{hit.kind}</Tag>],
-              ...(duration && !still ? [["duration", formatTime(duration)] as const, ["scenes", String(scenes.length)] as const] : []),
-              ["unit", `${hit.unit_index} (id ${hit.unit_id})`],
-              ["faces in frame", String(hasFrame && faces.length ? faces.length : hit.face_count)],
-              ["source", "NAS media library"],
+              [t("clip.kind"), <Tag>{hit.kind}</Tag>],
+              ...(duration && !still ? [[t("clip.duration"), formatTime(duration)] as const] : []),
+              [t("clip.faces"), String(hasFrame && faces.length ? faces.length : hit.face_count)],
             ]} />
           </Panel>
           <Panel as="section" title={t("notes.count", { count: notes.length })}>

@@ -231,7 +231,6 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 .mm-track-key li { display: inline-flex; align-items: center; gap: var(--space-2); }
 .mm-key { display: inline-block; width: 18px; height: 10px; border-radius: var(--radius-sm); }
 .mm-key.matched { background: var(--good-wash); box-shadow: inset 0 0 0 1px var(--good); }
-.mm-key.note { height: 6px; background: var(--warn); }
 
 /* molecules: person card, note item, meta list */
 .mm-person .mm-thumb { aspect-ratio: 1; }
@@ -286,10 +285,6 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 .mm-home-field input { flex: 1; min-width: 0; min-height: var(--touch-min); padding: var(--space-2) var(--space-5); border-radius: var(--radius-pill); font-size: var(--text-md); }
 .mm-home-field .mm-primary { border-radius: var(--radius-pill); min-height: var(--touch-min); }
 .mm-home .mm-parse { justify-content: center; }
-.mm-home-examples { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: var(--space-1) var(--space-2); color: var(--muted); font-size: var(--text-xs); }
-.mm-link { background: none; border: 0; padding: var(--space-1) var(--space-2); color: var(--accent); font-size: var(--text-sm); }
-.mm-link:hover { text-decoration: underline; }
-.mm-example-source { color: var(--muted); }
 .mm-home-foot { margin-top: auto; padding-top: var(--space-6); display: grid; justify-items: center; gap: var(--space-2); }
 
 /* dialog layer */
@@ -325,11 +320,13 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 
 /* Touch: every control is at least 44px tall, and so is the timeline band. */
 @media (pointer: coarse) {
-  button, input, select, .mm-links a, .mm-button, .mm-primary, .mm-ghost, .mm-danger, .mm-link { min-height: var(--touch-min); }
+  button, input, select, .mm-links a, .mm-button, .mm-primary, .mm-ghost, .mm-danger { min-height: var(--touch-min); }
   .mm-chip { min-height: var(--touch-min); padding-inline: var(--space-4); }
   .mm-scrub { padding: calc((var(--touch-min) - var(--track-h)) / 2) 0; }
   /* A card link is stretched over its card, so the card is the target; a face box keeps its drawn size. */
   .mm-card-link, .mm-face { min-height: 0; }
+  /* Keyboard hints mean nothing on a touch screen. */
+  .mm-kbd { display: none; }
   /* The box keeps the detected size; an invisible 44px target is centred on it. */
   .mm-face::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100% + 20px, var(--touch-min)); height: max(100% + 20px, var(--touch-min)); translate: -50% -50%; }
 }

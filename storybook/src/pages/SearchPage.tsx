@@ -34,8 +34,6 @@ export interface SearchPageProps {
   onOpenClip?: (hit: Hit) => void;
 }
 
-/** Two NAS examples and one that finds an Archive record, so the first visit shows both sources. */
-const EXAMPLES: { query: string; archive?: boolean }[] = [{ query: "Ana is cooking" }, { query: "Ana and Ben are cooking" }, { query: "Q3 budget", archive: true }];
 
 /** Page: query every source at once, scan the fused results, preview the matched moment, open the clip. */
 export function SearchPage({
@@ -105,21 +103,13 @@ export function SearchPage({
           <main className="mm-home">
             <h1 className="mm-home-brand"><BrandMark />Unified Search</h1>
             <SearchBar home people={people} busy={loading} onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
-            <div className="mm-home-examples">
-              <span>{t("home.try")}</span>
-              {EXAMPLES.map(({ query: q, archive: inArchive }) => (
-                <button key={q} type="button" className="mm-link" onClick={() => run(q)}>
-                  {q}{inArchive && <>{" "}<span className="mm-example-source">· {t("home.exampleArchive")}</span></>}
-                </button>
-              ))}
-            </div>
             <div className="mm-home-foot">
               {indexInfo && <Freshness index={indexInfo} now={now} />}
             </div>
           </main>
         </div>
       ) : (
-        <AppShell current="search" title={t("page.search.title")}
+        <AppShell current="search" title={t("page.search.title")} hideTitle
           index={indexInfo} now={now} viewer={viewer} onNavigate={onNavigate} inert={isOpen}>
           <SearchBar people={people} initialQuery={query} busy={loading}
             onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />

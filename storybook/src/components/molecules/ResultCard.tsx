@@ -37,7 +37,6 @@ export function ResultCard({ hit, rank, people = [], selected = false, onOpen, c
   const [thumbFailed, setThumbFailed] = useState(false);
   const src = thumbFailed ? null : thumbSrc(hit);
   const machineText = (hit.ocr_text || hit.asr_text || "").trim();
-  const bonus = hit.text_bonus ? ` ${t("card.bonus", { value: hit.text_bonus.toFixed(2) })}` : "";
   const hasRange = hit.scene_start != null && hit.scene_end != null;
 
   return (
@@ -46,7 +45,7 @@ export function ResultCard({ hit, rank, people = [], selected = false, onOpen, c
         {src ? <img loading="lazy" src={src} alt="" onError={() => setThumbFailed(true)} /> : <span className="mm-glyph" aria-hidden>{GLYPH[hit.kind]}</span>}
         {!compact && <span className="mm-rank">{rank}</span>}
         {showSource && <span className="mm-source">NAS</span>}
-        {!compact && <span className="mm-score">{hit.score.toFixed(3)}{bonus}</span>}
+        {!compact && <span className="mm-score">{hit.score.toFixed(3)}</span>}
       </div>
       <div className="mm-body">
         <button type="button" className="mm-name mm-card-link" title={hit.path} onClick={() => onOpen?.(hit)}>{name}</button>
@@ -65,8 +64,6 @@ export function ResultCard({ hit, rank, people = [], selected = false, onOpen, c
         </div>
         {!compact && hit.notes?.map((note) => <div key={note} className="mm-text note">{note}</div>)}
         {!compact && machineText && <div className="mm-text mm-transcript">{machineText.slice(0, 180)}</div>}
-        {/* Similarity is evidence for the curious, not for scanning, so it comes last. */}
-        {!compact && <div className="mm-mono">{t("card.sim", { similarity: hit.similarity.toFixed(3), unit: hit.unit_index })}</div>}
       </div>
     </article>
   );

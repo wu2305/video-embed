@@ -21,10 +21,9 @@ export function Freshness({ index, now = Date.now() / 1000, long = false }: Fres
   if (index.stale) {
     return (
       <span className={long ? "mm-hint" : "mm-mono"} role={long ? "alert" : undefined}>
-        <Tag tone="warn">stale</Tag>
-        {long
+        <Tag tone="warn">{long
           ? t("freshness.staleLong", { date: formatDate(index.published_at) })
-          : t("freshness.stale", { date: formatDate(index.published_at) })}
+          : t("freshness.stale", { date: formatDate(index.published_at) })}</Tag>
       </span>
     );
   }

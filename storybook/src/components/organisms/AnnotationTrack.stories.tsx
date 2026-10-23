@@ -17,7 +17,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Click, or use ←/→ (5s), Page Up/Down (30s) and Home/End, to move the playhead. Yellow bars are notes. */
+/** Click, or use ←/→ (5s), Page Up/Down (30s) and Home/End, to move the playhead. */
 export const Default: Story = {
   play: async ({ canvasElement }) => {
     const slider = within(canvasElement).getByRole("slider");
