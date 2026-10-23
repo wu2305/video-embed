@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Annotation, Face, Hit, Person, Scene, Unavailable } from "../../types";
 import { displayName, formatTime } from "../../lib/format";
 import { Button } from "../atoms/Button";
@@ -154,10 +154,47 @@ export function PreviewPanel({
         {!unavailable && hit.notes?.map((n) => <div key={n} className="mm-text note">{n}</div>)}
         <div className="mm-row">
           {!unavailable && actions}
-          <Button onClick={() => navigator.clipboard?.writeText(hit.path)}>{t("preview.copyPath")}</Button>
+          <CopyPath key={hit.path} path={hit.path} />
           <Button variant="ghost" onClick={onClose}>{t("preview.close")} <Kbd>Esc</Kbd></Button>
         </div>
       </aside>
     </div>
+  );
+}
+
+/**
+ * Copy path never fails silently: "Path copied" for two seconds, or, when the
+ * clipboard is refused (permissions, an insecure page), the path in a field,
+ * selected, ready for Ctrl+C.
+ */
+function CopyPath({ path }: { path: string }) {
+  const { t } = useI18n();
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  const field = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (state === "copied") {
+      const timer = setTimeout(() => setState("idle"), 2000);
+      return () => clearTimeout(timer);
+    }
+    if (state === "failed") field.current?.select();
+  }, [state]);
+
+  async function copy() {
+    try {
+      if (!navigator.clipboard) throw new Error("no clipboard");
+      await navigator.clipboard.writeText(path);
+      setState("copied");
+    } catch {
+      setState("failed");
+    }
+  }
+
+  return (
+    <>
+      <Button onClick={copy}>{t("preview.copyPath")}</Button>
+      <span className="mm-hint" role="status">{state === "copied" ? t("preview.copied") : state === "failed" ? t("preview.copyFailed") : ""}</span>
+      {state === "failed" && <input ref={field} type="text" readOnly value={path} aria-label={t("preview.pathField")} className="mm-mono" style={{ flexBasis: "100%" }} />}
+    </>
   );
 }

@@ -69,6 +69,19 @@ export const ConfirmAndUndoMerge: Story = {
   },
 };
 
+/** Renaming to the same name says why nothing happens, instead of a dead button. */
+export const SameName: Story = {
+  args: { selectedId: "person-0003" },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const rename = canvas.getByRole("button", { name: "Rename" });
+    await expect(rename).toHaveAccessibleDescription("That is already this person’s name.");
+    await userEvent.click(rename);
+    await expect(args.onName).not.toHaveBeenCalled();
+    await expect(canvas.getByLabelText("name")).toHaveFocus();
+  },
+};
+
 /** Cancelling the confirm step changes nothing. */
 export const CancelMerge: Story = {
   args: { selectedId: "person-0019" },

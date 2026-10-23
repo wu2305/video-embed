@@ -23,6 +23,7 @@ export const Default: Story = {
     await expect(args.onSave).toHaveBeenCalledWith({
       t_start: 42, t_end: 71, text: "Ana is presenting the Q3 budget", person_ids: ["person-0003"],
     });
+    await expect(canvas.getByRole("status")).toHaveTextContent("Note added at 00:42–01:11.");
   },
 };
 
@@ -37,7 +38,27 @@ export const InvalidRange: Story = {
     await userEvent.type(canvas.getByLabelText(/^to/), "00:10");
     await expect(canvas.getByRole("alert")).toHaveTextContent("End must be after start");
     await userEvent.type(canvas.getByLabelText("note"), "x");
-    await expect(canvas.getByRole("button", { name: "Save note" })).toBeDisabled();
+    // Save stays focusable and names why it cannot run; pressing it focuses the range.
+    const save = canvas.getByRole("button", { name: "Save note" });
+    await expect(save).toHaveAttribute("aria-disabled", "true");
+    await expect(save).toHaveAccessibleDescription("End must be after start.");
+    await expect(canvas.getByLabelText(/^to/)).toHaveAccessibleDescription(/End must be after start/);
+    await userEvent.click(save);
+    await expect(canvas.getByLabelText("from")).toHaveFocus();
+  },
+};
+
+/** Saving an empty note says so and puts the cursor in the note. Nothing is saved. */
+export const EmptyNote: Story = {
+  args: { onSave: fn() },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const save = canvas.getByRole("button", { name: "Save note" });
+    save.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onSave).not.toHaveBeenCalled();
+    await expect(canvas.getByText("Type the note first.")).toBeVisible();
+    await expect(canvas.getByLabelText("note")).toHaveFocus();
   },
 };
 
