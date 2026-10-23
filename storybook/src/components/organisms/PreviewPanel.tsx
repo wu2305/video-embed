@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Annotation, Face, Hit, Person, Scene, Unavailable } from "../../types";
 import { displayName, formatTime } from "../../lib/format";
+import { trapTab } from "../../lib/trapTab";
 import { Button } from "../atoms/Button";
 import { Kbd } from "../atoms/Kbd";
 import { Tag } from "../atoms/Tag";
@@ -41,8 +42,6 @@ export interface PreviewPanelProps {
   modal?: boolean;
 }
 
-const FOCUSABLE = "a[href], button:not(:disabled), input, select, textarea, video[controls], [tabindex]:not([tabindex='-1'])";
-
 const UNAVAILABLE: Record<Unavailable, MessageKey> = { forbidden: "preview.forbidden", gone: "preview.gone" };
 
 /**
@@ -82,7 +81,7 @@ export function PreviewPanel({
       return;
     }
     if (event.key === "Tab" && modal) {
-      trap(event);
+      trapTab(event, dialog.current);
       return;
     }
     if ((event.target as HTMLElement).closest("input, textarea, [role=slider]")) return;
@@ -90,16 +89,6 @@ export function PreviewPanel({
     else if (event.key === "ArrowRight") onNext?.();
     else return;
     event.preventDefault();
-  }
-
-  // Tab from the last control wraps to the first, and Shift+Tab the other way.
-  function trap(event: React.KeyboardEvent) {
-    const items = [...(dialog.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])];
-    const first = items[0], last = items[items.length - 1];
-    if (!first || !last) { event.preventDefault(); return; }
-    const active = document.activeElement;
-    if (event.shiftKey && (active === first || active === dialog.current)) { event.preventDefault(); last.focus(); }
-    else if (!event.shiftKey && active === last) { event.preventDefault(); first.focus(); }
   }
 
   const name = hit.path.split("/").pop() ?? hit.path;

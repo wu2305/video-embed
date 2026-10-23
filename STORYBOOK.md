@@ -237,19 +237,24 @@ as in scene 6; a service account alone gets nothing back.
 
 **4f. BI metrics**: *new.* A customer asked to search a BI platform's metrics
 and see which reports use each one. The gateway sends the *what* of the query to
-the platform's metric search API, like the Archive, and fuses the metrics into
-the same list by rank.
+its BI metric search and fuses the metrics into the same list by rank. The API
+is specified in [`docs/BI_METRIC_API.md`](docs/BI_METRIC_API.md).
 
-1. A metric card shows the metric name, id, domain and the platform's
-   definition, then "Used in N reports" and the first three reports, each with
-   its folder and last-modified date. The rest are behind "+N more", which opens
-   the metric's page in the BI platform. A metric no report uses says so.
-2. The metric name and every report are links into the BI platform, which
-   checks access again. There is no preview.
-3. The source filter gains a *BI metrics* chip. Only sources that returned
+1. A metric card shows the metric name, id, domain and definition, then "Used
+   in N reports", the top three reports (folder and last-modified date) and
+   "+N more". A metric no report the user may open says "No reports use it."
+2. The metric name opens the **metric preview** on the search page, as a
+   dialog like the media preview: owner, every report with its type, folder,
+   owner, charts that use the metric and date, a filter field from six reports
+   up, and *Open in BI*. Esc closes it and returns focus to the card.
+3. Each report link, on the card and in the preview, opens the report in the
+   BI platform, which checks access again.
+4. While the full list loads, the top three stay and a placeholder follows. If
+   it fails, the preview says so and offers Try again.
+5. The source filter gains a *BI metrics* chip. Only sources that returned
    something get a chip.
-4. If the BI API errors or times out, the other sources still show with a
-   warning that the list is incomplete.
+6. If the BI search times out, the other sources still show with a warning
+   that the list is incomplete.
 
 ---
 
@@ -381,7 +386,6 @@ preserved").
 | Who may name or rename a person: anyone signed in, or a curator group? | Scene 1 |
 | Can a user see who else wrote a note, or only that a note exists? | Scene 2 |
 | The Archive vendor's response fields and deep-link schema | Scene 4c (`ArchiveRecord` in the gallery is a guess) |
-| The BI platform's metric search API: response fields, report paging, identity passthrough, deep links | Scene 4f (`MetricRecord` in the gallery is a guess) |
 | Does the weekly full re-cluster go ahead? It decides how long faces stay pending. | Scenes 1, 7 |
 
 ## Not covered

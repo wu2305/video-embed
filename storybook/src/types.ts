@@ -53,12 +53,16 @@ export interface ArchiveRecord {
   vendor_rank: number;
 }
 
-/** A BI report or dashboard that uses a metric. */
+/** A BI report or dashboard that uses a metric (docs/BI_METRIC_API.md). */
 export interface MetricReport {
   report_id: string;
   title: string;
+  kind: "report" | "dashboard";
   /** Workspace or folder the report lives in. */
   folder?: string;
+  owner?: string;
+  /** Charts or tables in the report that use the metric. */
+  charts: number;
   /** Last modified, epoch seconds. */
   updated_at: number;
   /** Opens the report in the BI platform. */
@@ -66,10 +70,10 @@ export interface MetricReport {
 }
 
 /**
- * One metric from the BI platform's metric search, with the reports that use it.
- * All proposed: the BI API's response shape is not known yet. Assumes the
- * platform filters reports to what the caller may open, may return only the
- * first page of reports, and reports the full count in `report_count`.
+ * One metric from the gateway's BI metric search (docs/BI_METRIC_API.md).
+ * `reports` is the first few reports only; the preview loads the full list
+ * from `/api/bi/metrics/{metric_id}/reports`. Reports the caller may not
+ * open are left out of both the list and `report_count`.
  */
 export interface MetricRecord {
   source: "bi";
@@ -77,11 +81,12 @@ export interface MetricRecord {
   name: string;
   /** Business domain or owning team, e.g. "Finance". */
   domain?: string;
+  owner?: string;
   /** The platform's own definition text. */
   definition?: string;
-  /** Reports the caller may open, best first. May be a first page only. */
+  /** The top reports, at most three. */
   reports: MetricReport[];
-  /** Total reports that use the metric. At least `reports.length`. */
+  /** Reports the caller may open that use the metric. */
   report_count: number;
   /** Opens the metric's page in the BI platform. */
   deep_link: string;

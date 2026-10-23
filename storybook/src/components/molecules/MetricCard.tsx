@@ -6,27 +6,30 @@ import { useI18n } from "../../i18n";
 export interface MetricCardProps {
   metric: MetricRecord;
   rank: number;
-  /** Reports listed before the rest collapse into a link to the metric's page. */
+  /** Reports listed before the rest collapse into "+N more". */
   maxReports?: number;
+  selected?: boolean;
+  /** Opens the metric preview with every report. */
+  onOpen?: (metric: MetricRecord) => void;
 }
 
 /**
- * One BI metric and the reports that use it. No preview: the metric name
- * opens its page in the BI platform, and each report opens there too. The
- * links are plain links, not a stretched card link, so each one is its own
- * target. Like the Archive card, it leads with rank, source and type.
+ * One BI metric and its top reports (scene 4f). The metric name is the
+ * button that opens the preview; it stretches over the card, and the report
+ * links sit above it, so each report still opens straight in the BI platform.
+ * Like the Archive card, it leads with rank, source and type.
  */
-export function MetricCard({ metric, rank, maxReports = 3 }: MetricCardProps) {
+export function MetricCard({ metric, rank, maxReports = 3, selected = false, onOpen }: MetricCardProps) {
   const { t } = useI18n();
   const listed = metric.reports.slice(0, maxReports);
   const more = metric.report_count - listed.length;
   return (
-    <article className="mm-card mm-archive mm-metric" aria-label={t("card.result", { rank })}>
+    <article className={`mm-card mm-archive mm-metric${selected ? " selected" : ""}`} aria-label={t("card.result", { rank })} data-metric-id={metric.metric_id}>
       <div className="mm-body">
         <div className="mm-archive-head mm-mono">
           <span>{rank}</span><span className="mm-source-name">{t("card.biSource")}</span><span>{t("card.metric")}</span>
         </div>
-        <a className="mm-name" href={metric.deep_link} target="_blank" rel="noopener noreferrer">{metric.name}</a>
+        <button type="button" className="mm-name mm-card-link" onClick={() => onOpen?.(metric)}>{metric.name}</button>
         <div className="mm-mono">
           <Tag>{metric.metric_id}</Tag>
           {metric.domain && <Tag>{metric.domain}</Tag>}
@@ -45,9 +48,7 @@ export function MetricCard({ metric, rank, maxReports = 3 }: MetricCardProps) {
                 </li>
               ))}
             </ul>
-            {more > 0 && (
-              <a className="mm-mono" href={metric.deep_link} target="_blank" rel="noopener noreferrer">{t("card.moreReports", { count: more })}</a>
-            )}
+            {more > 0 && <div className="mm-text">{t("card.moreReports", { count: more })}</div>}
           </>
         )}
       </div>

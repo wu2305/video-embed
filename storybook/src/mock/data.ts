@@ -141,50 +141,56 @@ export const archiveRecords: ArchiveRecord[] = [
 
 const BI = "https://bi.example.internal";
 
-function report(report_id: string, title: string, folder: string, updated_at: number): MetricReport {
-  return { report_id, title, folder, updated_at, deep_link: `${BI}/reports/${report_id}` };
+function report(report_id: string, title: string, kind: MetricReport["kind"], folder: string, owner: string, charts: number, updated_at: number): MetricReport {
+  return { report_id, title, kind, folder, owner, charts, updated_at, deep_link: `${BI}/reports/${report_id}` };
+}
+
+const pnl = report("R-1042", "Monthly P&L", "report", "Finance / Close", "Raj Patel", 4, at(2026, 10, 20, 18));
+const regional = report("R-0981", "Regional sales dashboard", "dashboard", "Sales", "Lena Vogt", 3, at(2026, 10, 21, 7));
+const board = report("R-1107", "Board pack — Q3 2026", "report", "Finance / Board", "Raj Patel", 2, at(2026, 10, 2, 16));
+
+/** Most used first: by charts that use the metric, then most recently updated. */
+function byUse(reports: MetricReport[]): MetricReport[] {
+  return [...reports].sort((a, b) => b.charts - a.charts || b.updated_at - a.updated_at);
 }
 
 /**
- * Metrics the BI platform returns for "revenue", "cooking" and "churn", each
- * with the reports that use it. The shape is a guess (see `MetricRecord`).
+ * What `/api/bi/metrics/{metric_id}/reports` returns for each metric: every
+ * report the viewer may open, most used first (docs/BI_METRIC_API.md).
  */
+export const metricReports: Record<string, MetricReport[]> = Object.fromEntries(Object.entries({
+  "fin.net_revenue": [
+    pnl, regional, board,
+    report("R-0870", "Pricing experiment readout", "report", "Growth", "Sam Okoye", 1, at(2026, 9, 14, 11)),
+    report("R-0655", "Revenue by channel", "dashboard", "Marketing", "Mei Chen", 5, at(2026, 8, 30, 9)),
+    report("R-0512", "Weekly business review", "report", "Exec", "Raj Patel", 1, at(2026, 10, 19, 8)),
+    report("R-0233", "FY26 forecast vs actuals", "report", "Finance / Planning", "Ines Duarte", 2, at(2026, 7, 1, 12)),
+  ],
+  "fin.arpu": [regional, report("R-0712", "Subscriber health", "dashboard", "Product", "Lena Vogt", 2, at(2026, 10, 9, 15))],
+  "mkt.class_attendance": [report("R-1210", "Cooking class series 2025", "dashboard", "Marketing / Events", "Mei Chen", 3, at(2026, 10, 18, 10))],
+  "cs.churn_legacy": [],
+} satisfies Record<string, MetricReport[]>).map(([id, list]) => [id, byUse(list)]));
+
+function metric(m: Omit<MetricRecord, "source" | "reports" | "report_count" | "deep_link">): MetricRecord {
+  const all = metricReports[m.metric_id] ?? [];
+  return { source: "bi", ...m, reports: all.slice(0, 3), report_count: all.length, deep_link: `${BI}/metrics/${m.metric_id}` };
+}
+
+/** Metrics the BI search returns for "revenue", "cooking" and "churn" (docs/BI_METRIC_API.md). */
 export const metricRecords: MetricRecord[] = [
-  {
-    source: "bi", metric_id: "fin.net_revenue", name: "Net revenue", domain: "Finance", vendor_rank: 1,
+  metric({
+    metric_id: "fin.net_revenue", name: "Net revenue", domain: "Finance", owner: "Raj Patel", vendor_rank: 1,
     definition: "Gross sales minus returns, discounts and allowances",
-    report_count: 7,
-    reports: [
-      report("R-1042", "Monthly P&L", "Finance / Close", at(2026, 10, 20, 18)),
-      report("R-0981", "Regional sales dashboard", "Sales", at(2026, 10, 21, 7)),
-      report("R-1107", "Board pack — Q3 2026", "Finance / Board", at(2026, 10, 2, 16)),
-      report("R-0870", "Pricing experiment readout", "Growth", at(2026, 9, 14, 11)),
-      report("R-0655", "Revenue by channel", "Marketing", at(2026, 8, 30, 9)),
-    ],
-    deep_link: `${BI}/metrics/fin.net_revenue`,
-  },
-  {
-    source: "bi", metric_id: "fin.arpu", name: "Revenue per active user", domain: "Finance", vendor_rank: 2,
+  }),
+  metric({
+    metric_id: "fin.arpu", name: "Revenue per active user", domain: "Finance", owner: "Raj Patel", vendor_rank: 2,
     definition: "Net revenue ÷ monthly active users",
-    report_count: 2,
-    reports: [
-      report("R-0981", "Regional sales dashboard", "Sales", at(2026, 10, 21, 7)),
-      report("R-0712", "Subscriber health", "Product", at(2026, 10, 9, 15)),
-    ],
-    deep_link: `${BI}/metrics/fin.arpu`,
-  },
-  {
-    source: "bi", metric_id: "mkt.class_attendance", name: "Cooking class attendance", domain: "Marketing", vendor_rank: 3,
-    report_count: 1,
-    reports: [report("R-1210", "Cooking class series 2025", "Marketing / Events", at(2026, 10, 18, 10))],
-    deep_link: `${BI}/metrics/mkt.class_attendance`,
-  },
-  {
-    source: "bi", metric_id: "cs.churn_legacy", name: "Churn rate (legacy)", domain: "Customer success", vendor_rank: 4,
+  }),
+  metric({ metric_id: "mkt.class_attendance", name: "Cooking class attendance", domain: "Marketing", owner: "Mei Chen", vendor_rank: 3 }),
+  metric({
+    metric_id: "cs.churn_legacy", name: "Churn rate (legacy)", domain: "Customer success", vendor_rank: 4,
     definition: "Replaced by cs.churn_rate in 2025",
-    report_count: 0, reports: [],
-    deep_link: `${BI}/metrics/cs.churn_legacy`,
-  },
+  }),
 ];
 
 /** The signed-in user. Groups come from the IdP on every query. */

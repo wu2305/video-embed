@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { isArchive, isMetric, resultKey, sourceOf, type Hit, type Person, type Result, type SourceId, type SourceStatus } from "../../types";
+import { isArchive, isMetric, resultKey, sourceOf, type Hit, type MetricRecord, type Person, type Result, type SourceId, type SourceStatus } from "../../types";
 import { countBySource } from "../../lib/fuse";
 import { Button } from "../atoms/Button";
 import { Chip } from "../atoms/Chip";
@@ -22,8 +22,11 @@ export interface ResultGridProps {
   label?: string;
   /** Runs the same query again after an error. */
   onRetry?: () => void;
-  /** Opens a NAS hit's preview. Archive records and BI metrics are links into their own systems. */
+  /** Opens a NAS hit's preview. Archive records are links into the Archive System. */
   onOpen?: (hit: Hit) => void;
+  /** Opens a BI metric's preview. */
+  onOpenMetric?: (metric: MetricRecord) => void;
+  selectedMetricId?: string | null;
 }
 
 type Filter = "all" | SourceId;
@@ -36,7 +39,7 @@ const NAME: Record<SourceId, MessageKey> = { nas: "results.nasIndex", archive: "
  * Status line, source filter and the card grid. Covers the loading, error,
  * empty, partial (one source down) and populated states.
  */
-export function ResultGrid({ results, query = "", people, sources, selectedId = null, loading = false, error = null, label, onRetry, onOpen }: ResultGridProps) {
+export function ResultGrid({ results, query = "", people, sources, selectedId = null, loading = false, error = null, label, onRetry, onOpen, onOpenMetric, selectedMetricId = null }: ResultGridProps) {
   const { t, rich } = useI18n();
   const [filter, setFilter] = useState<Filter>("all");
   const sectionLabel = label ?? t("results.label");
@@ -100,7 +103,7 @@ export function ResultGrid({ results, query = "", people, sources, selectedId = 
         {!loading && !error && shown.map((r, index) => (isArchive(r)
           ? <ArchiveCard key={resultKey(r)} record={r} rank={index + 1} />
           : isMetric(r)
-          ? <MetricCard key={resultKey(r)} metric={r} rank={index + 1} />
+          ? <MetricCard key={resultKey(r)} metric={r} rank={index + 1} selected={r.metric_id === selectedMetricId} onOpen={onOpenMetric} />
           : <ResultCard key={resultKey(r)} hit={r} rank={index + 1} people={people} showSource={mixed} selected={r.unit_id === selectedId} onOpen={onOpen} />
         ))}
       </div>

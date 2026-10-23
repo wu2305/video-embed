@@ -18,6 +18,7 @@ export * from "./components/organisms/AnnotationComposer";
 export * from "./components/organisms/AnnotationTrack";
 export * from "./components/organisms/FaceOverlay";
 export * from "./components/organisms/FaceTagger";
+export * from "./components/organisms/MetricPreview";
 export * from "./components/organisms/NoteList";
 export * from "./components/organisms/PeopleGrid";
 export * from "./components/organisms/PreviewPanel";
