@@ -23,6 +23,8 @@ export const FirstVisit: Story = {
     await expect(canvas.queryByLabelText("limit")).toBeNull();
     await expect(canvas.getByText(/shows only what you are allowed to open/)).toBeInTheDocument();
     await expect(canvas.getByText("What is searched?")).toBeInTheDocument();
+    // One example says it finds an Archive record, so the first visit shows both sources.
+    await expect(canvas.getByRole("button", { name: "Q3 budget · Archive" })).toBeInTheDocument();
   },
 };
 

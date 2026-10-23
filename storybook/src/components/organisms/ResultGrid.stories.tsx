@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
+import { expect, within } from "storybook/test";
 import { ResultGrid } from "./ResultGrid";
 import { archiveRecords, hits, people } from "../../mock/data";
 import { fuseByRank } from "../../lib/fuse";
@@ -23,11 +24,31 @@ const archiveDown: SourceStatus[] = [
   { source: "archive", state: "unavailable", count: 0 },
 ];
 
-export const Populated: Story = {};
+/** The count and the query in the status line take the text colour; the rest stays muted. */
+export const Populated: Story = {
+  play: async ({ canvasElement }) => {
+    const bold = [...within(canvasElement).getByRole("status").querySelectorAll("b")].map((b) => b.textContent);
+    await expect(bold).toEqual([String(hits.length), "Ana Ruiz is cooking"]);
+  },
+};
 /** NAS and Archive results fused by rank; source badges and a source filter appear. */
 export const BothSources: Story = { args: { results: fuseByRank([hits, archiveRecords.slice(0, 2)]), query: "cooking" } };
 /** One source failed: show what the other returned, and say the list is incomplete. */
 export const SourceDown: Story = { args: { sources: archiveDown, query: "cooking" } };
 export const Loading: Story = { args: { loading: true, results: [] } };
 export const NoHits: Story = { args: { results: [], query: "Ana Ruiz is skydiving" } };
+/**
+ * 200% zoom on a 640px window leaves 320 CSS pixels: one column, in Chinese, with both sources and the status line.
+ * Nothing scrolls sideways.
+ */
+export const Zoom200Chinese: Story = {
+  args: { results: fuseByRank([hits, archiveRecords.slice(0, 2)]), query: "做饭" },
+  globals: { locale: "zh" },
+  decorators: [(Story) => <div style={{ width: 320 }}><Story /></div>],
+  play: async ({ canvasElement }) => {
+    const box = canvasElement.querySelector<HTMLElement>("section")!;
+    await expect(box.scrollWidth).toBeLessThanOrEqual(320);
+  },
+};
+
 export const ServerError: Story = { args: { results: [], error: "ValueError: query vector has 512 dims, index has 768" } };
