@@ -225,7 +225,7 @@ vendor's full-text API in parallel.
    warning that the list is incomplete. The reverse holds too.
 
 **4d. WeCom**: *by design, not a source.* Live WeCom documents are searched in WeCom; finalized material archived to
-the NAS shows up here as NAS media. The first-visit page (a centred search home: brand, one field, example queries and
+the NAS shows up here as NAS media. The first-visit page (a centred search home: brand, one field and
 the index freshness line) carries no explanatory copy about this.
 
 **4e. Plugging into an existing search API**: *new.* Expose `/api/search` with a

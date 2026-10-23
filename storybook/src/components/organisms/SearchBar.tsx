@@ -54,7 +54,7 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
   const spinner = busy && <span className="mm-spinner" aria-hidden="true" />;
   const readout = hasWho && (
     <div className="mm-parse" aria-live="polite">
-      {parsed.who.map((name, i) => <ParseStep key={name} tone="accent">{t("search.parse.who")} <b>{name}</b> → {parsed.person_ids[i]}</ParseStep>)}
+      {parsed.who.map((name, i) => <ParseStep key={name} tone="accent">{t("search.parse.who")} <b>{name}</b></ParseStep>)}
       {parsed.unresolved.map((name) => <ParseStep key={name} tone="bad">{t("search.parse.unknown")} <b>{name}</b></ParseStep>)}
       {parsed.unresolved.length === 0 && <ParseStep>{t("search.parse.what")} <b>{parsed.what}</b></ParseStep>}
     </div>

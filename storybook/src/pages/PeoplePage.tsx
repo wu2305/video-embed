@@ -112,7 +112,6 @@ export function PeoplePage({
 
   return (
     <AppShell current="people" title={t("people.title")}
-      subtitle={unnamed ? t("people.unnamedCount", { unnamed, total: people.length }) : undefined}
       index={index} now={now} viewer={viewer} onNavigate={onNavigate}>
       {pendingFaces > 0 && (
         <div className="mm-notice" role="note">
@@ -133,12 +132,11 @@ export function PeoplePage({
                   {samples[person.id] && (
                     <div className="mm-stage" style={{ maxWidth: 200 }}><img src={samples[person.id]} alt={t("people.sampleFace", { id: person.id })} /></div>
                   )}
-                  <div className="mm-mono"><Tag>{person.id}</Tag><Tag>{person.faces} faces</Tag></div>
+                  <div className="mm-mono"><Tag>{person.id}</Tag><Tag>{t("card.faces", { count: person.faces })}</Tag></div>
                   <Field label={t("people.nameField")}>
                     <input ref={nameRef} type="text" list={listId} value={draft} onChange={(e) => { setDraft(e.target.value); setSaved(null); setConfirming(false); }} placeholder={t("people.fullName")} autoComplete="off" />
                   </Field>
                   <datalist id={listId}>{known.map((n) => <option key={n} value={n} />)}</datalist>
-                  {target && <p className="mm-hint" role="note" style={{ margin: 0 }}><Tag tone="warn">{t("face.merge")}</Tag>{t("people.mergeWarn", { name: target.name ?? target.id, id: target.id })}</p>}
                   {target && confirming ? (
                     <div className="mm-confirm" role="group" aria-label={t("people.confirmGroup")}>
                       <p role="alert" style={{ margin: 0 }}>
@@ -157,7 +155,7 @@ export function PeoplePage({
                   {!target && why}
                   {saved && (
                     <p className="mm-hint mm-saved" role="status" style={{ margin: 0 }}>
-                      <Tag tone={saved.tone}>{saved.label}</Tag>{saved.text}
+                      {saved.text}
                       {saved.undo && <> <Button onClick={() => undoMerge(saved.undo!)}>{t("people.undo")}</Button></>}
                     </p>
                   )}
@@ -173,7 +171,7 @@ export function PeoplePage({
                     </div>
                     {appearances.length > 4 && (
                       <p className="mm-hint" style={{ margin: "10px 0 0" }}>
-                        and {appearances.length - 4} more. <a href="#search" onClick={(e) => { e.preventDefault(); onNavigate?.("search"); }}>Search for {person.name ?? person.id}</a>
+                        <a href="#search" onClick={(e) => { e.preventDefault(); onNavigate?.("search"); }}>{t("people.more", { count: appearances.length - 4 })}</a>
                       </p>
                     )}
                   </>

@@ -28,11 +28,10 @@ export function PeopleGrid({ people, samples = {}, selectedId = null, onOpen }: 
         <div className="mm-chips" role="group" aria-label={t("people.filter")}>
           {(["all", "unnamed", "named"] as const).map((f) => (
             <Chip key={f} pressed={filter === f} onClick={() => setFilter(f)}>
-              {f === "unnamed" ? `unnamed (${unnamed})` : f}
+              {f === "unnamed" ? t("people.chip.unnamed", { count: unnamed }) : f === "named" ? t("people.chip.named") : t("people.chip.all")}
             </Chip>
           ))}
         </div>
-        <span className="mm-mono">{people.length} clusters · {people.length - unnamed} named</span>
       </div>
       {shown.length === 0 ? (
         <p className="mm-empty">{filter === "unnamed" ? t("people.allNamed") : t("people.none")}</p>
