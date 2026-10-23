@@ -100,6 +100,10 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 /* Feedback is a colour change only: no transitions (see Layout). */
 .mm-primary:hover:not(:disabled, [aria-disabled=true]) { background: var(--accent-strong); }
 .mm-primary:active:not(:disabled, [aria-disabled=true]) { background: var(--accent-strong); border-color: var(--text); }
+/* Busy keeps the label and the fill, adds a spinner, and holds its width, so the row never reflows. */
+.mm-primary.mm-busy[aria-disabled=true] { background: var(--accent); color: var(--on-accent); border-color: transparent; cursor: progress; }
+.mm-busy { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-width: 8.5rem; }
+.mm-spinner { width: .9em; height: .9em; border: 2px solid currentColor; border-inline-end-color: transparent; border-radius: var(--radius-pill); flex-shrink: 0; }
 .mm-danger { background: var(--panel); color: var(--bad); border-color: var(--bad); font-weight: 600; min-height: var(--control-min); }
 .mm-danger:hover:not(:disabled) { background: var(--field); }
 .mm-danger:active:not(:disabled) { border-color: var(--text); }
@@ -123,7 +127,8 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 .mm-tag.bad { color: var(--bad); border-color: var(--bad); }
 .mm-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .mm-chip { border-radius: var(--radius-pill); padding: var(--space-1) 12px; color: var(--muted); }
-.mm-chip[aria-pressed=true] { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); }
+/* On reads as on without hue: a fill and a heavier label, not only a colour. */
+.mm-chip[aria-pressed=true] { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); font-weight: 600; }
 .mm-kbd { display: inline-block; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0 5px; font: var(--text-xs)/1.5 var(--mono); color: var(--muted); }
 .mm-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; }
 .mm-radio { display: flex; gap: var(--space-2); align-items: flex-start; }
@@ -146,6 +151,7 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 /* The card's one button stretches over the whole card; focus shows on the card. */
 .mm-card, .mm-note { position: relative; }
 .mm-card-link { all: unset; display: block; cursor: pointer; }
+.mm-card:has(.mm-card-link), .mm-note:has(.mm-card-link) { cursor: pointer; }
 .mm-card-link::after { content: ""; position: absolute; inset: 0; }
 .mm-card-link:focus-visible { outline: none; }
 .mm-card:has(.mm-card-link:focus-visible), .mm-note:has(.mm-card-link:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -327,11 +333,13 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 
 /* Touch: every control is at least 44px tall, and so is the timeline band. */
 @media (pointer: coarse) {
-  button, input, select, .mm-links a, .mm-button, .mm-primary, .mm-ghost, .mm-danger { min-height: var(--touch-min); }
+  button, input, select, .mm-links a, .mm-button, .mm-primary, .mm-ghost, .mm-danger, .mm-link { min-height: var(--touch-min); }
   .mm-chip { min-height: var(--touch-min); padding-inline: var(--space-4); }
   .mm-scrub { padding: calc((var(--touch-min) - var(--track-h)) / 2) 0; }
   /* A card link is stretched over its card, so the card is the target; a face box keeps its drawn size. */
   .mm-card-link, .mm-face { min-height: 0; }
+  /* The box keeps the detected size; an invisible 44px target is centred on it. */
+  .mm-face::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100% + 20px, var(--touch-min)); height: max(100% + 20px, var(--touch-min)); translate: -50% -50%; }
 }
 
 /* Motion is opt-in: the rules above are the whole interface when the reader
@@ -389,6 +397,11 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
      status line pulses so the wait has a heartbeat. The pulse is state, not
      decoration, and it stops the moment the search resolves. */
   [aria-busy="true"] .mm-status { animation: mm-pulse 1.2s var(--ease-out) infinite; }
+
+  /* The busy spinner turns only here; with reduced motion it is a still ring. */
+  .mm-spinner { animation: mm-spin .8s linear infinite; }
+
+  @keyframes mm-spin { to { rotate: 1turn; } }
 
   @keyframes mm-reveal {
     from { opacity: 0; translate: 0 -6px; }

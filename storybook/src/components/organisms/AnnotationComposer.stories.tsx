@@ -23,6 +23,7 @@ export const Default: Story = {
     await expect(args.onSave).toHaveBeenCalledWith({
       t_start: 42, t_end: 71, text: "Ana is presenting the Q3 budget", person_ids: ["person-0003"],
     });
+    await expect(canvas.getByRole("status")).toHaveTextContent("Note added at 00:42–01:11.");
   },
 };
 
@@ -41,6 +42,7 @@ export const InvalidRange: Story = {
     const save = canvas.getByRole("button", { name: "Save note" });
     await expect(save).toHaveAttribute("aria-disabled", "true");
     await expect(save).toHaveAccessibleDescription("End must be after start.");
+    await expect(canvas.getByLabelText(/^to/)).toHaveAccessibleDescription(/End must be after start/);
     await userEvent.click(save);
     await expect(canvas.getByLabelText("from")).toHaveFocus();
   },

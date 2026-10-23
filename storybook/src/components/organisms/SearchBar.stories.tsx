@@ -70,7 +70,15 @@ export const EmptyQuery: Story = {
   },
 };
 
-export const Busy: Story = { args: { initialQuery: "Ana is cooking", busy: true } };
+/** Busy keeps the label and the fill and adds a spinner, so the row does not reflow. */
+export const Busy: Story = {
+  args: { initialQuery: "Ana is cooking", busy: true },
+  play: async ({ canvasElement }) => {
+    const button = within(canvasElement).getByRole("button", { name: "search" });
+    await expect(button).toHaveAttribute("aria-disabled", "true");
+    await expect(button.querySelector(".mm-spinner")).not.toBeNull();
+  },
+};
 
 /** The same form in Chinese: the labels, the button and the reason all switch with the language. */
 export const Chinese: Story = {

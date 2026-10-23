@@ -17,4 +17,4 @@ export const Primary: Story = { args: { variant: "primary", children: "search" }
 /** Merging two people: the action is named for what it does. */
 export const Danger: Story = { args: { variant: "danger", children: "Merge into Ana Ruiz" } };
 export const Ghost: Story = { args: { variant: "ghost", children: "Close" } };
-export const Disabled: Story = { args: { variant: "primary", children: "searching…", disabled: true } };
+export const Disabled: Story = { args: { variant: "primary", children: "Save note", disabled: true } };

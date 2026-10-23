@@ -82,6 +82,12 @@ import { Meta } from "@storybook/addon-docs/blocks";
   every form (search, note, face name, person name). While a search runs, placeholders replace the old results.
 - A merge, from the People page or from the face tagger, takes a confirm step naming both sides and the combined
   count, then offers Undo.
+- A busy submit keeps its label and fill and adds a spinner, at a fixed minimum width, so nothing beside it moves.
+  The spinner turns only when motion is allowed.
+- A toggle chip that is on gets a fill and a heavier label, not only a colour. On touch, each face box keeps its
+  detected size but has a 44px target centred on it.
+- Saving a note confirms it with its range ("Note added at 00:42–01:11."). A range error is attached to both
+  range fields with `aria-describedby`.
 - Every action ends in a visible result. Copy path says "Path copied", or, when the clipboard is refused, shows
   the path selected in a field.
 - Every control sets `touch-action: manipulation`, so taps don't wait for double-tap zoom. The timeline takes

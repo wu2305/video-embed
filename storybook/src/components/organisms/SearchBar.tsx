@@ -49,7 +49,9 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
     onSearch?.({ query: query.trim(), parsed, limit, min_faces: minFaces });
   }
 
-  const submitProps = { variant: "primary" as const, type: "submit" as const, ...buttonProps };
+  // Busy keeps the label and adds a spinner; aria-disabled and the status line carry the state.
+  const submitProps = { variant: "primary" as const, type: "submit" as const, className: busy ? "mm-busy" : undefined, ...buttonProps };
+  const spinner = busy && <span className="mm-spinner" aria-hidden="true" />;
   const readout = hasWho && (
     <div className="mm-parse" aria-live="polite">
       {parsed.who.map((name, i) => <ParseStep key={name} tone="accent">{t("search.parse.who")} <b>{name}</b> → {parsed.person_ids[i]}</ParseStep>)}
@@ -63,7 +65,7 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
       <form className="mm-home-search" onSubmit={submit} role="search" aria-label={t("search.region")}>
         <div className="mm-home-field">
           <input type="search" aria-label={t("search.fieldLabel")} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search.placeholder")} autoComplete="off" />
-          <Button {...submitProps}>{busy ? t("search.searching") : t("search.submitHome")}</Button>
+          <Button {...submitProps}>{spinner}{t("search.submitHome")}</Button>
         </div>
         {readout}
         {why}
@@ -83,9 +85,7 @@ export function SearchBar({ people, initialQuery = "", busy = false, home = fals
         <Field label={t("search.minFaces")}>
           <input type="number" min={0} max={20} value={minFaces} onChange={(e) => setMinFaces(Number(e.target.value))} style={{ width: 90 }} />
         </Field>
-        <Button {...submitProps}>
-          {busy ? t("search.searching") : t("search.submit")}
-        </Button>
+        <Button {...submitProps}>{spinner}{t("search.submit")}</Button>
       </div>
       {readout}
       {why}
