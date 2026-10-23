@@ -1,4 +1,4 @@
-import type { ArchiveRecord, Hit, Person, Result, SourceStatus } from "../types";
+import type { ArchiveRecord, Hit, MetricRecord, Person, Result, SourceStatus } from "../types";
 import { fuseByRank } from "../lib/fuse";
 import { parseQuery } from "../lib/parseQuery";
 
@@ -35,17 +35,38 @@ export function searchArchiveMock(records: readonly ArchiveRecord[], people: rea
     .sort((a, b) => a.vendor_rank - b.vendor_rank);
 }
 
-/** Both sources for one query, fused by rank. A source that is down contributes nothing. */
+/**
+ * Stand-in for the BI platform's metric search. Like the Archive, it gets only
+ * the "what"; it matches metric names, ids and definitions, and each metric
+ * comes back with the reports that use it.
+ */
+export function searchBiMock(metrics: readonly MetricRecord[], people: readonly Person[], f: Filters): MetricRecord[] {
+  const words = parseQuery(f.query, people).what.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 2);
+  return metrics
+    .filter((m) => words.some((w) => `${m.name} ${m.metric_id} ${m.definition ?? ""}`.toLowerCase().includes(w)))
+    .sort((a, b) => a.vendor_rank - b.vendor_rank);
+}
+
+/** Sources that time out on the query. */
+export interface Down {
+  archive?: boolean;
+  bi?: boolean;
+}
+
+/** Every source for one query, fused by rank. A source that is down contributes nothing. */
 export function searchGateway(
-  nas: readonly Hit[], archive: readonly ArchiveRecord[], people: readonly Person[], f: Filters, archiveDown = false,
+  nas: readonly Hit[], archive: readonly ArchiveRecord[], people: readonly Person[], f: Filters,
+  down: Down = {}, bi: readonly MetricRecord[] = [],
 ): { results: Result[]; sources: SourceStatus[] } {
   const fromNas = searchMock(nas, people, f);
-  const fromArchive = archiveDown ? [] : searchArchiveMock(archive, people, f);
+  const fromArchive = down.archive ? [] : searchArchiveMock(archive, people, f);
+  const fromBi = down.bi ? [] : searchBiMock(bi, people, f);
   return {
-    results: fuseByRank([fromNas, fromArchive], f.limit ?? 12),
+    results: fuseByRank([fromNas, fromArchive, fromBi], f.limit ?? 12),
     sources: [
       { source: "nas", state: "ok", count: fromNas.length },
-      { source: "archive", state: archiveDown ? "unavailable" : "ok", count: fromArchive.length },
+      { source: "archive", state: down.archive ? "unavailable" : "ok", count: fromArchive.length },
+      { source: "bi", state: down.bi ? "unavailable" : "ok", count: fromBi.length },
     ],
   };
 }

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { SearchPage } from "./SearchPage";
-import { archiveRecords, audioHit, documentHit, hits, indexInfo, now, people, staleIndexInfo, viewer } from "../mock/data";
+import { archiveRecords, metricRecords, audioHit, documentHit, hits, indexInfo, now, people, staleIndexInfo, viewer } from "../mock/data";
 
 const corpus = [...hits, audioHit, documentHit];
 
@@ -9,7 +9,7 @@ const meta = {
   title: "Pages/Search",
   component: SearchPage,
   parameters: { layout: "fullscreen" },
-  args: { people, corpus, archive: archiveRecords, index: indexInfo, now, viewer, onNavigate: fn(), onOpenClip: fn() },
+  args: { people, corpus, archive: archiveRecords, metrics: metricRecords, index: indexInfo, now, viewer, onNavigate: fn(), onOpenClip: fn() },
 } satisfies Meta<typeof SearchPage>;
 
 export default meta;
@@ -74,7 +74,7 @@ export const PreviewKeyboard: Story = {
 };
 
 /** Video, photo, audio and documents in one list; things without a frame show a glyph. */
-export const MixedMedia: Story = { args: { initialQuery: "cooking", archive: [] } };
+export const MixedMedia: Story = { args: { initialQuery: "cooking", archive: [], metrics: [] } };
 
 /** NAS and Archive results fused by rank, with a source filter. */
 export const BothSources: Story = {
@@ -86,6 +86,40 @@ export const BothSources: Story = {
     await expect(canvas.getByRole("button", { name: /^NAS media \(6\)/ })).toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: /^Archive \(2\)/ }));
     await expect(canvas.getAllByRole("article")).toHaveLength(2);
+  },
+};
+
+/** A metric name with no matching media: BI metrics, each with the reports that use it, link out to the BI platform. */
+export const MetricSearch: Story = {
+  args: { initialQuery: "revenue", corpus: [] },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("status")).toHaveTextContent(/2 results for “revenue”/);
+    const card = canvas.getAllByRole("article")[0]!;
+    await expect(within(card).getByRole("link", { name: "Net revenue" })).toHaveAttribute("href", "https://bi.example.internal/metrics/fin.net_revenue");
+    await expect(card).toHaveTextContent("Used in 7 reports");
+    await expect(within(card).getByRole("link", { name: "Monthly P&L" })).toHaveAttribute("target", "_blank");
+    // Three reports listed; the other four are on the metric's own page.
+    await expect(within(card).getByRole("link", { name: "+4 more ↗" })).toHaveAttribute("href", "https://bi.example.internal/metrics/fin.net_revenue");
+  },
+};
+
+/** All three sources answer "cooking"; the filter gains a BI chip. */
+export const ThreeSources: Story = {
+  args: { initialQuery: "cooking" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /^BI metrics \(1\)/ }));
+    await expect(canvas.getAllByRole("article")).toHaveLength(1);
+    await expect(canvas.getByRole("link", { name: "Cooking class attendance" })).toBeInTheDocument();
+  },
+};
+
+/** The BI platform timed out: the other sources still show, with a warning. */
+export const BiDown: Story = {
+  args: { initialQuery: "revenue", biDown: true },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole("alert")).toHaveTextContent("The BI platform did not respond");
   },
 };
 

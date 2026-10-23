@@ -4,7 +4,7 @@ import { ClipPage } from "../ClipPage";
 import { PeoplePage } from "../PeoplePage";
 import { SearchPage } from "../SearchPage";
 import {
-  annotations, archiveRecords, audioHit, cookingHit, documentHit, duration, hitFaces, hits, indexInfo, kitchenFrame, now, people, personSamples, scenes, viewer,
+  annotations, archiveRecords, metricRecords, audioHit, cookingHit, documentHit, duration, hitFaces, hits, indexInfo, kitchenFrame, now, people, personSamples, scenes, viewer,
 } from "../../mock/data";
 
 /** A page to export as a static showcase card. `width`/`height` are the layout size in px. */
@@ -25,17 +25,17 @@ export const PAGES: ExportedPage[] = [
   {
     name: "SearchStartPage", title: "Search · first visit", story: "pages-search--first-visit", width: 1280,
     summary: "The search home before any query: the brand, one large search field and when the index was last updated.",
-    element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} />,
+    element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} metrics={metricRecords} />,
   },
   {
     name: "SearchResultsPage", title: "Search · results", story: "pages-search--results", width: 1280,
-    summary: "The Search page after “Ana is cooking”: the who/what read-out, the status line and NAS and Archive results fused into one grid.",
-    element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} initialQuery="Ana is cooking" />,
+    summary: "The Search page after “Ana is cooking”: the who/what read-out, the status line and NAS, Archive and BI results fused into one grid.",
+    element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} metrics={metricRecords} initialQuery="Ana is cooking" />,
   },
   {
     name: "SearchPreviewPage", title: "Search · preview open", story: "pages-search--preview-open", width: 1280,
     summary: "A hit opened in the preview dialog: the matched scene with named faces, the timeline and the Open clip action.",
-    element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} initialQuery="Ana is cooking" openId={101} onOpenClip={() => {}} />,
+    element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} metrics={metricRecords} initialQuery="Ana is cooking" openId={101} onOpenClip={() => {}} />,
   },
   {
     name: "PeoplePage", title: "People · named person", story: "pages-people--named-person", width: 1280,
@@ -53,7 +53,7 @@ export const PAGES: ExportedPage[] = [
   {
     name: "SearchPhonePage", title: "Search · phone", story: "pages-search--results", width: 390,
     summary: "The Search results page at 390px: the form stacks and the grid drops to two columns.",
-    element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} initialQuery="Ana is cooking" />,
+    element: <SearchPage {...shared} people={people} corpus={corpus} archive={archiveRecords} metrics={metricRecords} initialQuery="Ana is cooking" />,
   },
 ];
 

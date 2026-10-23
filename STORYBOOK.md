@@ -2,8 +2,9 @@
 
 User stories for the console of the Unified Search Gateway
 ([`docs/UNIFIED_SEARCH_DESIGN.md`](docs/UNIFIED_SEARCH_DESIGN.md)). The console
-is one search box over two sources: the NAS media library, which `mmindex`
-indexes, and the Archive System, which is searched live through its vendor API.
+is one search box over the NAS media library, which `mmindex` indexes, the
+Archive System, searched live through its vendor API, and a BI platform's
+metric catalogue (scene 4f), also searched live.
 Within the NAS it turns "search by what the pixels look like" into "search by
 who is doing what". Each scene gives the user's goal, the flow, what the repo
 does today, and what is missing. Status tags: **exists**, **partial**, **new**.
@@ -234,6 +235,22 @@ a documented error shape, so another product can call the gateway. The caller
 must pass the end user's identity, and results are filtered for that user exactly
 as in scene 6; a service account alone gets nothing back.
 
+**4f. BI metrics**: *new.* A customer asked to search a BI platform's metrics
+and see which reports use each one. The gateway sends the *what* of the query to
+the platform's metric search API, like the Archive, and fuses the metrics into
+the same list by rank.
+
+1. A metric card shows the metric name, id, domain and the platform's
+   definition, then "Used in N reports" and the first three reports, each with
+   its folder and last-modified date. The rest are behind "+N more", which opens
+   the metric's page in the BI platform. A metric no report uses says so.
+2. The metric name and every report are links into the BI platform, which
+   checks access again. There is no preview.
+3. The source filter gains a *BI metrics* chip. Only sources that returned
+   something get a chip.
+4. If the BI API errors or times out, the other sources still show with a
+   warning that the list is incomplete.
+
 ---
 
 ## Scene 5 — Preview the result
@@ -364,6 +381,7 @@ preserved").
 | Who may name or rename a person: anyone signed in, or a curator group? | Scene 1 |
 | Can a user see who else wrote a note, or only that a note exists? | Scene 2 |
 | The Archive vendor's response fields and deep-link schema | Scene 4c (`ArchiveRecord` in the gallery is a guess) |
+| The BI platform's metric search API: response fields, report paging, identity passthrough, deep links | Scene 4f (`MetricRecord` in the gallery is a guess) |
 | Does the weekly full re-cluster go ahead? It decides how long faces stay pending. | Scenes 1, 7 |
 
 ## Not covered

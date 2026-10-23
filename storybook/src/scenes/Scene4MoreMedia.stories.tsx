@@ -2,7 +2,7 @@ import type { Meta } from "@storybook/react-vite";
 import type { StoryObj } from "@storybook/react-vite";
 import { ResultGrid } from "../components/organisms/ResultGrid";
 import { fuseByRank } from "../lib/fuse";
-import { archiveRecords, audioHit, cookingHit, documentHit, people, photoHit } from "../mock/data";
+import { archiveRecords, metricRecords, audioHit, cookingHit, documentHit, people, photoHit } from "../mock/data";
 
 const meta = {
   title: "Scenes/4 · More media, more sources",
@@ -25,4 +25,12 @@ export const NewMediaKinds: Story = { args: { results: [cookingHit, audioHit, do
  */
 export const ArchiveSystem: Story = {
   args: { results: fuseByRank([[cookingHit, audioHit, photoHit], archiveRecords.slice(0, 2)]), query: "cooking" },
+};
+
+/**
+ * 4f: BI metrics. A metric card lists the reports that use it; the metric and
+ * each report open in the BI platform. A metric no report uses says so.
+ */
+export const BiMetrics: Story = {
+  args: { results: fuseByRank([[cookingHit], metricRecords]), query: "revenue" },
 };

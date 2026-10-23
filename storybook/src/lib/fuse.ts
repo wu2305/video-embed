@@ -29,7 +29,7 @@ export function fuseByRank(lists: readonly (readonly Result[])[], limit = Infini
 
 /** Counts per source, for the status line and the source filter. */
 export function countBySource(results: readonly Result[]): Record<SourceId, number> {
-  const counts: Record<SourceId, number> = { nas: 0, archive: 0 };
+  const counts: Record<SourceId, number> = { nas: 0, archive: 0, bi: 0 };
   for (const r of results) counts[sourceOf(r)] += 1;
   return counts;
 }

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { displayName, formatTime, parseTime } from "./format";
 import { parseQuery } from "./parseQuery";
-import { people } from "../mock/data";
+import { searchBiMock, searchGateway } from "../pages/search";
+import { archiveRecords, hits, metricRecords, people } from "../mock/data";
 
 describe("formatTime / parseTime", () => {
   it("formats seconds as mm:ss and clamps negatives", () => {
@@ -32,5 +33,19 @@ describe("parseQuery", () => {
   });
   it("flags a capitalised name nobody owns", () => {
     expect(parseQuery("Zed Marlow is cooking", people).unresolved).toEqual(["Zed Marlow"]);
+  });
+});
+
+describe("BI metric search", () => {
+  it("matches metric names, not the people the query names", () => {
+    expect(searchBiMock(metricRecords, people, { query: "revenue" }).map((m) => m.metric_id)).toEqual(["fin.net_revenue", "fin.arpu"]);
+    expect(searchBiMock(metricRecords, people, { query: "Ana is cooking" }).map((m) => m.metric_id)).toEqual(["mkt.class_attendance"]);
+    expect(searchBiMock(metricRecords, people, { query: "skydiving" })).toEqual([]);
+  });
+  it("reports a BI outage and keeps the other sources", () => {
+    const { results, sources } = searchGateway(hits, archiveRecords, people, { query: "cooking" }, { bi: true }, metricRecords);
+    expect(sources.find((s) => s.source === "bi")).toEqual({ source: "bi", state: "unavailable", count: 0 });
+    expect(results.some((r) => r.source === "bi")).toBe(false);
+    expect(results.some((r) => r.source === "archive")).toBe(true);
   });
 });

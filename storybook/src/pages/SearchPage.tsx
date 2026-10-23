@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { isArchive, type ArchiveRecord, type Hit, type IndexInfo, type Person, type Result, type SourceStatus, type Unavailable, type Viewer } from "../types";
+import { isHit, type ArchiveRecord, type Hit, type MetricRecord, type IndexInfo, type Person, type Result, type SourceStatus, type Unavailable, type Viewer } from "../types";
 import { Button } from "../components/atoms/Button";
 import { Freshness } from "../components/molecules/Freshness";
 import { ResultGrid } from "../components/organisms/ResultGrid";
@@ -19,6 +19,10 @@ export interface SearchPageProps {
   archive?: readonly ArchiveRecord[];
   /** The Archive System times out on every query. */
   archiveDown?: boolean;
+  /** BI metrics the mock metric search can return, each with the reports that use it. */
+  metrics?: readonly MetricRecord[];
+  /** The BI platform times out on every query. */
+  biDown?: boolean;
   /** NAS hits whose file the source route refuses, by unit id. */
   unavailable?: Readonly<Record<number, Unavailable>>;
   /** A query already run when the page opens. Omit for the first-visit state. */
@@ -37,12 +41,12 @@ export interface SearchPageProps {
 
 /** Page: query every source at once, scan the fused results, preview the matched moment, open the clip. */
 export function SearchPage({
-  people, corpus, archive = [], archiveDown = false, unavailable = {}, initialQuery, openId = null, loading = false, error = null,
+  people, corpus, archive = [], archiveDown = false, metrics = [], biDown = false, unavailable = {}, initialQuery, openId = null, loading = false, error = null,
   index: indexInfo, now, viewer, onNavigate, onOpenClip,
 }: SearchPageProps) {
   const { t } = useI18n();
   const runSearch = (q: string, extra: { min_faces?: number; limit?: number } = {}) =>
-    searchGateway(corpus, archive, people, { query: q, ...extra }, archiveDown);
+    searchGateway(corpus, archive, people, { query: q, ...extra }, { archive: archiveDown, bi: biDown }, metrics);
   const [query, setQuery] = useState(initialQuery ?? "");
   const [found, setFound] = useState<{ results: Result[]; sources: SourceStatus[] }>(() =>
     initialQuery ? runSearch(initialQuery) : { results: [], sources: [] });
@@ -51,8 +55,8 @@ export function SearchPage({
   // The mock error comes from props; Try again clears it and reruns the query.
   const [retried, setRetried] = useState(false);
 
-  // Only NAS hits preview; Archive records open in the Archive System.
-  const previewable = found.results.filter((r): r is Hit => !isArchive(r));
+  // Only NAS hits preview; Archive records and BI metrics open in their own systems.
+  const previewable = found.results.filter(isHit);
   const position = open === null ? -1 : previewable.findIndex((h) => h.unit_id === open);
   const hit = position >= 0 ? previewable[position]! : null;
 

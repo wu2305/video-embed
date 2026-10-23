@@ -1,4 +1,4 @@
-import type { Annotation, ArchiveRecord, Face, Hit, IndexInfo, Person, Scene, Viewer } from "../types";
+import type { Annotation, ArchiveRecord, MetricRecord, MetricReport, Face, Hit, IndexInfo, Person, Scene, Viewer } from "../types";
 import { personSample, sceneFaces, sceneFrame, type Slot } from "./media";
 
 export const people: Person[] = [
@@ -136,6 +136,54 @@ export const archiveRecords: ArchiveRecord[] = [
     title: "Purchase order — kitchen equipment for the cooking studio",
     doc_type: "Purchase order", archived_at: at(2024, 11, 5, 9), department: "Facilities",
     deep_link: "https://archive.example.internal/records/PO-2024-2290",
+  },
+];
+
+const BI = "https://bi.example.internal";
+
+function report(report_id: string, title: string, folder: string, updated_at: number): MetricReport {
+  return { report_id, title, folder, updated_at, deep_link: `${BI}/reports/${report_id}` };
+}
+
+/**
+ * Metrics the BI platform returns for "revenue", "cooking" and "churn", each
+ * with the reports that use it. The shape is a guess (see `MetricRecord`).
+ */
+export const metricRecords: MetricRecord[] = [
+  {
+    source: "bi", metric_id: "fin.net_revenue", name: "Net revenue", domain: "Finance", vendor_rank: 1,
+    definition: "Gross sales minus returns, discounts and allowances",
+    report_count: 7,
+    reports: [
+      report("R-1042", "Monthly P&L", "Finance / Close", at(2026, 10, 20, 18)),
+      report("R-0981", "Regional sales dashboard", "Sales", at(2026, 10, 21, 7)),
+      report("R-1107", "Board pack — Q3 2026", "Finance / Board", at(2026, 10, 2, 16)),
+      report("R-0870", "Pricing experiment readout", "Growth", at(2026, 9, 14, 11)),
+      report("R-0655", "Revenue by channel", "Marketing", at(2026, 8, 30, 9)),
+    ],
+    deep_link: `${BI}/metrics/fin.net_revenue`,
+  },
+  {
+    source: "bi", metric_id: "fin.arpu", name: "Revenue per active user", domain: "Finance", vendor_rank: 2,
+    definition: "Net revenue ÷ monthly active users",
+    report_count: 2,
+    reports: [
+      report("R-0981", "Regional sales dashboard", "Sales", at(2026, 10, 21, 7)),
+      report("R-0712", "Subscriber health", "Product", at(2026, 10, 9, 15)),
+    ],
+    deep_link: `${BI}/metrics/fin.arpu`,
+  },
+  {
+    source: "bi", metric_id: "mkt.class_attendance", name: "Cooking class attendance", domain: "Marketing", vendor_rank: 3,
+    report_count: 1,
+    reports: [report("R-1210", "Cooking class series 2025", "Marketing / Events", at(2026, 10, 18, 10))],
+    deep_link: `${BI}/metrics/mkt.class_attendance`,
+  },
+  {
+    source: "bi", metric_id: "cs.churn_legacy", name: "Churn rate (legacy)", domain: "Customer success", vendor_rank: 4,
+    definition: "Replaced by cs.churn_rate in 2025",
+    report_count: 0, reports: [],
+    deep_link: `${BI}/metrics/cs.churn_legacy`,
   },
 ];
 
