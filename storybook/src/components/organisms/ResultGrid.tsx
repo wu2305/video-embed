@@ -35,7 +35,7 @@ const NAME: Record<SourceId, MessageKey> = { nas: "results.nasIndex", archive: "
  * empty, partial (one source down) and populated states.
  */
 export function ResultGrid({ results, query = "", people, sources, selectedId = null, loading = false, error = null, label, onRetry, onOpen }: ResultGridProps) {
-  const { t } = useI18n();
+  const { t, rich } = useI18n();
   const [filter, setFilter] = useState<Filter>("all");
   const sectionLabel = label ?? t("results.label");
   const counts = countBySource(results);
@@ -43,12 +43,13 @@ export function ResultGrid({ results, query = "", people, sources, selectedId = 
   const mixed = counts.nas > 0 && counts.archive > 0;
   const shown = filter === "all" ? results : results.filter((r) => sourceOf(r) === filter);
 
-  let status = "";
+  // The count and the query are the answer, so they take the text colour; the rest stays muted.
+  let status: React.ReactNode = "";
   if (loading) status = t("results.searching");
   else if (error) status = t("results.failed");
   else if (query) {
-    status = results.length ? t("results.count", { count: results.length, query }) : t("results.none", { query });
-    if (mixed) status += t("results.bySource", { nas: counts.nas, archive: counts.archive });
+    const vars = { count: <b>{results.length}</b>, query: <b>{query}</b> };
+    status = <>{rich(results.length ? "results.count" : "results.none", vars)}{mixed && t("results.bySource", { nas: counts.nas, archive: counts.archive })}</>;
   }
 
   return (

@@ -34,7 +34,8 @@ export interface SearchPageProps {
   onOpenClip?: (hit: Hit) => void;
 }
 
-const EXAMPLES = ["Ana is cooking", "Ana and Ben are cooking", "Q3 budget"];
+/** Two NAS examples and one that finds an Archive record, so the first visit shows both sources. */
+const EXAMPLES: { query: string; archive?: boolean }[] = [{ query: "Ana is cooking" }, { query: "Ana and Ben are cooking" }, { query: "Q3 budget", archive: true }];
 
 /** Page: query every source at once, scan the fused results, preview the matched moment, open the clip. */
 export function SearchPage({
@@ -106,7 +107,11 @@ export function SearchPage({
             <SearchBar home people={people} busy={loading} onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />
             <div className="mm-home-examples">
               <span>{t("home.try")}</span>
-              {EXAMPLES.map((q) => <button key={q} type="button" className="mm-link" onClick={() => run(q)}>{q}</button>)}
+              {EXAMPLES.map(({ query: q, archive: inArchive }) => (
+                <button key={q} type="button" className="mm-link" onClick={() => run(q)}>
+                  {q}{inArchive && <>{" "}<span className="mm-example-source">· {t("home.exampleArchive")}</span></>}
+                </button>
+              ))}
             </div>
             <div className="mm-home-foot">
               <p className="mm-hint">

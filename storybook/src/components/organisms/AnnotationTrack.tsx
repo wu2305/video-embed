@@ -7,16 +7,17 @@ export interface AnnotationTrackProps {
   scenes: readonly Scene[];
   annotations?: readonly Annotation[];
   playhead?: number;
-  /** The scene the search matched, shown in green. */
+  /** The scene the search matched: an outlined green band, named in the key below the track. */
   matched?: Scene | null;
   onSeek?: (seconds: number) => void;
 }
 
 const pct = (value: number, total: number) => `${(Math.min(Math.max(value, 0), total) / total) * 100}%`;
 
-/** Timeline of scene cuts, notes and the matched range. Clicking seeks. On touch the hit band is 44px tall around the 28px track. */
+/** Timeline of scene cuts, notes and the matched range. Clicking or tapping seeks. On touch the hit band is 44px tall around the 28px track. */
 export function AnnotationTrack({ duration, scenes, annotations = [], playhead = 0, matched = null, onSeek }: AnnotationTrackProps) {
   const { t } = useI18n();
+  const inMatch = matched !== null && playhead >= matched.start && playhead < matched.end;
   function seek(event: React.MouseEvent<HTMLDivElement>) {
     const box = event.currentTarget.getBoundingClientRect();
     onSeek?.(Math.round(((event.clientX - box.left) / box.width) * duration));
@@ -32,7 +33,7 @@ export function AnnotationTrack({ duration, scenes, annotations = [], playhead =
         aria-valuemin={0}
         aria-valuemax={duration}
         aria-valuenow={Math.round(playhead)}
-        aria-valuetext={formatTime(playhead)}
+        aria-valuetext={inMatch ? t("timeline.inMatch", { time: formatTime(playhead) }) : formatTime(playhead)}
         onClick={seek}
         aria-orientation="horizontal"
         onKeyDown={(e) => {
@@ -56,9 +57,15 @@ export function AnnotationTrack({ duration, scenes, annotations = [], playhead =
       </div>
       <div className="mm-track-legend mm-mono">
         <span>{formatTime(0)}</span>
-        <span>{formatTime(playhead)} · {scenes.length} scenes · {annotations.length} notes</span>
+        <span>{t("timeline.summary", { time: formatTime(playhead), scenes: scenes.length, notes: annotations.length })}</span>
         <span>{formatTime(duration)}</span>
       </div>
+      {(matched || annotations.length > 0) && (
+        <ul className="mm-track-key mm-hint" aria-label={t("timeline.key")}>
+          {matched && <li><span className="mm-key matched" aria-hidden="true" />{t("timeline.key.matched", { start: formatTime(matched.start), end: formatTime(matched.end) })}</li>}
+          {annotations.length > 0 && <li><span className="mm-key note" aria-hidden="true" />{t("timeline.key.note")}</li>}
+        </ul>
+      )}
     </div>
   );
 }

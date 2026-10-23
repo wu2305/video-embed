@@ -13,10 +13,10 @@ Use the **Theme** toolbar to switch any story, or pick **Side by side** to see b
 ## Dark
 
 <ColorPalette>
-  <ColorItem title="Surfaces" subtitle="bg · panel · field · thumb · line"
-    colors={{ bg: "#0f1115", panel: "#171a21", field: "#12151b", thumb: "#0b0d11", line: "#262b36" }} />
+  <ColorItem title="Surfaces" subtitle="bg · panel · field · thumb · line · line-strong"
+    colors={{ bg: "#0f1115", panel: "#171a21", field: "#12151b", thumb: "#0b0d11", line: "#262b36", "line-strong": "#616670" }} />
   <ColorItem title="Text" subtitle="text · muted · on-accent"
-    colors={{ text: "#e6e9ef", muted: "#8b94a7", "on-accent": "#0b0d11" }} />
+    colors={{ text: "#e6e9ef", muted: "#b4bed2", "on-accent": "#0b0d11" }} />
   <ColorItem title="Signal" subtitle="accent · accent-strong · good · warn · bad"
     colors={{ accent: "#6ea8fe", "accent-strong": "#a3c7ff", good: "#59d18c", warn: "#e5c07b", bad: "#ff8b8b" }} />
 </ColorPalette>
@@ -24,34 +24,45 @@ Use the **Theme** toolbar to switch any story, or pick **Side by side** to see b
 ## Light
 
 <ColorPalette>
-  <ColorItem title="Surfaces" subtitle="bg · panel · field · thumb · line"
-    colors={{ bg: "#f5f6f8", panel: "#ffffff", field: "#f2f4f7", thumb: "#e3e6eb", line: "#d5dae2" }} />
+  <ColorItem title="Surfaces" subtitle="bg · panel · field · thumb · line · line-strong"
+    colors={{ bg: "#f5f6f8", panel: "#fdfeff", field: "#f2f4f7", thumb: "#e3e6eb", line: "#d5dae2", "line-strong": "#878c96" }} />
   <ColorItem title="Text" subtitle="text · muted · on-accent"
     colors={{ text: "#171b23", muted: "#586174", "on-accent": "#ffffff" }} />
   <ColorItem title="Signal" subtitle="accent · accent-strong · good · warn · bad"
-    colors={{ accent: "#1d5bd6", "accent-strong": "#1747a8", good: "#127a48", warn: "#8f5d00", bad: "#c42b2b" }} />
+    colors={{ accent: "#1d5bd6", "accent-strong": "#123f96", good: "#127a48", warn: "#8f5d00", bad: "#c42b2b" }} />
 </ColorPalette>
 
 ## On photos and video (both themes)
 
 <ColorPalette>
-  <ColorItem title="Over imagery" subtitle="scrim · on-scrim · image-accent · image-good · image-warn"
-    colors={{ scrim: "rgba(0,0,0,.72)", "on-scrim": "#fff", "image-accent": "#6ea8fe", "image-good": "#59d18c", "image-warn": "#e5c07b" }} />
+  <ColorItem title="Over imagery" subtitle="scrim · on-scrim · image-ring · image-halo"
+    colors={{ scrim: "rgba(0,0,0,.72)", "on-scrim": "#fff", "image-ring": "rgba(255,255,255,.92)", "image-halo": "rgba(0,0,0,.55)" }} />
+  <ColorItem title="Face label chips" subtitle="image-accent · image-good · image-warn, with on-image text"
+    colors={{ "image-accent": "#6ea8fe", "image-good": "#59d18c", "image-warn": "#e5c07b", "on-image": "#0b0d11" }} />
 </ColorPalette>
 
 Face boxes, rank and score chips and the note over the frame sit on a photo, not on a theme surface,
-so they keep these values in both themes.
+so they keep these values in both themes. A face box is never one colour on the photo: a white ring
+between two dark halos always has one edge that clears 3:1, whatever the frame. Its state (named, untagged,
+selected) is the fill of its label chip, plus a dashed ring for untagged and a thicker ring for selected.
 
 ## Rules
 
 - `text` on `bg`, `panel` and `field`. `muted` for labels, metadata and ghost buttons. Every text colour
   is at least 4.5:1 on all three surfaces in both themes; `npm test` checks every story in each.
-- `accent` is the single interactive colour: the primary button, the focus ring, a selected card, a named person,
-  and the brand mark (a keyframe with a face box). `accent-strong` is the primary button under hover and press;
-  feedback is a colour change, never motion.
+- `accent` is the single interactive colour, and each role has its own treatment so they never look alike:
+  an action is filled accent (the primary button); focus is a 2px accent outline set 2px off the control;
+  selection is a 2px accent border plus `accent-wash` (a selected card, chip or note); a link is accent text,
+  underlined on hover. The brand mark is accent too. `accent-strong` is the primary button under hover and press.
+- A disabled or `aria-disabled` button is `muted` on `field` with a `line-strong` border, never faded with
+  opacity: an `aria-disabled` button stays focusable to explain why, so its label must stay readable.
 - `good` means *matched* (scene range, score, saved). `warn` means *look twice* (copy, merge, unnamed).
   `bad` means *blocked* (error, no such person), and outlines a `danger` button such as *Merge into Ana Ruiz*.
 - Every signal colour sits next to a word or number. Green and red are close in lightness in both themes,
   so hue alone never carries meaning.
-- `line` is a separator (about 1.3:1). Selection and focus always add `accent` on top of it.
+- `line` is a separator (about 1.3:1). `line-strong` (at least 3:1 on every surface) bounds anything you act on
+  or read as a unit: inputs, buttons, panels, cards, notes and the timeline track.
+- The timeline's matched range is a green wash with a `good` edge, and the key under the track names it.
+- In dark, `muted` is bright enough for 12px text, so the gap to `text` is small: hierarchy comes from size
+  and weight, not lightness alone.
 - Never write a hex value in a component. If a colour is missing, add a token with both theme values.

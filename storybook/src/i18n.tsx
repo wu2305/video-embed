@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, Fragment, useContext, type ReactNode } from "react";
 
 /**
  * UI strings for the two supported languages. English is the source of truth:
@@ -38,6 +38,7 @@ const en = {
   "search.parse.unknown": "no such person",
 
   "home.try": "Try",
+  "home.exampleArchive": "Archive",
   "home.about": "Name a person and say what they are doing. Searches the NAS media library and the Archive System, and shows only what you are allowed to open{as}. Searches are logged. Files added today are searchable tomorrow morning.",
   "home.asViewer": ", as {name}",
   "home.sourcesToggle": "What is searched?",
@@ -110,6 +111,11 @@ const en = {
   "people.namedText": "Named {faces} appearances “{name}”.",
   "people.mergedText": "Merged {id} into {target}: {faces} appearances.",
   "timeline.label": "Timeline",
+  "timeline.summary": "{time} · {scenes} scenes · {notes} notes",
+  "timeline.inMatch": "{time}, in the matched scene",
+  "timeline.key": "Timeline key",
+  "timeline.key.matched": "Outlined green band: the scene that matched, {start}–{end}",
+  "timeline.key.note": "Yellow bar: a note",
   "notes.none": "No notes yet. Add one for the scene under the playhead.",
   "notes.label": "Notes",
   "notes.count": "Notes ({count})",
@@ -171,6 +177,7 @@ const zh: Partial<Record<MessageKey, string>> = {
   "search.parse.unknown": "无此人",
 
   "home.try": "试试",
+  "home.exampleArchive": "档案系统",
   "home.about": "输入人名并描述他们在做什么。会搜索 NAS 媒体库和档案系统，只显示你有权打开的内容{as}。搜索会被记录。今天添加的文件会在次日早上可以搜索。",
   "home.asViewer": "，当前用户 {name}",
   "home.sourcesToggle": "搜索范围是什么？",
@@ -243,6 +250,11 @@ const zh: Partial<Record<MessageKey, string>> = {
   "people.namedText": "已命名 {faces} 次出现：“{name}”。",
   "people.mergedText": "已将 {id} 合并到 {target}：{faces} 次出现。",
   "timeline.label": "时间轴",
+  "timeline.summary": "{time} · {scenes} 个场景 · {notes} 条备注",
+  "timeline.inMatch": "{time}，位于匹配的场景内",
+  "timeline.key": "时间轴图例",
+  "timeline.key.matched": "带边框的绿色区段：匹配的场景，{start}–{end}",
+  "timeline.key.note": "黄色短条：一条备注",
   "notes.none": "还没有备注。为播放头所在的场景添加一条。",
   "notes.label": "备注",
   "notes.count": "备注（{count}）",
@@ -286,16 +298,28 @@ export function translator(locale: Locale): Translate {
   return (key, vars) => format(messages[locale][key] ?? en[key], vars);
 }
 
+/** Like `format`, but each filled placeholder comes back as its own part, so a caller can style it. */
+export function formatParts(template: string, vars: Record<string, ReactNode>): ReactNode[] {
+  return template.split(/(\{\w+\})/).map((part, i) => {
+    const name = /^\{(\w+)\}$/.exec(part)?.[1];
+    return name !== undefined && name in vars ? <Fragment key={i}>{vars[name]}</Fragment> : part;
+  });
+}
+
 const LocaleContext = createContext<Locale>("en");
 
 export function LocaleProvider({ locale, children }: { locale: Locale; children: ReactNode }) {
   return <LocaleContext.Provider value={locale}>{children}</LocaleContext.Provider>;
 }
 
-/** The current locale and a `t` that translates a message key. English when no provider is present. */
-export function useI18n(): { locale: Locale; t: Translate } {
+/**
+ * The current locale, a `t` that translates a message key, and a `rich` that
+ * does the same but lets each placeholder be any React node. English when no
+ * provider is present.
+ */
+export function useI18n(): { locale: Locale; t: Translate; rich: (key: MessageKey, vars: Record<string, ReactNode>) => ReactNode[] } {
   const locale = useContext(LocaleContext);
-  return { locale, t: translator(locale) };
+  return { locale, t: translator(locale), rich: (key, vars) => formatParts(messages[locale][key] ?? en[key], vars) };
 }
 
 export const LOCALES: { value: Locale; title: string }[] = [

@@ -23,8 +23,8 @@ import { Meta } from "@storybook/addon-docs/blocks";
 
 <div style={{ display: "flex", gap: 14, alignItems: "flex-end", margin: "16px 0" }}>
   {[4, 8, 10, 14, 20, 28].map((n) => (
-    <div key={n} style={{ textAlign: "center", font: "12px ui-monospace, monospace", color: "#8b94a7" }}>
-      <div style={{ width: n, height: n, background: "#6ea8fe", margin: "0 auto 6px" }} />{n}
+    <div key={n} style={{ textAlign: "center", font: "12px ui-monospace, monospace", color: "var(--muted)" }}>
+      <div style={{ width: n, height: n, background: "var(--accent)", margin: "0 auto 6px" }} />{n}
     </div>
   ))}
 </div>

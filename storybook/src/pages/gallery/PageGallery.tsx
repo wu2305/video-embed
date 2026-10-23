@@ -43,7 +43,7 @@ function Frame({ id, theme, device, title }: { id: string; theme: "dark" | "ligh
 
   return (
     <figure className="pg-frame">
-      <div ref={box} className="pg-screen" style={{ aspectRatio: `${device.width} / ${device.height}` }}>
+      <div ref={box} className="pg-screen" data-theme="dark" style={{ aspectRatio: `${device.width} / ${device.height}` }}>
         <iframe
           title={`${title}, ${theme} theme`}
           src={`iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`}
@@ -63,7 +63,7 @@ export function PageGallery({ groups }: { groups: readonly PageGroup[] }) {
   const themes = choice === "both" ? (["dark", "light"] as const) : ([choice] as const);
 
   return (
-    <div className="pg">
+    <div className="pg" data-theme="light">
       <div className="pg-bar" role="group" aria-label="Theme">
         {(["both", "dark", "light"] as const).map((c) => (
           <button key={c} type="button" aria-pressed={choice === c} onClick={() => setChoice(c)}>
