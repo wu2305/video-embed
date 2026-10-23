@@ -224,10 +224,9 @@ vendor's full-text API in parallel.
 4. If the Archive API errors or times out, the NAS results still show with a
    warning that the list is incomplete. The reverse holds too.
 
-**4d. WeCom**: *by design, not a source.* The first-visit page (a centred search
-home: brand, one field, example queries, one line on scope and freshness) says
-under *What is searched?* that live WeCom documents are searched in WeCom, and that finalized material archived to the NAS
-shows up here as NAS media.
+**4d. WeCom**: *by design, not a source.* Live WeCom documents are searched in WeCom; finalized material archived to
+the NAS shows up here as NAS media. The first-visit page (a centred search home: brand, one field, example queries and
+the index freshness line) carries no explanatory copy about this.
 
 **4e. Plugging into an existing search API**: *new.* Expose `/api/search` with a
 stable, versioned response (`/v1/search`), the same name/person/note fields, and
@@ -286,9 +285,9 @@ and 2, and keyboard navigation.
 2. She searches. Every NAS unit is kept only if its folder's allowed groups
    intersect hers; Archive results are already filtered by the vendor for her
    identity.
-3. The results say *Only results you are allowed to open are shown.* The page
-   never shows how many results were hidden, because a count leaks that they
-   exist.
+3. The results show only what she may open, with no note about filtering. The
+   page never shows how many results were hidden, because a count leaks that
+   they exist.
 4. If a hit's permissions changed today, the preview refuses it (scene 5).
 
 **Today**: *new.* Nothing records ACLs, and the console has no sign-in.

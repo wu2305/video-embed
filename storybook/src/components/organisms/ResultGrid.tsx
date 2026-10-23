@@ -96,9 +96,6 @@ export function ResultGrid({ results, query = "", people, sources, selectedId = 
           : <ResultCard key={resultKey(r)} hit={r} rank={index + 1} people={people} showSource={mixed} selected={r.unit_id === selectedId} onOpen={onOpen} />
         ))}
       </div>
-      {!loading && !error && results.length > 0 && (
-        <p className="mm-hint" style={{ margin: "12px 0 0" }}>{t("results.allowedOnly")}</p>
-      )}
     </section>
   );
 }

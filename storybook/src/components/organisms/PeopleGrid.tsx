@@ -35,7 +35,7 @@ export function PeopleGrid({ people, samples = {}, selectedId = null, onOpen }: 
         <span className="mm-mono">{people.length} clusters · {people.length - unnamed} named</span>
       </div>
       {shown.length === 0 ? (
-        <p className="mm-empty">{filter === "unnamed" ? "Every cluster has a name." : "No clusters yet. They appear after the first export."}</p>
+        <p className="mm-empty">{filter === "unnamed" ? t("people.allNamed") : t("people.none")}</p>
       ) : (
         <div className="mm-grid" style={{ ["--card-min" as string]: "160px" }}>
           {shown.map((p) => (

@@ -114,23 +114,12 @@ export function SearchPage({
               ))}
             </div>
             <div className="mm-home-foot">
-              <p className="mm-hint">
-                {t("home.about", { as: viewer ? t("home.asViewer", { name: viewer.name }) : "" })}
-              </p>
               {indexInfo && <Freshness index={indexInfo} now={now} />}
-              <details className="mm-hint">
-                <summary>{t("home.sourcesToggle")}</summary>
-                <ul className="mm-sources">
-                  <li><b>{t("home.src.nasName")}</b><span>{t("home.src.nasDesc")}</span></li>
-                  <li><b>{t("home.src.archiveName")}</b><span>{t("home.src.archiveDesc")}</span></li>
-                  <li><b>{t("home.src.wecomName")}</b><span>{t("home.src.wecomDesc")}</span></li>
-                </ul>
-              </details>
             </div>
           </main>
         </div>
       ) : (
-        <AppShell current="search" title={t("page.search.title")} subtitle={t("page.search.subtitle")}
+        <AppShell current="search" title={t("page.search.title")}
           index={indexInfo} now={now} viewer={viewer} onNavigate={onNavigate} inert={isOpen}>
           <SearchBar people={people} initialQuery={query} busy={loading}
             onSearch={(p) => run(p.query, { min_faces: p.min_faces, limit: p.limit })} />

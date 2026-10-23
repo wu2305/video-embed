@@ -37,7 +37,10 @@ export const TwoUsers: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getAllByText("Only results you are allowed to open are shown.")).toHaveLength(2);
+    // Same query, different results: each viewer sees only what they may open.
+    const grids = canvas.getAllByRole("region", { name: /^Results for / });
+    await expect(grids).toHaveLength(2);
+    await expect(grids[0]!.textContent).not.toBe(grids[1]!.textContent);
   },
 };
 

@@ -6,7 +6,7 @@ import { Kbd } from "../atoms/Kbd";
 import { Tag } from "../atoms/Tag";
 import { AnnotationTrack } from "./AnnotationTrack";
 import { FaceOverlay } from "./FaceOverlay";
-import { useI18n } from "../../i18n";
+import { useI18n, type MessageKey } from "../../i18n";
 
 export interface PreviewPanelProps {
   hit: Hit;
@@ -43,16 +43,7 @@ export interface PreviewPanelProps {
 
 const FOCUSABLE = "a[href], button:not(:disabled), input, select, textarea, video[controls], [tabindex]:not([tabindex='-1'])";
 
-const UNAVAILABLE: Record<Unavailable, { title: string; body: string }> = {
-  forbidden: {
-    title: "You no longer have access to this file",
-    body: "Its folder permissions changed after last night’s update. It drops out of your results after tonight’s update.",
-  },
-  gone: {
-    title: "This file is no longer on the NAS",
-    body: "It was deleted or moved after last night’s update. A moved file reappears under its new path tomorrow.",
-  },
-};
+const UNAVAILABLE: Record<Unavailable, MessageKey> = { forbidden: "preview.forbidden", gone: "preview.gone" };
 
 /**
  * Scene 5: the matched moment, not the file. Plays the scene range on a loop,
@@ -120,8 +111,7 @@ export function PreviewPanel({
         <div className="mm-stage">
           {unavailable ? (
             <div className="mm-unavailable" role="alert">
-              <strong>{UNAVAILABLE[unavailable].title}</strong>
-              <span>{UNAVAILABLE[unavailable].body}</span>
+              <strong>{t(UNAVAILABLE[unavailable])}</strong>
             </div>
           ) : (
             <>
