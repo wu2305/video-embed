@@ -13,7 +13,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Three reports listed, the rest counted. The name opens the preview; each report opens in BI. */
+/** Three reports listed, the rest counted. The name and "+4 more" open the preview; each report opens in BI. */
 export const ManyReports: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
@@ -22,6 +22,8 @@ export const ManyReports: Story = {
     await expect(canvasElement).toHaveTextContent("+4 more");
     await userEvent.click(canvas.getByRole("button", { name: "Net revenue" }));
     await expect(args.onOpen).toHaveBeenCalledWith(expect.objectContaining({ metric_id: "fin.net_revenue" }));
+    await userEvent.click(canvas.getByRole("button", { name: "+4 more" }));
+    await expect(args.onOpen).toHaveBeenCalledTimes(2);
   },
 };
 
@@ -30,6 +32,7 @@ export const OneReport: Story = {
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getAllByRole("listitem")).toHaveLength(1);
     await expect(within(canvasElement).queryByText(/more/)).toBeNull();
+    await expect(within(canvasElement).getAllByRole("button")).toHaveLength(1);
   },
 };
 
