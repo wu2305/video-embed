@@ -272,6 +272,30 @@ source the type leaves out is not queried and gets no outage warning. The
 type stays picked after the search, and the source filter appears only when
 more than one source returned something.
 
+**4h. Long result lists**: *new.* Both lists the user scans can grow large: the
+fused results, and the reports that use one metric.
+
+1. **Results: Load more.** The results end in a *Load more* button while the
+   gateway has another page; it appends the next page under the first and moves
+   focus to the first new card. There is no automatic infinite scroll, so the
+   footer stays reachable and a keyboard user decides when the list grows.
+   Until the last page is in, the status line says "First 12 results". If a
+   page fails, the results already shown stay and the button becomes Try again.
+2. **Gateway paging.** `/api/search` takes `limit` (the bar's limit, per page)
+   and `cursor`, and returns `next_cursor` (null on the last page). For page *n*
+   the gateway asks each source for its first *n × limit* results, fuses them
+   by rank and returns the slice for that page. Each source's results have their
+   own key, so a result's fused score depends only on its own rank in its own
+   source; everything already shown outranks anything fetched later, and the
+   console can append without reordering. The source chips count the results
+   loaded so far.
+3. **Metric preview: a pager.** The preview loads ten reports at a time
+   (`offset`/`limit` on the reports endpoint, docs/BI_METRIC_API.md). Under the
+   list: Previous, "11–20 of 34", Next. They stay focusable at the ends
+   (aria-disabled) so focus never drops. The filter is sent to the server and
+   starts again from the first page. A page that is loading shows placeholder
+   rows, never the previous page's rows.
+
 ---
 
 ## Scene 5 — Preview the result

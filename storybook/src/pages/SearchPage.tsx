@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { isHit, isMetric, type ArchiveRecord, type Hit, type MetricRecord, type MetricReport, type IndexInfo, type Person, type Result, type SearchType, type SourceStatus, type Unavailable, type Viewer } from "../types";
+import { isHit, isMetric, type ArchiveRecord, type Hit, type MetricRecord, type MetricReport, type IndexInfo, type Person, type SearchType, type Unavailable, type Viewer } from "../types";
 import { Button } from "../components/atoms/Button";
 import { Freshness } from "../components/molecules/Freshness";
 import { ResultGrid } from "../components/organisms/ResultGrid";
-import { MetricPreview } from "../components/organisms/MetricPreview";
+import { MetricPreview, REPORTS_PAGE, type ReportsRequest } from "../components/organisms/MetricPreview";
 import { PreviewPanel } from "../components/organisms/PreviewPanel";
 import { SearchBar } from "../components/organisms/SearchBar";
 import { BrandMark, TopBar, type PageId } from "../components/organisms/TopBar";
 import { AppShell } from "../components/templates/AppShell";
 import { annotations, duration, hitFaces, kitchenFrame, scenes } from "../mock/data";
-import { searchGateway } from "./search";
+import { queryReports, searchGateway, type GatewayPage } from "./search";
 import { useI18n } from "../i18n";
 
 export interface SearchPageProps {
@@ -34,6 +34,10 @@ export interface SearchPageProps {
   unavailable?: Readonly<Record<number, Unavailable>>;
   /** A query already run when the page opens. Omit for the first-visit state. */
   initialQuery?: string;
+  /** Results per page for `initialQuery`; a search from the bar uses the bar's limit. */
+  pageSize?: number;
+  /** Load more fails the first time. */
+  moreError?: boolean;
   /** Open the preview on this hit at load. */
   openId?: number | null;
   loading?: boolean;
@@ -48,17 +52,20 @@ export interface SearchPageProps {
 
 /** Page: query every source at once, scan the fused results, preview the matched moment, open the clip. */
 export function SearchPage({
-  people, corpus, archive = [], archiveDown = false, metrics = [], biDown = false, metricReports, metricReportsError = false, openMetricId = null, unavailable = {}, initialQuery, openId = null, loading = false, error = null,
+  people, corpus, archive = [], archiveDown = false, metrics = [], biDown = false, metricReports, metricReportsError = false, openMetricId = null, unavailable = {}, initialQuery, pageSize = 12, moreError = false, openId = null, loading = false, error = null,
   index: indexInfo, now, viewer, onNavigate, onOpenClip,
 }: SearchPageProps) {
   const { t } = useI18n();
-  const runSearch = (q: string, extra: { type?: SearchType; limit?: number } = {}) =>
-    searchGateway(corpus, archive, people, { query: q, ...extra }, { archive: archiveDown, bi: biDown }, metrics);
+  const runSearch = (q: string, extra: { type?: SearchType; limit?: number; cursor?: string | null } = {}) =>
+    searchGateway(corpus, archive, people, { query: q, limit: pageSize, ...extra }, { archive: archiveDown, bi: biDown }, metrics);
   const [query, setQuery] = useState(initialQuery ?? "");
   // The type picked on the home carries over to the results bar.
   const [type, setType] = useState<SearchType>("all");
-  const [found, setFound] = useState<{ results: Result[]; sources: SourceStatus[] }>(() =>
-    initialQuery ? runSearch(initialQuery) : { results: [], sources: [] });
+  const [limit, setLimit] = useState(pageSize);
+  const [found, setFound] = useState<GatewayPage>(() =>
+    initialQuery ? runSearch(initialQuery) : { results: [], sources: [], next_cursor: null });
+  const [moreTries, setMoreTries] = useState(0);
+  const [moreFailed, setMoreFailed] = useState(false);
   const [open, setOpen] = useState<number | null>(openId);
   const [openMetric, setOpenMetric] = useState<string | null>(openMetricId);
   const [playhead, setPlayhead] = useState<number | undefined>(undefined);
@@ -71,13 +78,32 @@ export function SearchPage({
   const hit = position >= 0 ? previewable[position]! : null;
   const metric = openMetric === null ? null : found.results.filter(isMetric).find((m) => m.metric_id === openMetric) ?? null;
   const [reportsRetried, setReportsRetried] = useState(false);
+  const [reportsAsk, setReportsAsk] = useState<ReportsRequest>({ q: "", offset: 0, limit: REPORTS_PAGE });
+  // The mock reports endpoint answers at once; a metric with no entry stays loading.
+  const reportsFor = metric && metricReports?.[metric.metric_id];
+  const reportsPage = reportsFor && !(metricReportsError && !reportsRetried) ? queryReports(reportsFor, reportsAsk) : null;
 
   function run(q: string, extra: { type?: SearchType; limit?: number } = {}) {
     setQuery(q);
     if (extra.type) setType(extra.type);
+    if (extra.limit) setLimit(extra.limit);
     setFound(runSearch(q, extra));
+    setMoreFailed(false);
     setOpen(null);
     setOpenMetric(null);
+  }
+
+  function more() {
+    setMoreTries(moreTries + 1);
+    setMoreFailed(moreError && moreTries === 0);
+    if (moreError && moreTries === 0) return;
+    const next = runSearch(query, { type, limit, cursor: found.next_cursor });
+    setFound({ ...next, results: [...found.results, ...next.results] });
+  }
+
+  function openReports(id: string) {
+    setOpenMetric(id);
+    setReportsAsk({ q: "", offset: 0, limit: REPORTS_PAGE });
   }
 
   function step(delta: number) {
@@ -134,14 +160,15 @@ export function SearchPage({
             onSearch={(p) => run(p.query, { type: p.type, limit: p.limit })} />
           <ResultGrid results={found.results} sources={found.sources} query={query} people={people} loading={loading} error={retried ? null : error}
             onRetry={() => { setRetried(true); run(query, { type }); }} selectedId={open} onOpen={(h) => { setOpen(h.unit_id); setPlayhead(undefined); }}
-            selectedMetricId={openMetric} onOpenMetric={(m) => setOpenMetric(m.metric_id)} />
+            selectedMetricId={openMetric} onOpenMetric={(m) => openReports(m.metric_id)}
+            more={found.next_cursor !== null} moreError={moreFailed} onMore={more} />
         </AppShell>
       )}
 
       {metric && (
         <div ref={backdrop} className="mm-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setOpenMetric(null); }}>
-          <MetricPreview modal metric={metric} reports={metricReports?.[metric.metric_id] ?? null}
-            error={metricReportsError && !reportsRetried} onRetry={() => setReportsRetried(true)} onClose={() => setOpenMetric(null)} />
+          <MetricPreview key={metric.metric_id} modal metric={metric} reports={reportsPage?.reports ?? null} total={reportsPage?.total} offset={reportsAsk.offset}
+            onRequest={setReportsAsk} error={metricReportsError && !reportsRetried} onRetry={() => setReportsRetried(true)} onClose={() => setOpenMetric(null)} />
         </div>
       )}
 

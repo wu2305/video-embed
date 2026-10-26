@@ -70,6 +70,39 @@ export const Results: Story = {
   },
 };
 
+/**
+ * More results than one page: Load more appends the next page under the
+ * first, and focus moves to the first new card. The status line says the
+ * count is partial until the last page is in.
+ */
+export const LoadMore: Story = {
+  args: { initialQuery: "budget", pageSize: 4 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("status")).toHaveTextContent("First 4 results");
+    await expect(canvas.getAllByRole("article")).toHaveLength(4);
+    await userEvent.click(canvas.getByRole("button", { name: "Load more" }));
+    await expect(canvas.getAllByRole("article")).toHaveLength(6);
+    await waitFor(() => expect(canvas.getAllByRole("article")[4]!.querySelector(".mm-card-link")).toHaveFocus());
+    await expect(canvas.getByRole("status")).toHaveTextContent("6 results");
+    await expect(canvas.queryByRole("button", { name: "Load more" })).toBeNull();
+  },
+};
+
+/** The next page failed: the first page stays, with Try again in the button's place. */
+export const LoadMoreFailed: Story = {
+  args: { initialQuery: "budget", pageSize: 4, moreError: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Load more" }));
+    await expect(canvas.getByRole("alert")).toHaveTextContent("Could not load more results.");
+    await expect(canvas.getAllByRole("article")).toHaveLength(4);
+    await userEvent.click(canvas.getByRole("button", { name: "Try again" }));
+    await expect(canvas.getAllByRole("article")).toHaveLength(6);
+    await expect(canvas.queryByRole("alert")).toBeNull();
+  },
+};
+
 /** Opening a NAS document previews it. ← → step through NAS hits only, Esc closes. */
 export const PreviewOpen: Story = {
   args: { initialQuery: "budget", openId: 201 },
@@ -122,7 +155,7 @@ export const MetricPreviewOpen: Story = {
     const dialog = canvas.getByRole("dialog", { name: "Preview RevPAR" });
     await expect(within(dialog).getAllByRole("listitem")).toHaveLength(7);
     await userEvent.type(within(dialog).getByRole("searchbox", { name: "Filter reports" }), "raj");
-    await expect(within(dialog).getAllByRole("listitem")).toHaveLength(3);
+    await waitFor(() => expect(within(dialog).getAllByRole("listitem")).toHaveLength(3));
     await expect(within(dialog).getByRole("link", { name: "Open in BI ↗" })).toHaveAttribute("href", "https://bi.example.internal/metrics/hotel.revpar");
     await expect(canvasElement.querySelector(".mm-shell")).toHaveAttribute("inert");
     await userEvent.keyboard("{Escape}");
