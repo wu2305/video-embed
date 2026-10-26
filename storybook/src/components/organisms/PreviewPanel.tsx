@@ -135,7 +135,6 @@ export function PreviewPanel({
           {!unavailable && hit.person_ids.map((id) => <Tag key={id} tone="accent">{displayName(id, people)}</Tag>)}
         </div>
         {!unavailable && text && <div className="mm-text mm-transcript">{text}</div>}
-        {!unavailable && plain && !text && <p className="mm-hint" style={{ margin: 0 }}>{t("preview.noText")}</p>}
         {!unavailable && hit.notes?.map((n) => <div key={n} className="mm-text note">{s(n)}</div>)}
         <div className="mm-row">
           {!unavailable && actions}

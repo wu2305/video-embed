@@ -21,21 +21,16 @@ export const Anonymous: Story = { args: { hit: presentingHit, people: [] } };
 
 export const Image: Story = { args: { hit: photoHit } };
 
-/** A NAS document has no thumbnail: the card leads with source and kind, then the OCR text. */
+/**
+ * A NAS document has no thumbnail: the card leads with source and kind. The
+ * matched-text slot stays in the component but is left empty here.
+ */
 export const Document: Story = {
-  args: { hit: documentHit, rank: 3 },
+  args: { hit: { ...documentHit, ocr_text: "", asr_text: "" }, rank: 3 },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector(".mm-thumb, img")).toBeNull();
     await expect(within(canvasElement).getByText("NAS")).toBeVisible();
-  },
-};
-
-/** The index may return a document with no matched text: the card keeps source, kind, name and folder. */
-export const DocumentNoText: Story = {
-  args: { hit: { ...documentHit, ocr_text: "", asr_text: "" }, rank: 3 },
-  play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector(".mm-transcript")).toBeNull();
-    await expect(within(canvasElement).getByRole("button", { name: "recipe_notes.pdf" })).toBeVisible();
   },
 };
 

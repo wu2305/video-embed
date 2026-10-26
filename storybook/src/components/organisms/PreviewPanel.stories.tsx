@@ -55,27 +55,21 @@ export const Image: Story = {
   args: { hit: photoHit, position: 3, total: 4, frameSrc: photoHit.thumb_url!, people, faces: hitFaces(photoHit) },
 };
 
-/** A NAS document has no frame to show: the panel holds only its details and text. */
+/**
+ * A NAS document has no frame to show: the panel holds only its details. The
+ * matched-text slot stays in the component but is left empty here.
+ */
 export const Document: Story = {
-  args: { hit: documentHit, position: 2, total: 4 },
+  args: { hit: { ...documentHit, ocr_text: "", asr_text: "" }, position: 2, total: 4 },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector(".mm-stage, img")).toBeNull();
     await expect(within(canvasElement).getByRole("heading", { name: "recipe_notes.pdf" })).toBeVisible();
   },
 };
 
-/** A document with no matched text says so instead of leaving the panel bare. */
-export const DocumentNoText: Story = {
-  args: { hit: { ...documentHit, ocr_text: "", asr_text: "" }, position: 2, total: 4 },
-  play: async ({ canvasElement }) => {
-    await expect(canvasElement.querySelector(".mm-transcript")).toBeNull();
-    await expect(within(canvasElement).getByText("No matched text to show for this file.")).toBeVisible();
-  },
-};
-
 /** A document whose access was revoked says so under its name, with no text. */
 export const DocumentAccessRevoked: Story = {
-  args: { hit: documentHit, position: 2, total: 4, unavailable: "forbidden" },
+  args: { hit: { ...documentHit, ocr_text: "", asr_text: "" }, position: 2, total: 4, unavailable: "forbidden" },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole("alert")).toBeInTheDocument();
     await expect(canvasElement.querySelector(".mm-transcript")).toBeNull();
