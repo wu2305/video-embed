@@ -24,6 +24,17 @@ export const OnSearch: Story = {
   },
 };
 /** The nightly cycle has not published for days. */
-export const StaleIndex: Story = { args: { index: staleIndexInfo } };
+export const StaleIndex: Story = {
+  args: { index: staleIndexInfo },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement).toHaveTextContent("not updated since 2026-10-19");
+  },
+};
 /** Before the first export there is no snapshot to report. */
-export const NoSnapshot: Story = { args: { index: undefined } };
+export const NoSnapshot: Story = {
+  args: { index: undefined },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement).not.toHaveTextContent(/updated/);
+    await expect(within(canvasElement).getByText("Mei Chen")).toBeVisible();
+  },
+};

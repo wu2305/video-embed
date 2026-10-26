@@ -23,4 +23,10 @@ export const Contract: Story = {
 };
 
 /** The vendor may return no summary; the card still has type, date and id. */
-export const NoSummary: Story = { args: { record: archiveRecords[2]!, rank: 5 } };
+export const NoSummary: Story = {
+  args: { record: archiveRecords[2]!, rank: 5 },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole("article", { name: "Result 5" })).toHaveTextContent("Purchase order");
+    await expect(canvasElement.querySelectorAll(".mm-text")).toHaveLength(0);
+  },
+};

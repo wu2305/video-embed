@@ -55,8 +55,20 @@ export const TypeFromHome: Story = {
   },
 };
 
-/** NAS documents fused with Archive records about the budget. */
-export const Results: Story = { args: { initialQuery: "budget" } };
+/** NAS documents, Archive records and BI metrics fused by rank, with a source filter. */
+export const Results: Story = {
+  args: { initialQuery: "budget" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // The source split lives on the filter chips, not repeated in the status line.
+    await expect(canvas.getByRole("status")).not.toHaveTextContent(/NAS \d/);
+    await expect(canvas.getByRole("button", { name: /^NAS \(4\)/ })).toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: /^Archive \(1\)/ }));
+    await expect(canvas.getAllByRole("article")).toHaveLength(1);
+    await userEvent.click(canvas.getByRole("button", { name: /^BI metrics \(1\)/ }));
+    await expect(canvas.getByRole("button", { name: "Opex budget variance" })).toBeInTheDocument();
+  },
+};
 
 /** Opening a NAS document previews it. ← → step through NAS hits only, Esc closes. */
 export const PreviewOpen: Story = {
@@ -85,19 +97,6 @@ export const PreviewKeyboard: Story = {
     await expect(canvas.queryByRole("dialog")).toBeNull();
     await expect(canvasElement.querySelector(".mm-shell")).not.toHaveAttribute("inert");
     await waitFor(() => expect(canvasElement.querySelector('[data-unit-id="201"] .mm-card-link')).toHaveFocus());
-  },
-};
-
-/** NAS and Archive results fused by rank, with a source filter. */
-export const BothSources: Story = {
-  args: { initialQuery: "budget" },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    // The source split lives on the filter chips, not repeated in the status line.
-    await expect(canvas.getByRole("status")).not.toHaveTextContent(/NAS \d/);
-    await expect(canvas.getByRole("button", { name: /^NAS \(4\)/ })).toBeInTheDocument();
-    await userEvent.click(canvas.getByRole("button", { name: /^Archive \(1\)/ }));
-    await expect(canvas.getAllByRole("article")).toHaveLength(1);
   },
 };
 
@@ -150,17 +149,6 @@ export const MetricReportsFailed: Story = {
     await expect(within(dialog).getByRole("alert")).toHaveTextContent("Could not load the reports.");
     await userEvent.click(within(dialog).getByRole("button", { name: "Try again" }));
     await expect(within(dialog).getAllByRole("listitem")).toHaveLength(7);
-  },
-};
-
-/** All three sources answer "budget"; the filter gains a BI chip. */
-export const ThreeSources: Story = {
-  args: { initialQuery: "budget" },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: /^BI metrics \(1\)/ }));
-    await expect(canvas.getAllByRole("article")).toHaveLength(1);
-    await expect(canvas.getByRole("button", { name: "Opex budget variance" })).toBeInTheDocument();
   },
 };
 

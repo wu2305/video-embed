@@ -256,7 +256,7 @@ a.mm-button:hover { border-color: var(--muted); }
 .mm-note-form { display: grid; gap: 12px; }
 .mm-preview { display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); gap: 16px; align-items: start; }
 /* A document has no frame to show: the details take the whole panel, at a reading width. */
-.mm-preview.mm-plain { grid-template-columns: minmax(0, var(--measure)); }
+.mm-preview.mm-plain { grid-template-columns: minmax(0, 1fr); }
 .mm-preview aside { display: grid; gap: var(--space-3); }
 .mm-preview h2 { margin: 0; font-size: var(--text-lg); line-height: 1.25; overflow-wrap: anywhere; }
 .mm-nav { display: flex; gap: var(--space-3); align-items: center; justify-content: space-between; }
@@ -351,6 +351,8 @@ a.mm-button:hover { border-color: var(--muted); }
 /* dialog layer */
 .mm-backdrop { position: fixed; inset: 0; background: var(--backdrop); display: grid; place-items: center; padding: var(--space-5); z-index: 10; }
 .mm-backdrop > * { width: min(100%, 980px); max-height: 100%; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); }
+/* A preview with no frame holds only details: a narrow dialog, so the nav and actions stay together. */
+.mm-backdrop > .mm-preview.mm-plain { width: min(100%, 560px); }
 
 /* Cards respond to their own width, not the page's: a narrow grid cell gets a
    tighter body and clamps the longer text. */

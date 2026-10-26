@@ -20,8 +20,18 @@ export const Short: Story = {
 };
 
 /** The long form, as a full sentence. */
-export const Long: Story = { args: { long: true } };
+export const Long: Story = {
+  args: { long: true },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement).toHaveTextContent("Updated today 02:40");
+  },
+};
 
 /** Nothing published for longer than the nightly cadence. */
-export const Stale: Story = { args: { index: staleIndexInfo, long: true } };
+export const Stale: Story = {
+  args: { index: staleIndexInfo, long: true },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole("alert")).toHaveTextContent("Not updated since 2026-10-19. Newer files are missing.");
+  },
+};
 

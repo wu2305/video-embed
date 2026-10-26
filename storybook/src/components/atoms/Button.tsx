@@ -4,7 +4,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * `primary` is the single submit action of a form. `ghost` is for dismissals.
    * `danger` is for an action that changes what other people see and cannot be
-   * taken back silently, such as merging two people.
+   * taken back silently, such as deleting something others rely on.
    */
   variant?: "default" | "primary" | "ghost" | "danger";
 }

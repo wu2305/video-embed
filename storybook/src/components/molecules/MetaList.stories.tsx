@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect } from "storybook/test";
 import { MetaList } from "./MetaList";
 import { Tag } from "../atoms/Tag";
 
@@ -18,5 +19,8 @@ export const File: Story = {
       ["kind", <Tag>document</Tag>],
       ["copies", <Tag tone="warn">1 copy</Tag>],
     ],
+  },
+  play: async ({ canvasElement }) => {
+    await expect([...canvasElement.querySelectorAll("dt")].map((d) => d.textContent)).toEqual(["path", "kind", "copies"]);
   },
 };

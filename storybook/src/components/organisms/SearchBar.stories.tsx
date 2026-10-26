@@ -11,7 +11,16 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = { args: { initialQuery: "Q3 budget" } };
+/** The query, a limit, and the source to search: All, NAS, Archive or BI metrics. */
+export const Default: Story = {
+  args: { initialQuery: "Q3 budget" },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await expect([...canvas.getByLabelText("type").querySelectorAll("option")].map((o) => o.value)).toEqual(["all", "nas", "archive", "bi"]);
+    await userEvent.click(canvas.getByRole("button", { name: "search" }));
+    await expect(args.onSearch).toHaveBeenCalledWith(expect.objectContaining({ query: "Q3 budget", type: "all", limit: 12 }));
+  },
+};
 
 /** An empty query: the button stays focusable, says why it cannot search, and shows the reason when pressed. */
 export const EmptyQuery: Story = {

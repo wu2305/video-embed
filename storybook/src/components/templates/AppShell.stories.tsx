@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, within } from "storybook/test";
 import { AppShell } from "./AppShell";
 import { Button } from "../atoms/Button";
 import { Panel } from "../atoms/Panel";
@@ -19,18 +20,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /** Slots: title, subtitle, actions and body. */
-export const ListPage: Story = { args: { actions: <Button variant="primary">Primary action</Button> } };
-
-/** A detail page adds breadcrumbs and a two-column split. */
-export const DetailPage: Story = {
-  args: {
-    title: "Q3_budget_review.xlsx",
-    crumbs: <><a href="#search">Search</a> / file</>,
-    children: (
-      <div className="mm-split">
-        <Panel>Main column</Panel>
-        <aside><Panel title="Details">Sidebar</Panel></aside>
-      </div>
-    ),
+export const ListPage: Story = {
+  args: { actions: <Button variant="primary">Primary action</Button> },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("heading", { level: 1, name: "Page title" })).toBeVisible();
+    await expect(canvas.getByRole("main")).toHaveTextContent("Page body");
+    await expect(canvas.getByRole("button", { name: "Primary action" })).toBeVisible();
   },
 };
