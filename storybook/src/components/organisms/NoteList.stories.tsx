@@ -6,6 +6,8 @@ import { annotations, people } from "../../mock/data";
 
 const meta = {
   title: "Organisms/NoteList",
+  // Media (faces, notes, clips): hidden, since no customer searches images, video or audio. Still tested.
+  tags: ["!dev", "!autodocs"],
   component: NoteList,
   args: { notes: annotations, people, playhead: 50 },
   decorators: [(Story) => <div style={{ maxWidth: 380 }}><Story /></div>],

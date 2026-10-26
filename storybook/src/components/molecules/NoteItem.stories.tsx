@@ -5,6 +5,8 @@ import { annotations, people } from "../../mock/data";
 
 const meta = {
   title: "Molecules/NoteItem",
+  // Media (faces, notes, clips): hidden, since no customer searches images, video or audio. Still tested.
+  tags: ["!dev", "!autodocs"],
   component: NoteItem,
   args: { note: annotations[0]!, people, onSeek: fn() },
   decorators: [(Story) => <div style={{ maxWidth: 380 }}><Story /></div>],

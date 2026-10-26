@@ -5,6 +5,8 @@ import { audioHit, hits, indexInfo, now, pendingFaces, people, personSamples, vi
 
 const meta = {
   title: "Pages/People",
+  // Media (faces, notes, clips): hidden, since no customer searches images, video or audio. Still tested.
+  tags: ["!dev", "!autodocs"],
   component: PeoplePage,
   parameters: { layout: "fullscreen" },
   args: {

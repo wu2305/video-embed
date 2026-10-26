@@ -4,7 +4,7 @@ import { Tag } from "./Tag";
 const meta = {
   title: "Atoms/Tag",
   component: Tag,
-  args: { children: "video" },
+  args: { children: "document" },
   argTypes: { tone: { control: "inline-radio", options: ["neutral", "good", "accent", "warn", "bad"] } },
 } satisfies Meta<typeof Tag>;
 

@@ -17,21 +17,21 @@ export interface TopBarProps {
   hideBrand?: boolean;
 }
 
+// People and Clip are media pages, hidden while no customer searches media.
 const LINKS: { id: PageId; label: MessageKey }[] = [
   { id: "search", label: "nav.search" },
-  { id: "people", label: "nav.people" },
 ];
 
 function initials(name: string): string {
   return name.split(/\s+/).map((part) => part[0] ?? "").join("").slice(0, 2).toUpperCase();
 }
 
-/** A keyframe with a face box in it: what the console finds. */
+/** A magnifier: one search over every source. */
 export function BrandMark() {
   return (
     <svg className="mm-brand-mark" viewBox="0 0 18 18" aria-hidden focusable="false">
-      <rect x="1" y="3" width="16" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <rect x="6.5" y="6" width="5" height="5.5" rx="1" fill="currentColor" />
+      <circle cx="7.5" cy="7.5" r="5.25" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M11.5 11.5 16 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }

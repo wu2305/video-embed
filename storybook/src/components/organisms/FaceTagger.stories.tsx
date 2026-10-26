@@ -5,6 +5,8 @@ import { kitchenFaces, kitchenFrame, people } from "../../mock/data";
 
 const meta = {
   title: "Organisms/FaceTagger",
+  // Media (faces, notes, clips): hidden, since no customer searches images, video or audio. Still tested.
+  tags: ["!dev", "!autodocs"],
   component: FaceTagger,
   args: { src: kitchenFrame, faces: kitchenFaces, people, onTag: fn(), onUndoTag: fn() },
 } satisfies Meta<typeof FaceTagger>;

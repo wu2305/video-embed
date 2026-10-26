@@ -5,6 +5,8 @@ import { annotations, audioHit, cookingHit, duration, hitFaces, indexInfo, kitch
 
 const meta = {
   title: "Pages/Clip",
+  // Media (faces, notes, clips): hidden, since no customer searches images, video or audio. Still tested.
+  tags: ["!dev", "!autodocs"],
   component: ClipPage,
   parameters: { layout: "fullscreen" },
   args: {

@@ -5,6 +5,8 @@ import { people, personSamples } from "../../mock/data";
 
 const meta = {
   title: "Organisms/PeopleGrid",
+  // Media (faces, notes, clips): hidden, since no customer searches images, video or audio. Still tested.
+  tags: ["!dev", "!autodocs"],
   component: PeopleGrid,
   args: { people, samples: personSamples, onOpen: fn() },
 } satisfies Meta<typeof PeopleGrid>;

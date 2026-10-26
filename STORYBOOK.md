@@ -9,6 +9,11 @@ Within the NAS it turns "search by what the pixels look like" into "search by
 who is doing what". Each scene gives the user's goal, the flow, what the repo
 does today, and what is missing. Status tags: **exists**, **partial**, **new**.
 
+*Scope, 2026-10-26: the customer does not search images, video or audio. The
+console shows Archive, NAS documents and BI metrics only. The media scenes
+(1–3, and the media parts of 4 and 5) stay below for reference; their
+components are hidden from the Storybook sidebar but still tested.*
+
 *Updated 2026-10-22 to match the design doc: two sources fused into one list
 (scene 4c), per-user permission filtering at query time (scene 6), and nightly
 ingestion, so files show up the morning after they land (scene 7).*

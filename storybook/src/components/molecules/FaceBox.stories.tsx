@@ -4,6 +4,8 @@ import { kitchenFaces, kitchenFrame } from "../../mock/data";
 
 const meta = {
   title: "Molecules/FaceBox",
+  // Media (faces, notes, clips): hidden, since no customer searches images, video or audio. Still tested.
+  tags: ["!dev", "!autodocs"],
   component: FaceBox,
   args: { face: kitchenFaces[0]!, label: "Ana Ruiz" },
   render: (args) => (

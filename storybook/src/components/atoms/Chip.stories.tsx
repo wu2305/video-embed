@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, within } from "storybook/test";
 import { Chip } from "./Chip";
 
-const meta = { title: "Atoms/Chip", component: Chip, args: { children: "Ana Ruiz" } } satisfies Meta<typeof Chip>;
+const meta = { title: "Atoms/Chip", component: Chip, args: { children: "Archive" } } satisfies Meta<typeof Chip>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

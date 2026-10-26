@@ -14,7 +14,7 @@ type Story = StoryObj<typeof meta>;
 /** Secondary actions. A panel fill and a resting edge, so it never reads as a text field. */
 export const Default: Story = {};
 export const Primary: Story = { args: { variant: "primary", children: "search" } };
-/** Merging two people: the action is named for what it does. */
-export const Danger: Story = { args: { variant: "danger", children: "Merge into Ana Ruiz" } };
+/** A destructive action is named for what it does. */
+export const Danger: Story = { args: { variant: "danger", children: "Delete saved search" } };
 export const Ghost: Story = { args: { variant: "ghost", children: "Close" } };
-export const Disabled: Story = { args: { variant: "primary", children: "Save note", disabled: true } };
+export const Disabled: Story = { args: { variant: "primary", children: "search", disabled: true } };

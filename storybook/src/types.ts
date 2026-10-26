@@ -99,8 +99,8 @@ export type Result = Hit | ArchiveRecord | MetricRecord;
 
 export type SourceId = "nas" | "archive" | "bi";
 
-/** What a search asks for: every source, NAS videos or images only, or one other source. */
-export type SearchType = "all" | "video" | "image" | "archive" | "bi";
+/** What a search asks for: every source, or one source. */
+export type SearchType = "all" | SourceId;
 
 export function sourceOf(result: Result): SourceId {
   return result.source ?? "nas";
