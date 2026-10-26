@@ -93,7 +93,8 @@ select {
 }
 @media (forced-colors: active) { select { appearance: auto; } }
 /* Focus is an outline set off from the control; selection is a border and wash, so the two never look alike. */
-input:focus, select:focus, textarea:focus, button:focus-visible, [role=slider]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input:focus, select:focus, textarea:focus, button:focus-visible, [role=slider]:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a:focus-visible { border-radius: var(--radius-sm); }
 input[aria-invalid=true] { border-color: var(--bad); }
 textarea { min-height: 72px; resize: vertical; }
 button { cursor: pointer; }
@@ -108,7 +109,6 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 .mm-button:hover:not(:disabled, [aria-disabled=true]) { border-color: var(--muted); }
 .mm-primary { background: var(--accent); color: var(--on-accent); border-color: transparent; font-weight: 600; padding: var(--space-2) 18px; min-height: var(--control-min); }
 .mm-ghost { background: transparent; color: var(--muted); }
-/* Feedback is a colour change only: no transitions (see Layout). */
 .mm-primary:hover:not(:disabled, [aria-disabled=true]) { background: var(--accent-strong); }
 .mm-primary:active:not(:disabled, [aria-disabled=true]) { background: var(--accent-strong); border-color: var(--text); }
 /* Busy keeps the label and the fill, adds a spinner, and holds its width, so the row never reflows. */
@@ -139,6 +139,7 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 .mm-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .mm-chip { border-radius: var(--radius-pill); padding: var(--space-1) 12px; color: var(--muted); }
 /* On reads as on without hue: a fill and a heavier label, not only a colour. */
+.mm-chip:hover:not([aria-pressed=true]) { border-color: var(--muted); color: var(--text); }
 .mm-chip[aria-pressed=true] { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); font-weight: 600; }
 .mm-kbd { display: inline-block; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0 5px; font: var(--text-xs)/1.5 var(--mono); color: var(--muted); }
 .mm-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; }
@@ -239,6 +240,8 @@ a.mm-button:hover { border-color: var(--muted); }
 .mm-face.untagged { border-style: dashed; }
 .mm-face.selected { border-width: 3px; box-shadow: 0 0 0 1px var(--image-halo), 0 0 0 3px var(--image-good), inset 0 0 0 1px var(--image-halo); }
 .mm-face.static { pointer-events: none; }
+/* Hover takes the label's colour, so the box and its name read as one target. */
+.mm-face:hover:not(.selected) { border-color: var(--image-accent); }
 .mm-face.untagged .mm-face-label { background: var(--image-warn); }
 .mm-face.selected .mm-face-label { background: var(--image-good); }
 .mm-face.label-below .mm-face-label { bottom: auto; top: 100%; margin: 2px 0 0; }
@@ -258,6 +261,7 @@ a.mm-button:hover { border-color: var(--muted); }
    with the 28px track centred inside it. */
 .mm-scrub { cursor: pointer; border-radius: var(--radius-md); }
 .mm-track { position: relative; height: var(--track-h); background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--radius-md); cursor: pointer; overflow: hidden; }
+.mm-scrub:hover .mm-track { border-color: var(--muted); }
 .mm-track .scene { position: absolute; top: 0; bottom: 0; border-right: 1px solid var(--line); }
 /* The matched range has an edge as well as a fill, and the legend names it, so hue never carries it alone. */
 .mm-track .matched { position: absolute; top: 0; bottom: 0; background: var(--good-wash); box-shadow: inset 0 0 0 1px var(--good); }
@@ -382,6 +386,8 @@ a.mm-button:hover { border-color: var(--muted); }
   .mm-card-link, .mm-face { min-height: 0; }
   /* Keyboard hints mean nothing on a touch screen. */
   .mm-kbd { display: none; }
+  /* Text links in lists and crumbs get the same 44px band. */
+  .mm-more, .mm-reports a, .mm-report-rows a, .mm-crumbs a { display: inline-flex; align-items: center; min-height: var(--touch-min); }
   /* The box keeps the detected size; an invisible 44px target is centred on it. */
   .mm-face::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100% + 20px, var(--touch-min)); height: max(100% + 20px, var(--touch-min)); translate: -50% -50%; }
 }
@@ -393,7 +399,7 @@ a.mm-button:hover { border-color: var(--muted); }
 @media (prefers-reduced-motion: no-preference) {
   /* Tactile. Every control answers a pointer within one frame of intent. */
   button, input, select, textarea, .mm-links a, .mm-card, .mm-note,
-  .mm-tag, .mm-scrub, .mm-track .matched, .mm-face {
+  .mm-tag, .mm-scrub, .mm-track, .mm-track .matched, .mm-face {
     transition-property: background-color, border-color, color, opacity, scale, translate;
     transition-duration: var(--dur-2);
     transition-timing-function: var(--ease-out);
@@ -436,6 +442,9 @@ a.mm-button:hover { border-color: var(--muted); }
   /* A saved or merged message appears after the write. It rises from the button
      that caused it. */
   .mm-saved { animation: mm-reveal var(--dur-3) var(--ease-out) both; }
+
+  /* An error or source-down notice reveals the same way, so no message pops. */
+  .mm-notice { animation: mm-reveal var(--dur-3) var(--ease-out) both; }
 
   /* Loading. Placeholders replace the old results while a search runs, and the
      status line pulses so the wait has a heartbeat. The pulse is state, not
