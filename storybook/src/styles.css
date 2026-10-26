@@ -319,20 +319,24 @@ a.mm-button:hover { border-color: var(--muted); }
 .mm-home-brand .mm-brand-mark { width: 1.1em; height: 1.1em; }
 .mm-home-search { width: min(100%, 40rem); }
 .mm-home-field { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-/* One pill holds the query and the type; the box draws the border and the focus ring for the query. */
+/* One pill holds the query and the type; the box draws the border and the one focus ring for both. */
 .mm-home-box { flex: 1 1 18rem; min-width: 0; display: flex; align-items: center; min-height: var(--touch-min); background: var(--field); border: 1px solid var(--line-strong); border-radius: var(--radius-pill); }
-.mm-home-box:has(input:focus) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mm-home-box:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .mm-home-box input { flex: 1; min-width: 0; align-self: stretch; padding: var(--space-2) var(--space-3) var(--space-2) var(--space-5); border: 0; border-radius: var(--radius-pill); background: transparent; font-size: var(--text-md); }
 .mm-home-box input:focus { outline: none; }
 /* The type keeps the box's full height as its target; a short rule, the first background layer, divides it from the query. */
 .mm-home-box select {
-  flex: none; align-self: stretch; margin-inline-end: var(--space-2); padding-block: 0; padding-inline-start: var(--space-4);
+  flex: none; align-self: stretch; padding-block: 0; padding-inline: var(--space-4) calc(var(--space-5) + 14px);
   border: 0; border-radius: 0; background-color: transparent; color: var(--muted);
   background-image: linear-gradient(var(--line-strong), var(--line-strong)), linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-  background-position: 0 50%, calc(100% - var(--space-3) - 5px) 50%, calc(100% - var(--space-3)) 50%;
+  background-position: 0 50%, calc(100% - var(--space-4) - 5px) 50%, calc(100% - var(--space-4)) 50%;
   background-size: 1px 50%, 5px 5px, 5px 5px;
 }
-.mm-home-box select:focus { outline-offset: -4px; border-radius: var(--radius-pill); background-size: 0 0, 5px 5px, 5px 5px; }
+/* A focused type fills its end of the pill with the accent wash, inside the box's ring, instead of drawing a second ring. */
+.mm-home-box select:focus {
+  outline: none; color: var(--text); background-color: color-mix(in srgb, var(--accent) 18%, var(--field));
+  border-start-end-radius: var(--radius-pill); border-end-end-radius: var(--radius-pill); background-size: 0 0, 5px 5px, 5px 5px;
+}
 .mm-home-field .mm-primary { border-radius: var(--radius-pill); min-height: var(--touch-min); }
 .mm-home-foot { margin-top: auto; padding-top: var(--space-6); display: grid; justify-items: center; gap: var(--space-2); }
 
