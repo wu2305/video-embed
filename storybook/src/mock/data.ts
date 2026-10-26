@@ -168,7 +168,7 @@ export const metricReports: Record<string, MetricReport[]> = Object.fromEntries(
   ],
   "taxi.revenue_per_trip": [board, report("R-0712", "Fleet daily dashboard", "dashboard", "Taxi / Operations", "Lena Vogt", 2, at(2026, 10, 9, 15))],
   "fin.opex_budget_variance": [report("R-1210", "FY26 opex budget tracker", "dashboard", "Finance / Planning", "Ines Duarte", 3, at(2026, 10, 18, 10))],
-  "risk.npl_ratio_legacy": [],
+  "fin.group_ebitda_margin_legacy": [],
 } satisfies Record<string, MetricReport[]>).map(([id, list]) => [id, byUse(list)]));
 
 function metric(m: Omit<MetricRecord, "source" | "reports" | "report_count" | "deep_link">): MetricRecord {
@@ -176,7 +176,7 @@ function metric(m: Omit<MetricRecord, "source" | "reports" | "report_count" | "d
   return { source: "bi", ...m, reports: all.slice(0, 3), report_count: all.length, deep_link: `${BI}/metrics/${m.metric_id}` };
 }
 
-/** Metrics the BI search returns for "revenue", "budget" and "NPL" (docs/BI_METRIC_API.md). */
+/** Metrics the BI search returns for "revenue", "budget" and "EBITDA" (docs/BI_METRIC_API.md). */
 export const metricRecords: MetricRecord[] = [
   metric({
     metric_id: "hotel.revpar", name: "RevPAR", domain: "Hotels", owner: "Lena Vogt", vendor_rank: 1,
@@ -188,8 +188,8 @@ export const metricRecords: MetricRecord[] = [
   }),
   metric({ metric_id: "fin.opex_budget_variance", name: "Opex budget variance", domain: "Finance", owner: "Ines Duarte", vendor_rank: 3 }),
   metric({
-    metric_id: "risk.npl_ratio_legacy", name: "NPL ratio (legacy)", domain: "Risk", vendor_rank: 4,
-    definition: "Replaced by risk.npl_ratio in 2025",
+    metric_id: "fin.group_ebitda_margin_legacy", name: "Group EBITDA margin (legacy)", domain: "Finance", vendor_rank: 4,
+    definition: "Replaced by fin.group_ebitda_margin in 2025",
   }),
 ];
 

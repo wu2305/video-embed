@@ -346,7 +346,6 @@ const samplesZh: Record<string, string> = {
   "Media-Library": "媒体库",
   "Hotels": "酒店",
   "Taxi": "出租车",
-  "Risk": "风险管理部",
   "Monthly hotel P&L": "酒店月度损益表",
   "Finance / Close": "财务 / 结账",
   "Hotel portfolio dashboard": "酒店组合看板",
@@ -368,8 +367,8 @@ const samplesZh: Record<string, string> = {
   "Revenue per trip": "每单收入",
   "Fare revenue ÷ completed trips": "车费收入 ÷ 完成订单数",
   "Opex budget variance": "运营费用预算偏差",
-  "NPL ratio (legacy)": "不良贷款率（旧版）",
-  "Replaced by risk.npl_ratio in 2025": "2025 年已由 risk.npl_ratio 取代",
+  "Group EBITDA margin (legacy)": "集团 EBITDA 利润率（旧版）",
+  "Replaced by fin.group_ebitda_margin in 2025": "2025 年已由 fin.group_ebitda_margin 取代",
 };
 
 /** The sample text in `zh`, or the text itself when there is no translation. */
