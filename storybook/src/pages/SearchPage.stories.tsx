@@ -100,16 +100,15 @@ export const PreviewKeyboard: Story = {
   },
 };
 
-/** A metric name with no matching media: BI metric cards, each with its top reports. */
+/** A metric name with no matching media: BI metric cards, with no reports on the card. */
 export const MetricSearch: Story = {
   args: { initialQuery: "revenue", corpus: [] },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole("status")).toHaveTextContent("2 results");
     const card = canvas.getByRole("button", { name: "RevPAR" }).closest("article")!;
-    await expect(card).toHaveTextContent("+4 more");
-    // A report link opens the report in BI; it is not covered by the card's button.
-    await expect(within(card as HTMLElement).getByRole("link", { name: "Monthly hotel P&L" })).toHaveAttribute("href", "https://bi.example.internal/reports/R-1042");
+    // Reports are listed only in the preview.
+    await expect(within(card as HTMLElement).queryAllByRole("link")).toHaveLength(0);
   },
 };
 
@@ -131,7 +130,7 @@ export const MetricPreviewOpen: Story = {
   },
 };
 
-/** The report list is still loading: the card's top reports show, with a placeholder under them. */
+/** The report list is still loading: the top reports from the search show, with a placeholder under them. */
 export const MetricReportsLoading: Story = {
   args: { initialQuery: "revenue", corpus: [], metricReports: {}, openMetricId: "hotel.revpar" },
   play: async ({ canvasElement }) => {
@@ -141,7 +140,7 @@ export const MetricReportsLoading: Story = {
   },
 };
 
-/** The reports request failed: the card's top reports stay, with Try again. */
+/** The reports request failed: the top reports from the search stay, with Try again. */
 export const MetricReportsFailed: Story = {
   args: { initialQuery: "revenue", corpus: [], metricReportsError: true, openMetricId: "hotel.revpar" },
   play: async ({ canvasElement }) => {

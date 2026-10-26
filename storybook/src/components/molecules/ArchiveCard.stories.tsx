@@ -22,11 +22,12 @@ export const Contract: Story = {
   },
 };
 
-/** The vendor may return no summary; the card still has type, date and id. */
-export const NoSummary: Story = {
-  args: { record: archiveRecords[2]!, rank: 5 },
+/** Only the fields every vendor returns: type, title and date. Department and summary stay off the card. */
+export const FieldsEveryVendorReturns: Story = {
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole("article", { name: "Result 5" })).toHaveTextContent("Purchase order");
-    await expect(canvasElement.querySelectorAll(".mm-text")).toHaveLength(0);
+    const card = within(canvasElement).getByRole("article", { name: "Result 2" });
+    await expect(card).toHaveTextContent("Contract");
+    await expect(card.querySelectorAll(".mm-tag")).toHaveLength(1);
+    await expect(card.querySelectorAll(".mm-text")).toHaveLength(0);
   },
 };
