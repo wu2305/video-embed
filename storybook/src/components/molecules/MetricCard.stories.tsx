@@ -36,12 +36,3 @@ export const OneReport: Story = {
   },
 };
 
-/** The metric exists but nothing uses it. */
-export const NoReports: Story = {
-  args: { metric: metricRecords[3]! },
-  play: async ({ canvasElement }) => {
-    await expect(canvasElement).toHaveTextContent("No reports use it.");
-    await expect(within(canvasElement).queryByRole("list")).toBeNull();
-  },
-};
-

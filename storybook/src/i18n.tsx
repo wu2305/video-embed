@@ -70,7 +70,6 @@ const en = {
   "card.archiveSource": "Archive",
   "card.biSource": "BI",
   "card.metric": "Metric",
-  "card.noReports": "No reports use it.",
   "card.moreReports": "+{count} more",
   "metric.owner": "owner",
   "metric.reports": "Reports",
@@ -226,7 +225,6 @@ const zh: Partial<Record<MessageKey, string>> = {
   "card.archiveSource": "档案系统",
   "card.biSource": "BI",
   "card.metric": "指标",
-  "card.noReports": "没有报表使用此指标。",
   "card.moreReports": "还有 {count} 个",
   "metric.owner": "负责人",
   "metric.reports": "报表",
@@ -367,8 +365,8 @@ const samplesZh: Record<string, string> = {
   "Revenue per trip": "每单收入",
   "Fare revenue ÷ completed trips": "车费收入 ÷ 完成订单数",
   "Opex budget variance": "运营费用预算偏差",
-  "Group EBITDA margin (legacy)": "集团 EBITDA 利润率（旧版）",
-  "Replaced by fin.group_ebitda_margin in 2025": "2025 年已由 fin.group_ebitda_margin 取代",
+  "Group EBITDA margin": "集团 EBITDA 利润率",
+  "EBITDA ÷ group revenue": "EBITDA ÷ 集团收入",
 };
 
 /** The sample text in `zh`, or the text itself when there is no translation. */

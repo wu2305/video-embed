@@ -45,8 +45,6 @@ export const ReportsFailed: Story = {
   },
 };
 
-export const NoReports: Story = { args: { metric: metricRecords[3]!, reports: [] } };
-
 /** 320px wide, in Chinese: the rows wrap and nothing scrolls sideways. */
 export const Phone320Chinese: Story = {
   globals: { locale: "zh" },

@@ -41,6 +41,8 @@ describe("BI metric search", () => {
     expect(searchBiMock(metricRecords, people, { query: "revenue" }).map((m) => m.metric_id)).toEqual(["hotel.revpar", "taxi.revenue_per_trip"]);
     expect(searchBiMock(metricRecords, people, { query: "Ana is presenting the budget" }).map((m) => m.metric_id)).toEqual(["fin.opex_budget_variance"]);
     expect(searchBiMock(metricRecords, people, { query: "skydiving" })).toEqual([]);
+    // Used in no report: left out.
+    expect(searchBiMock(metricRecords, people, { query: "EBITDA" })).toEqual([]);
   });
   it("reports a BI outage and keeps the other sources", () => {
     const { results, sources } = searchGateway(hits, archiveRecords, people, { query: "cooking" }, { bi: true }, metricRecords);
