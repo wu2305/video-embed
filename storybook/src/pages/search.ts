@@ -44,7 +44,7 @@ export function searchArchiveMock(records: readonly ArchiveRecord[], people: rea
 export function searchBiMock(metrics: readonly MetricRecord[], people: readonly Person[], f: Filters): MetricRecord[] {
   const words = parseQuery(f.query, people).what.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 2);
   return metrics
-    .filter((m) => words.some((w) => `${m.name} ${m.metric_id} ${m.definition ?? ""}`.toLowerCase().includes(w)))
+    .filter((m) => m.report_count > 0 && words.some((w) => `${m.name} ${m.metric_id} ${m.definition ?? ""}`.toLowerCase().includes(w)))
     .sort((a, b) => a.vendor_rank - b.vendor_rank);
 }
 

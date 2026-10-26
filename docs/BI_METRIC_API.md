@@ -12,7 +12,7 @@ as long as these responses hold. The Storybook types `MetricRecord` and
 - **Caller identity.** The gateway resolves the signed-in user as it does for
   the other sources (design doc §5) and returns only reports that user may open
   in the BI platform. `report_count` counts those reports only. A metric is
-  listed even when the user can open none of its reports.
+  left out when the user can open none of its reports.
 - **Times** are epoch seconds. **Links** are absolute URLs into the BI
   platform, which checks access again when they are opened.
 - **Errors** use `{ "error": { "code": string, "message": string } }`. If the
@@ -40,16 +40,16 @@ in the BI side's ranking. The gateway fuses them with the other sources by rank
   "metrics": [
     {
       "source": "bi",
-      "metric_id": "fin.net_revenue",
-      "name": "Net revenue",
-      "domain": "Finance",
-      "owner": "Raj Patel",
-      "definition": "Gross sales minus returns, discounts and allowances",
+      "metric_id": "hotel.revpar",
+      "name": "RevPAR",
+      "domain": "Hotels",
+      "owner": "Lena Vogt",
+      "definition": "Room revenue ÷ available room nights",
       "report_count": 7,
       "reports": [
         {
           "report_id": "R-1042",
-          "title": "Monthly P&L",
+          "title": "Monthly hotel P&L",
           "kind": "report",
           "folder": "Finance / Close",
           "owner": "Raj Patel",
@@ -58,7 +58,7 @@ in the BI side's ranking. The gateway fuses them with the other sources by rank
           "deep_link": "https://bi.example.internal/reports/R-1042"
         }
       ],
-      "deep_link": "https://bi.example.internal/metrics/fin.net_revenue",
+      "deep_link": "https://bi.example.internal/metrics/hotel.revpar",
       "vendor_rank": 1
     }
   ]
@@ -114,7 +114,6 @@ null on the last page. Unknown `metric_id` → 404 `code: "metric_not_found"`.
 | State | Endpoint | Console |
 |---|---|---|
 | Metric with reports | 1 | Card: top 3 reports, "+N more" |
-| Metric with no visible reports | 1 | Card: "No reports use it." |
 | Preview loading | 2 | Top 3 stay, placeholder below |
 | Preview failed | 2 | "Could not load the reports." + Try again |
 | Filter with no match | 2 (`q`) | "No reports match." |
