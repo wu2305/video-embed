@@ -30,6 +30,15 @@ export const Document: Story = {
   },
 };
 
+/** The index may return a document with no matched text: the card keeps source, kind, name and folder. */
+export const DocumentNoText: Story = {
+  args: { hit: { ...documentHit, ocr_text: "", asr_text: "" }, rank: 3 },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector(".mm-transcript")).toBeNull();
+    await expect(within(canvasElement).getByRole("button", { name: "recipe_notes.pdf" })).toBeVisible();
+  },
+};
+
 export const NonMasterCopy: Story = { args: { hit: copyHit } };
 
 export const Selected: Story = { args: { selected: true } };

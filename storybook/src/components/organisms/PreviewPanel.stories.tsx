@@ -64,6 +64,15 @@ export const Document: Story = {
   },
 };
 
+/** A document with no matched text says so instead of leaving the panel bare. */
+export const DocumentNoText: Story = {
+  args: { hit: { ...documentHit, ocr_text: "", asr_text: "" }, position: 2, total: 4 },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector(".mm-transcript")).toBeNull();
+    await expect(within(canvasElement).getByText("No matched text to show for this file.")).toBeVisible();
+  },
+};
+
 /** A document whose access was revoked says so under its name, with no text. */
 export const DocumentAccessRevoked: Story = {
   args: { hit: documentHit, position: 2, total: 4, unavailable: "forbidden" },

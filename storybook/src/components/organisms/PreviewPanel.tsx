@@ -96,7 +96,8 @@ export function PreviewPanel({
   }
 
   const name = hit.path.split("/").pop() ?? hit.path;
-  const text = s((hit.ocr_text || hit.asr_text).trim());
+  // The index may return a hit with no OCR or ASR text at all.
+  const text = s((hit.ocr_text || hit.asr_text || "").trim());
 
   return (
     <div ref={dialog} className={`mm-preview${plain ? " mm-plain" : ""}`} role="dialog" aria-modal={modal || undefined} aria-label={t("preview.label", { name })} tabIndex={-1} onKeyDown={keys}>
@@ -134,6 +135,7 @@ export function PreviewPanel({
           {!unavailable && hit.person_ids.map((id) => <Tag key={id} tone="accent">{displayName(id, people)}</Tag>)}
         </div>
         {!unavailable && text && <div className="mm-text mm-transcript">{text}</div>}
+        {!unavailable && plain && !text && <p className="mm-hint" style={{ margin: 0 }}>{t("preview.noText")}</p>}
         {!unavailable && hit.notes?.map((n) => <div key={n} className="mm-text note">{s(n)}</div>)}
         <div className="mm-row">
           {!unavailable && actions}
