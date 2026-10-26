@@ -84,8 +84,7 @@ export function ResultGrid({ results, query = "", people, sources, selectedId = 
       <div className="mm-grid">
         {/* While a search runs, placeholders replace the old results so nothing stale reads as live. */}
         {loading && Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="mm-card mm-skeleton" aria-hidden>
-            <div className="mm-thumb" />
+          <div key={i} className="mm-card mm-plain mm-skeleton" aria-hidden>
             <div className="mm-body"><span /><span /><span /></div>
           </div>
         ))}

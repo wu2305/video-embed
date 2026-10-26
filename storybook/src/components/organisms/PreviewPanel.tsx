@@ -14,8 +14,8 @@ export interface PreviewPanelProps {
   /** Position within the result list, for the "3 / 12" counter. */
   position: number;
   total: number;
-  /** Poster frame. Used when no `videoSrc` is given, as in these stories. */
-  frameSrc: string;
+  /** Poster frame of a video or image hit. Used when no `videoSrc` is given, as in these stories. Documents and audio show none. */
+  frameSrc?: string;
   videoSrc?: string;
   faces?: readonly Face[];
   people?: readonly Person[];
@@ -47,7 +47,8 @@ const UNAVAILABLE: Record<Unavailable, MessageKey> = { forbidden: "preview.forbi
 /**
  * Scene 5: the matched moment, not the file. Plays the scene range on a loop,
  * overlays face names and the note under the playhead, and steps through hits
- * with the arrow keys.
+ * with the arrow keys. A document or audio hit has no frame: the panel shows
+ * only its details and text.
  */
 export function PreviewPanel({
   hit, position, total, frameSrc, videoSrc, faces = [], people = [], annotations = [],
@@ -56,6 +57,7 @@ export function PreviewPanel({
   const { t, s } = useI18n();
   const video = useRef<HTMLVideoElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
+  const plain = hit.kind !== "video" && hit.kind !== "image";
   const range: Scene | null = hit.scene_start != null && hit.scene_end != null ? { start: hit.scene_start, end: hit.scene_end } : null;
   // The track's key already names the matched range; the tag stands in only when there is no track.
   const showTrack = !unavailable && hit.kind === "video" && duration > 0;
@@ -94,11 +96,12 @@ export function PreviewPanel({
   }
 
   const name = hit.path.split("/").pop() ?? hit.path;
-  const text = s((hit.ocr_text || hit.asr_text).trim());
+  // The index may return a hit with no OCR or ASR text at all.
+  const text = s((hit.ocr_text || hit.asr_text || "").trim());
 
   return (
-    <div ref={dialog} className="mm-preview" role="dialog" aria-modal={modal || undefined} aria-label={t("preview.label", { name })} tabIndex={-1} onKeyDown={keys}>
-      <div>
+    <div ref={dialog} className={`mm-preview${plain ? " mm-plain" : ""}`} role="dialog" aria-modal={modal || undefined} aria-label={t("preview.label", { name })} tabIndex={-1} onKeyDown={keys}>
+      {!plain && <div>
         <div className="mm-stage">
           {unavailable ? (
             <div className="mm-unavailable" role="alert">
@@ -117,7 +120,7 @@ export function PreviewPanel({
             <AnnotationTrack duration={duration} scenes={scenes} annotations={annotations} playhead={now} matched={range} onSeek={onSeek} />
           </div>
         )}
-      </div>
+      </div>}
       <aside>
         <div className="mm-nav">
           <Button onClick={onPrev} disabled={position <= 1}>{t("preview.previous")} <Kbd>←</Kbd></Button>
@@ -125,6 +128,7 @@ export function PreviewPanel({
           <Button onClick={onNext} disabled={position >= total}>{t("preview.next")} <Kbd>→</Kbd></Button>
         </div>
         <h2 title={hit.path}>{name}</h2>
+        {plain && unavailable && <div className="mm-notice warn" role="alert"><strong>{t(UNAVAILABLE[unavailable])}</strong></div>}
         <div className="mm-mono">
           <Tag>{t(`kind.${hit.kind}` as MessageKey)}</Tag>
           {range && !showTrack && <Tag tone="good">{formatTime(range.start)}–{formatTime(range.end)}</Tag>}
