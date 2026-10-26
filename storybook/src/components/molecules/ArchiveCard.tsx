@@ -9,10 +9,11 @@ export interface ArchiveCardProps {
 }
 
 /**
- * One Archive System record (scene 4c). Metadata only: there is no preview,
- * because the gateway never fetches the document. The title is a link that
- * opens the record in the Archive System, which checks access again itself.
- * It has no thumbnail frame: it leads with source and record type.
+ * One Archive System record (scene 4c): source, record type, title and archive
+ * date, the fields every vendor returns. Department and summary are optional in
+ * the API, so the card leaves them out and every Archive card has one height.
+ * There is no preview, because the gateway never fetches the document. The title
+ * is a link that opens the record in the Archive System, which checks access again.
  */
 export function ArchiveCard({ record, rank }: ArchiveCardProps) {
   const { t, s } = useI18n();
@@ -27,9 +28,7 @@ export function ArchiveCard({ record, rank }: ArchiveCardProps) {
         </a>
         <div className="mm-mono">
           <Tag>{formatDate(record.archived_at)}</Tag>
-          {record.department && <Tag>{s(record.department)}</Tag>}
         </div>
-        {record.summary && <div className="mm-text">{s(record.summary)}</div>}
       </div>
     </article>
   );

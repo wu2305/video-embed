@@ -152,7 +152,8 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 .mm-search input[type=text] { width: 100%; }
 
 /* result card and grid */
-.mm-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr)); }
+/* Every row takes the height of the tallest card, so all cards share one height. */
+.mm-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr)); grid-auto-rows: 1fr; }
 .mm-card { background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; text-align: start; padding: 0; color: inherit; container-type: inline-size; }
 .mm-card.selected { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-wash); }
 /* The card's one button stretches over the whole card; focus shows on the card. */
@@ -193,28 +194,14 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 .mm-skeleton .mm-body span:last-child { width: 60%; }
 /* Cards with no thumbnail frame (Archive records, NAS documents) lead with source and kind. */
 .mm-archive .mm-body, .mm-plain .mm-body { padding-top: 12px; }
-.mm-archive .mm-name { white-space: normal; }
+/* Titles wrap to two lines at most; the full title is in the tooltip. */
+.mm-archive .mm-name { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .mm-archive-head, .mm-plain-head { display: flex; gap: var(--space-2); align-items: baseline; }
 .mm-archive-head .mm-source-name { color: var(--warn); }
 .mm-plain-head .mm-source-name { color: var(--good); }
-/* BI metric: the name opens the preview; each report opens in the BI platform. */
+/* BI metric: the name opens the preview, which lists the reports. */
 .mm-metric .mm-source-name, .mm-metric-preview .mm-source-name { color: var(--accent-strong); }
-.mm-metric a { color: var(--accent); }
 .mm-metric .mm-definition { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-/* The reports are the answer, so they get their own band under the metric. */
-.mm-reports { margin: var(--space-1) 0 0; padding: var(--space-2) 0 0; list-style: none; display: grid; gap: var(--space-2); border-top: 1px solid var(--line); }
-.mm-reports li { display: grid; gap: 2px; min-width: 0; }
-/* One line per title keeps the cards level; the full title is in the tooltip and the preview. */
-.mm-reports a { display: flex; gap: .3em; min-width: 0; font-weight: 500; text-decoration: none; }
-.mm-reports a:hover { text-decoration: underline; }
-.mm-report-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* The date leads so it survives when a long folder is cut short. */
-.mm-report-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mm-more { all: unset; justify-self: start; font-size: var(--text-xs); color: var(--accent); cursor: pointer; }
-.mm-more:hover { text-decoration: underline; }
-.mm-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
-/* Report links and "+N more" sit above the card's stretched preview button. */
-.mm-reports a, .mm-more { position: relative; z-index: 1; }
 .mm-metric-preview { display: grid; gap: var(--space-3); align-content: start; }
 .mm-metric-preview h2 { margin: 0; font-size: var(--text-lg); line-height: 1.25; overflow-wrap: anywhere; }
 .mm-metric-preview h3 { margin: 0; font-size: var(--text-sm); }
@@ -393,7 +380,7 @@ a.mm-button:hover { border-color: var(--muted); }
   /* Keyboard hints mean nothing on a touch screen. */
   .mm-kbd { display: none; }
   /* Text links in lists and crumbs get the same 44px band. */
-  .mm-more, .mm-reports a, .mm-report-rows a, .mm-crumbs a { display: inline-flex; align-items: center; min-height: var(--touch-min); }
+  .mm-report-rows a, .mm-crumbs a { display: inline-flex; align-items: center; min-height: var(--touch-min); }
   /* The box keeps the detected size; an invisible 44px target is centred on it. */
   .mm-face::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100% + 20px, var(--touch-min)); height: max(100% + 20px, var(--touch-min)); translate: -50% -50%; }
 }

@@ -113,7 +113,7 @@ null on the last page. Unknown `metric_id` → 404 `code: "metric_not_found"`.
 
 | State | Endpoint | Console |
 |---|---|---|
-| Metric with reports | 1 | Card: top 3 reports, "+N more" |
+| Metric with reports | 1 | Card: name, id, domain, definition; reports only in the preview |
 | Preview loading | 2 | Top 3 stay, placeholder below |
 | Preview failed | 2 | "Could not load the reports." + Try again |
 | Filter with no match | 2 (`q`) | "No reports match." |

@@ -53,3 +53,14 @@ export const Zoom200Chinese: Story = {
     await expect(within(box).getByRole("group", { name: "按来源筛选" })).toBeInTheDocument();
   },
 };
+
+/** NAS, Archive and BI cards mixed in one grid all share one height. */
+export const EqualHeights: Story = {
+  args: { results: fuseByRank([hits, archiveRecords, metricRecords]), query: "budget" },
+  decorators: [(Story) => <div style={{ width: 960 }}><Story /></div>],
+  play: async ({ canvasElement }) => {
+    const heights = [...canvasElement.querySelectorAll(".mm-grid > .mm-card")].map((c) => Math.round(c.getBoundingClientRect().height));
+    await expect(heights.length).toBeGreaterThan(4);
+    await expect(new Set(heights).size).toBe(1);
+  },
+};

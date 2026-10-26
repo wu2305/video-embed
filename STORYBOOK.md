@@ -221,9 +221,10 @@ vendor's full-text API in parallel.
    by comparing raw scores: NAS cosine scores and the vendor's relevance are on
    different scales. The current `Index.check_backend` guard already rejects
    mixing embedding backends, and the same rule applies here.
-2. An Archive card shows the title, record type, archive date, department, the
-   vendor's summary and the record id. It has no thumbnail, no score and no
-   preview. Its title is a link that opens the record in the Archive System
+2. An Archive card shows only what every vendor returns: the record type, title
+   and archive date. Department and summary are optional in the API, so they stay
+   off the card and every card in the grid keeps one height. It has no thumbnail,
+   no score and no preview. Its title is a link that opens the record in the Archive System
    (deep-link schema, §3.2), which checks access again.
 3. When both sources return results, cards carry a source badge (*NAS*,
    *Archive*) and a source filter appears: all, NAS media, Archive.
@@ -245,16 +246,15 @@ and see which reports use each one. The gateway sends the *what* of the query to
 its BI metric search and fuses the metrics into the same list by rank. The API
 is specified in [`docs/BI_METRIC_API.md`](docs/BI_METRIC_API.md).
 
-1. A metric card shows the metric name, id, domain and a two-line definition,
-   then, under a rule, the top three reports: one line for the title, one for
-   the last-modified date and folder. "+N more" opens the preview. A metric that
-   no report the user may open uses is not listed.
+1. A metric card shows the metric name, id, domain and a two-line definition.
+   It lists no reports: they are in the preview, so the card keeps the grid's one
+   height. A metric that no report the user may open uses is not listed.
 2. The metric name opens the **metric preview** on the search page, as a
    dialog like the media preview: owner, every report with its type, folder,
    owner, charts that use the metric and date, a filter field from six reports
    up, and *Open in BI*. Esc closes it and returns focus to the card.
-3. Each report link, on the card and in the preview, opens the report in the
-   BI platform, which checks access again.
+3. Each report link in the preview opens the report in the BI platform, which
+   checks access again.
 4. While the full list loads, the top three stay and a placeholder follows. If
    it fails, the preview says so and offers Try again.
 5. The source filter gains a *BI metrics* chip. Only sources that returned
