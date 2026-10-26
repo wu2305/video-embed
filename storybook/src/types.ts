@@ -94,6 +94,13 @@ export interface MetricRecord {
   vendor_rank: number;
 }
 
+/** One page of `/api/bi/metrics/{metric_id}/reports` (docs/BI_METRIC_API.md). */
+export interface MetricReportsPage {
+  reports: MetricReport[];
+  /** Reports that match the filter, across every page. */
+  total: number;
+}
+
 /** One row of a gateway result list. */
 export type Result = Hit | ArchiveRecord | MetricRecord;
 

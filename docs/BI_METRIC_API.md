@@ -90,24 +90,30 @@ in the BI side's ranking. The gateway fuses them with the other sources by rank
 ## 2. Reports that use a metric
 
 ```
-GET /api/bi/metrics/{metric_id}/reports?q=<text>&cursor=<c>&limit=<n>
+GET /api/bi/metrics/{metric_id}/reports?q=<text>&offset=<n>&limit=<n>
 ```
 
-Called when the user opens a metric's preview. It returns every report the
-caller may open, in the same order as the card's top reports.
+Called when the user opens a metric's preview, and again for each page or
+filter. It returns one page of the reports the caller may open, in the same
+order as the card's top reports. A metric can be used by hundreds of reports,
+so the console never asks for all of them at once.
 
 | Param | Notes |
 |---|---|
-| `q` | Optional. Filters on title, folder and owner. The preview's filter field shows from 6 reports up. |
-| `cursor` | From `next_cursor`. Absent on the first page. |
-| `limit` | Default 100, max 200. |
+| `q` | Optional. Filters on title, folder and owner. The preview's filter field shows from 6 reports up and sends `q` once typing pauses for 250 ms. A new `q` starts again at `offset=0`. |
+| `offset` | Position of the first report to return. Default 0. |
+| `limit` | Default 10, max 100. The console asks for 10. |
 
 ```json
-{ "reports": [ /* MetricReport */ ], "total": 7, "next_cursor": null }
+{ "reports": [ /* MetricReport */ ], "total": 34 }
 ```
 
-`total` equals the metric's `report_count` when `q` is empty. `next_cursor` is
-null on the last page. Unknown `metric_id` → 404 `code: "metric_not_found"`.
+`total` counts every report that matches `q` (all of them when `q` is empty, so
+it equals the metric's `report_count`). The console shows "11–20 of 34" with
+Previous and Next, and needs `total` for that. Offsets rather than cursors,
+because Previous and the range need random access and one metric's report list
+is small enough to count. An `offset` past the end returns an empty `reports`
+with the same `total`. Unknown `metric_id` → 404 `code: "metric_not_found"`.
 
 ## Console states this must support
 
@@ -118,3 +124,5 @@ null on the last page. Unknown `metric_id` → 404 `code: "metric_not_found"`.
 | Preview failed | 2 | "Could not load the reports." + Try again |
 | Filter with no match | 2 (`q`) | "No reports match." |
 | BI timeout | 1 | Other sources show; warning that BI did not respond |
+| More than 10 reports | 2 (`offset`) | Pager under the list: Previous, "11–20 of 34", Next |
+| Next page loading | 2 (`offset`) | Placeholder rows; Previous and Next wait |

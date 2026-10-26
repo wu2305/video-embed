@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { displayName, formatTime, parseTime } from "./format";
 import { parseQuery } from "./parseQuery";
-import { searchBiMock, searchGateway } from "../pages/search";
-import { archiveRecords, documentHits, hits, metricRecords, people } from "../mock/data";
+import { queryReports, searchBiMock, searchGateway } from "../pages/search";
+import { resultKey } from "../types";
+import { archiveRecords, documentHits, hits, metricRecords, metricReports, people } from "../mock/data";
 
 describe("formatTime / parseTime", () => {
   it("formats seconds as mm:ss and clamps negatives", () => {
@@ -58,5 +59,27 @@ describe("BI metric search", () => {
     const bi = searchGateway(hits, archiveRecords, people, { query: "budget", type: "bi" }, { archive: true }, metricRecords);
     expect(bi.sources).toEqual([{ source: "bi", state: "ok", count: 1 }]);
     expect(bi.results.every((r) => r.source === "bi")).toBe(true);
+  });
+});
+
+describe("paging", () => {
+  it("appends gateway pages without reordering the earlier ones", () => {
+    const f = { query: "budget" };
+    const whole = searchGateway(documentHits, archiveRecords, people, { ...f, limit: 50 }, {}, metricRecords);
+    expect(whole.next_cursor).toBeNull();
+    const pages = [];
+    let cursor: string | null = null;
+    do {
+      const page = searchGateway(documentHits, archiveRecords, people, { ...f, limit: 2, cursor }, {}, metricRecords);
+      pages.push(...page.results);
+      cursor = page.next_cursor;
+    } while (cursor);
+    expect(pages.map(resultKey)).toEqual(whole.results.map(resultKey));
+  });
+  it("pages and filters a metric's reports on the server side", () => {
+    const all = metricReports["hotel.revpar"]!;
+    expect(queryReports(all, { limit: 5 })).toEqual({ reports: all.slice(0, 5), total: 7 });
+    expect(queryReports(all, { offset: 5, limit: 5 }).reports).toEqual(all.slice(5));
+    expect(queryReports(all, { q: "raj" }).total).toBe(3);
   });
 });
