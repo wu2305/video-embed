@@ -258,7 +258,8 @@ is specified in [`docs/BI_METRIC_API.md`](docs/BI_METRIC_API.md).
    that the list is incomplete.
 
 **4g. Search type**: *new.* A user who already knows what they want picks a
-type next to the field, on the search home and in the results bar: *All*,
+type on the search home (inside the search box, after a divider) and in the
+results bar (beside the limit): *All*,
 *Videos*, *Images*, *Archive* or *BI metrics*. It replaces the old *min faces*
 field. Videos and Images ask the NAS only and keep that kind; Archive and BI
 metrics ask that source only. Audio and documents come back under All. A

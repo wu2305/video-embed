@@ -62,8 +62,11 @@ export function SearchBar({ people, initialQuery = "", initialType = "all", busy
     return (
       <form className="mm-home-search" onSubmit={submit} role="search" aria-label={t("search.region")}>
         <div className="mm-home-field">
-          <input type="search" aria-label={t("search.fieldLabel")} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search.placeholder")} autoComplete="off" />
-          {typeSelect}
+          {/* The type sits inside the field, after a divider, so the bar reads as one box and one button. */}
+          <div className="mm-home-box">
+            <input type="search" aria-label={t("search.fieldLabel")} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search.placeholder")} autoComplete="off" />
+            {typeSelect}
+          </div>
           <Button {...submitProps}>{spinner}{t("search.submitHome")}</Button>
         </div>
         {why}

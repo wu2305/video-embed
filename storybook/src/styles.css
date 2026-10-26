@@ -83,6 +83,15 @@ input, select, textarea, button {
 }
 /* A select ignores line-height, so it gets the text fields' height to sit on the same line. */
 select { min-block-size: calc(1lh + 2 * var(--space-2) + 2px); line-height: inherit; }
+/* Our own chevron in the muted ink instead of the platform arrow, and only as wide as the picked option. */
+select {
+  appearance: none; field-sizing: content; cursor: pointer;
+  padding-inline-end: calc(var(--space-3) + 14px);
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - var(--space-3) - 5px) 50%, calc(100% - var(--space-3)) 50%;
+  background-size: 5px 5px; background-repeat: no-repeat;
+}
+@media (forced-colors: active) { select { appearance: auto; } }
 /* Focus is an outline set off from the control; selection is a border and wash, so the two never look alike. */
 input:focus, select:focus, textarea:focus, button:focus-visible, [role=slider]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 input[aria-invalid=true] { border-color: var(--bad); }
@@ -310,8 +319,20 @@ a.mm-button:hover { border-color: var(--muted); }
 .mm-home-brand .mm-brand-mark { width: 1.1em; height: 1.1em; }
 .mm-home-search { width: min(100%, 40rem); }
 .mm-home-field { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.mm-home-field input { flex: 1 1 14rem; min-width: 0; min-height: var(--touch-min); padding: var(--space-2) var(--space-5); border-radius: var(--radius-pill); font-size: var(--text-md); }
-.mm-home-field select { flex: none; min-height: var(--touch-min); border-radius: var(--radius-pill); }
+/* One pill holds the query and the type; the box draws the border and the focus ring for the query. */
+.mm-home-box { flex: 1 1 18rem; min-width: 0; display: flex; align-items: center; min-height: var(--touch-min); background: var(--field); border: 1px solid var(--line-strong); border-radius: var(--radius-pill); }
+.mm-home-box:has(input:focus) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mm-home-box input { flex: 1; min-width: 0; align-self: stretch; padding: var(--space-2) var(--space-3) var(--space-2) var(--space-5); border: 0; border-radius: var(--radius-pill); background: transparent; font-size: var(--text-md); }
+.mm-home-box input:focus { outline: none; }
+/* The type keeps the box's full height as its target; a short rule, the first background layer, divides it from the query. */
+.mm-home-box select {
+  flex: none; align-self: stretch; margin-inline-end: var(--space-2); padding-block: 0; padding-inline-start: var(--space-4);
+  border: 0; border-radius: 0; background-color: transparent; color: var(--muted);
+  background-image: linear-gradient(var(--line-strong), var(--line-strong)), linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: 0 50%, calc(100% - var(--space-3) - 5px) 50%, calc(100% - var(--space-3)) 50%;
+  background-size: 1px 50%, 5px 5px, 5px 5px;
+}
+.mm-home-box select:focus { outline-offset: -4px; border-radius: var(--radius-pill); background-size: 0 0, 5px 5px, 5px 5px; }
 .mm-home-field .mm-primary { border-radius: var(--radius-pill); min-height: var(--touch-min); }
 .mm-home-foot { margin-top: auto; padding-top: var(--space-6); display: grid; justify-items: center; gap: var(--space-2); }
 
@@ -344,6 +365,8 @@ a.mm-button:hover { border-color: var(--muted); }
 /* iOS zooms the page when a focused control is under 16px. */
 @media (max-width: 640px) {
   input, select, textarea { font-size: max(1rem, 16px); }
+  /* The search button keeps the height of the 16px fields beside it. */
+  .mm-search .mm-primary { min-block-size: calc(1.5 * max(1rem, 16px) + 2 * var(--space-2) + 2px); }
 }
 
 /* Touch: every control is at least 44px tall, and so is the timeline band. */
