@@ -7,7 +7,11 @@ const meta = { title: "Atoms/Chip", component: Chip, args: { children: "Archive"
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Off: Story = {};
+export const Off: Story = {
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole("button", { name: "Archive" })).toHaveAttribute("aria-pressed", "false");
+  },
+};
 /** On is a fill and a heavier label as well as a colour, so it reads in grayscale. */
 export const On: Story = {
   args: { pressed: true },

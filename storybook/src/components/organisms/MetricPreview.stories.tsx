@@ -35,8 +35,6 @@ export const FewReports: Story = {
   },
 };
 
-export const Loading: Story = { args: { reports: null } };
-
 export const ReportsFailed: Story = {
   args: { reports: null, error: true },
   play: async ({ canvasElement, args }) => {

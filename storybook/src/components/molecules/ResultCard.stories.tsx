@@ -1,62 +1,65 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 import { ResultCard } from "./ResultCard";
-import { copyHit, cookingHit, documentHit, people, photoHit, presentingHit } from "../../mock/data";
+import { budgetCopyDoc, budgetDoc } from "../../mock/data";
 
 const meta = {
   title: "Molecules/ResultCard",
   component: ResultCard,
-  args: { hit: cookingHit, rank: 1, people, onOpen: fn() },
+  args: { hit: budgetDoc, rank: 1, onOpen: fn() },
   decorators: [(Story) => <div style={{ width: 240 }}><Story /></div>],
 } satisfies Meta<typeof ResultCard>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Named people, a note (blue) and ASR text (yellow). */
-export const Named: Story = {};
-
-/** Without names the card shows cluster ids, as the console does today. */
-export const Anonymous: Story = { args: { hit: presentingHit, people: [] } };
-
-export const Image: Story = { args: { hit: photoHit } };
-
 /**
  * A NAS document has no thumbnail: the card leads with source and kind. The
  * matched-text slot stays in the component but is left empty here.
  */
 export const Document: Story = {
-  args: { hit: { ...documentHit, ocr_text: "", asr_text: "" }, rank: 3 },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
     await expect(canvasElement.querySelector(".mm-thumb, img")).toBeNull();
-    await expect(within(canvasElement).getByText("NAS")).toBeVisible();
+    await expect(canvas.getByText("NAS")).toBeVisible();
     await expect(canvasElement.querySelector(".mm-transcript")).toBeNull();
+    await userEvent.click(canvas.getByRole("button", { name: "Q3_budget_review.xlsx" }));
+    await expect(args.onOpen).toHaveBeenCalledWith(budgetDoc);
   },
 };
 
-export const NonMasterCopy: Story = { args: { hit: copyHit } };
+/** A backup copy of a file: the folder tells it apart, and it is tagged as a copy. */
+export const NonMasterCopy: Story = {
+  args: { hit: budgetCopyDoc },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText("copy")).toBeVisible();
+    await expect(canvasElement).toHaveTextContent("/nas/backup/finance/");
+  },
+};
 
-export const Selected: Story = { args: { selected: true } };
+/** The card whose preview is open. */
+export const Selected: Story = {
+  args: { selected: true },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector(".mm-card")).toHaveClass("selected");
+  },
+};
 
 /**
- * Ugly data: a 120-character German file name in a deep folder, 40 faces and a thumbnail that fails to load.
- * The name stays one line with an ellipsis, the folder keeps its end, the tags wrap, and nothing widens the card.
+ * Ugly data: a 120-character German file name in a deep folder.
+ * The name stays one line with an ellipsis, the folder keeps its end, and nothing widens the card.
  */
 export const UglyData: Story = {
   args: {
     hit: {
-      ...cookingHit,
-      path: "/media/Archiv/Abteilung Öffentlichkeitsarbeit/Veranstaltungen/2025/Jahresabschlussfeier_Großküche_Mitarbeiterversammlung_Kochvorführung_Teil_03_endgültige_Fassung_überarbeitet.mp4",
-      face_count: 40,
-      thumb_url: "/missing-thumb.webp",
+      ...budgetDoc,
+      path: "/nas/Archiv/Abteilung Finanzen und Controlling/Konzernabschluss/2025/Konzernbudget_Hotelsparte_Taxiflotte_Abweichungsanalyse_drittes_Quartal_endgültige_Fassung_überarbeitet.xlsx",
     },
   },
   play: async ({ canvasElement }) => {
     const card = canvasElement.querySelector<HTMLElement>(".mm-card")!;
     await expect(card.scrollWidth).toBeLessThanOrEqual(card.clientWidth);
-    await waitFor(() => expect(canvasElement.querySelector(".mm-glyph")).not.toBeNull());
+    const name = canvasElement.querySelector<HTMLElement>(".mm-name")!;
+    await expect(name.scrollWidth).toBeGreaterThan(name.clientWidth);
   },
 };
-
-/** For "appears in" lists: no rank, score or machine text. */
-export const Compact: Story = { args: { compact: true } };

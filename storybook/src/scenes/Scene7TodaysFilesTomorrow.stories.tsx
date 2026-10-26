@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, within } from "storybook/test";
 import { ResultGrid } from "../components/organisms/ResultGrid";
 import { TopBar } from "../components/organisms/TopBar";
 import { indexInfo, now, viewer } from "../mock/data";
@@ -24,4 +25,9 @@ export const NotYetIndexed: Story = {
       </div>
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    // No result, and the top bar says when the index last updated.
+    await expect(within(canvasElement).getByRole("status")).toHaveTextContent("No results.");
+    await expect(within(canvasElement).getByRole("banner")).toHaveTextContent("updated today 02:40");
+  },
 };

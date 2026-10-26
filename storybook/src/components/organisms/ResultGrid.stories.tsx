@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { expect, within } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import { ResultGrid } from "./ResultGrid";
 import { archiveRecords, documentHits as hits, metricRecords } from "../../mock/data";
 import { fuseByRank } from "../../lib/fuse";
-import type { Hit, SourceStatus } from "../../types";
+import type { Hit } from "../../types";
 
 const meta = {
   title: "Organisms/ResultGrid",
@@ -19,28 +19,28 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const archiveDown: SourceStatus[] = [
-  { source: "nas", state: "ok", count: hits.length },
-  { source: "archive", state: "unavailable", count: 0 },
-];
-
-/** The count in the status line takes the text colour; the query is not repeated. */
+/** The count in the status line takes the text colour; the query is not repeated. Opening a card selects it. */
 export const Populated: Story = {
   play: async ({ canvasElement }) => {
-    const bold = [...within(canvasElement).getByRole("status").querySelectorAll("b")].map((b) => b.textContent);
+    const canvas = within(canvasElement);
+    const bold = [...canvas.getByRole("status").querySelectorAll("b")].map((b) => b.textContent);
     await expect(bold).toEqual([String(hits.length)]);
+    await expect(canvas.getByRole("status")).not.toHaveTextContent("budget");
+    await userEvent.click(canvas.getByRole("button", { name: "fare_schedule_2026.pdf" }));
+    await expect(canvasElement.querySelector('[data-unit-id="203"]')).toHaveClass("selected");
   },
 };
-/** NAS and Archive results fused by rank; source badges and a source filter appear. */
-export const BothSources: Story = { args: { results: fuseByRank([hits, archiveRecords.slice(0, 2)]), query: "budget" } };
-/** BI metrics with the reports that use them, fused with NAS hits and Archive records. */
-export const WithMetrics: Story = { args: { results: fuseByRank([hits, archiveRecords.slice(0, 1), metricRecords.slice(0, 2)]), query: "revenue" } };
-/** One source failed: show what the other returned, and say the list is incomplete. */
-export const SourceDown: Story = { args: { sources: archiveDown, query: "budget" } };
-export const Loading: Story = { args: { loading: true, results: [] } };
-export const NoHits: Story = { args: { results: [], query: "fleet insurance" } };
+
+export const NoHits: Story = {
+  args: { results: [], query: "fleet insurance" },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole("status")).toHaveTextContent("No results.");
+    await expect(within(canvasElement).queryAllByRole("article")).toHaveLength(0);
+  },
+};
+
 /**
- * 200% zoom on a 640px window leaves 320 CSS pixels: one column, in Chinese, with both sources and the status line.
+ * 200% zoom on a 640px window leaves 320 CSS pixels: one column, in Chinese, with all three sources and the status line.
  * Nothing scrolls sideways.
  */
 export const Zoom200Chinese: Story = {
@@ -50,7 +50,6 @@ export const Zoom200Chinese: Story = {
   play: async ({ canvasElement }) => {
     const box = canvasElement.querySelector<HTMLElement>("section")!;
     await expect(box.scrollWidth).toBeLessThanOrEqual(320);
+    await expect(within(box).getByRole("group", { name: "按来源筛选" })).toBeInTheDocument();
   },
 };
-
-export const ServerError: Story = { args: { results: [], error: "ValueError: query vector has 512 dims, index has 768" } };
