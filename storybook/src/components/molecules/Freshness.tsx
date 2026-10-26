@@ -17,7 +17,7 @@ export interface FreshnessProps {
  */
 export function Freshness({ index, now = Date.now() / 1000, long = false }: FreshnessProps) {
   const { t, locale } = useI18n();
-  const updated = formatUpdated(index.published_at, now);
+  const updated = formatUpdated(index.published_at, now, { today: t("time.today"), yesterday: t("time.yesterday") });
   if (index.stale) {
     return (
       <span className={long ? "mm-hint" : "mm-mono"} role={long ? "alert" : undefined}>

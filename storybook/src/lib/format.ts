@@ -30,11 +30,11 @@ function clock(d: Date): string {
  * When the index was last updated, relative to `now`: "today 02:40",
  * "yesterday 02:40", or a date. Both arguments are epoch seconds.
  */
-export function formatUpdated(epochSeconds: number, now: number): string {
+export function formatUpdated(epochSeconds: number, now: number, labels = { today: "today", yesterday: "yesterday" }): string {
   const d = new Date(epochSeconds * 1000);
   const today = new Date(now * 1000);
   const yesterday = new Date((now - 86_400) * 1000);
-  if (d.toDateString() === today.toDateString()) return `today ${clock(d)}`;
-  if (d.toDateString() === yesterday.toDateString()) return `yesterday ${clock(d)}`;
+  if (d.toDateString() === today.toDateString()) return `${labels.today} ${clock(d)}`;
+  if (d.toDateString() === yesterday.toDateString()) return `${labels.yesterday} ${clock(d)}`;
   return formatDate(epochSeconds);
 }

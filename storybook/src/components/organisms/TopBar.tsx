@@ -38,7 +38,7 @@ export function BrandMark() {
 
 /** App header: product mark, primary navigation, how fresh the NAS index is, and who is signed in. */
 export function TopBar({ current, index, now, viewer, onNavigate, hideBrand = false }: TopBarProps) {
-  const { t } = useI18n();
+  const { t, s } = useI18n();
   return (
     <header className="mm-topbar">
       {!hideBrand && <div className="mm-brand"><BrandMark /><span className="mm-brand-name">{t("brand.name")}</span></div>}
@@ -56,7 +56,7 @@ export function TopBar({ current, index, now, viewer, onNavigate, hideBrand = fa
       </nav>
       {index && <Freshness index={index} now={now} />}
       {viewer && (
-        <span className="mm-viewer" title={t("viewer.signedIn", { name: viewer.name, groups: viewer.groups.join(t("viewer.groupSep")) })}>
+        <span className="mm-viewer" title={t("viewer.signedIn", { name: viewer.name, groups: viewer.groups.map(s).join(t("viewer.groupSep")) })}>
           <span className="mm-avatar" aria-hidden>{initials(viewer.name)}</span>
           <span className="mm-viewer-name">{viewer.name}</span>
         </span>

@@ -53,7 +53,7 @@ export function PreviewPanel({
   hit, position, total, frameSrc, videoSrc, faces = [], people = [], annotations = [],
   scenes = [], duration = 0, playhead, onSeek, onPrev, onNext, onClose, actions, unavailable, modal = false,
 }: PreviewPanelProps) {
-  const { t } = useI18n();
+  const { t, s } = useI18n();
   const video = useRef<HTMLVideoElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
   const range: Scene | null = hit.scene_start != null && hit.scene_end != null ? { start: hit.scene_start, end: hit.scene_end } : null;
@@ -94,7 +94,7 @@ export function PreviewPanel({
   }
 
   const name = hit.path.split("/").pop() ?? hit.path;
-  const text = (hit.ocr_text || hit.asr_text).trim();
+  const text = s((hit.ocr_text || hit.asr_text).trim());
 
   return (
     <div ref={dialog} className="mm-preview" role="dialog" aria-modal={modal || undefined} aria-label={t("preview.label", { name })} tabIndex={-1} onKeyDown={keys}>
@@ -108,7 +108,7 @@ export function PreviewPanel({
             <>
               {videoSrc ? <video ref={video} src={videoSrc} controls muted playsInline onTimeUpdate={loop} /> : <img src={frameSrc} alt={t("preview.matched", { name })} />}
               <FaceOverlay faces={faces} people={people} />
-              {activeNote && <div className="mm-overlay-note">{activeNote.text}</div>}
+              {activeNote && <div className="mm-overlay-note">{s(activeNote.text)}</div>}
             </>
           )}
         </div>
@@ -126,12 +126,12 @@ export function PreviewPanel({
         </div>
         <h2 title={hit.path}>{name}</h2>
         <div className="mm-mono">
-          <Tag>{hit.kind}</Tag>
+          <Tag>{t(`kind.${hit.kind}` as MessageKey)}</Tag>
           {range && !showTrack && <Tag tone="good">{formatTime(range.start)}–{formatTime(range.end)}</Tag>}
           {!unavailable && hit.person_ids.map((id) => <Tag key={id} tone="accent">{displayName(id, people)}</Tag>)}
         </div>
         {!unavailable && text && <div className="mm-text mm-transcript">{text}</div>}
-        {!unavailable && hit.notes?.map((n) => <div key={n} className="mm-text note">{n}</div>)}
+        {!unavailable && hit.notes?.map((n) => <div key={n} className="mm-text note">{s(n)}</div>)}
         <div className="mm-row">
           {!unavailable && actions}
           <CopyPath key={hit.path} path={hit.path} />

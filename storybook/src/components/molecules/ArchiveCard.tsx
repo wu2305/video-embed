@@ -15,21 +15,21 @@ export interface ArchiveCardProps {
  * It has no thumbnail frame: it leads with source and record type.
  */
 export function ArchiveCard({ record, rank }: ArchiveCardProps) {
-  const { t } = useI18n();
+  const { t, s } = useI18n();
   return (
     <article className="mm-card mm-archive" aria-label={t("card.result", { rank })}>
       <div className="mm-body">
         <div className="mm-archive-head mm-mono">
-          <span className="mm-source-name">{t("card.archiveSource")}</span><span>{record.doc_type}</span>
+          <span className="mm-source-name">{t("card.archiveSource")}</span><span>{s(record.doc_type)}</span>
         </div>
-        <a className="mm-name mm-card-link" href={record.deep_link} target="_blank" rel="noopener noreferrer" title={record.title}>
-          {record.title}
+        <a className="mm-name mm-card-link" href={record.deep_link} target="_blank" rel="noopener noreferrer" title={s(record.title)}>
+          {s(record.title)}
         </a>
         <div className="mm-mono">
           <Tag>{formatDate(record.archived_at)}</Tag>
-          {record.department && <Tag>{record.department}</Tag>}
+          {record.department && <Tag>{s(record.department)}</Tag>}
         </div>
-        {record.summary && <div className="mm-text">{record.summary}</div>}
+        {record.summary && <div className="mm-text">{s(record.summary)}</div>}
       </div>
     </article>
   );
