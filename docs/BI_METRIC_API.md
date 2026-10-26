@@ -40,16 +40,16 @@ in the BI side's ranking. The gateway fuses them with the other sources by rank
   "metrics": [
     {
       "source": "bi",
-      "metric_id": "fin.net_revenue",
-      "name": "Net revenue",
-      "domain": "Finance",
-      "owner": "Raj Patel",
-      "definition": "Gross sales minus returns, discounts and allowances",
+      "metric_id": "hotel.revpar",
+      "name": "RevPAR",
+      "domain": "Hotels",
+      "owner": "Lena Vogt",
+      "definition": "Room revenue ÷ available room nights",
       "report_count": 7,
       "reports": [
         {
           "report_id": "R-1042",
-          "title": "Monthly P&L",
+          "title": "Monthly hotel P&L",
           "kind": "report",
           "folder": "Finance / Close",
           "owner": "Raj Patel",
@@ -58,7 +58,7 @@ in the BI side's ranking. The gateway fuses them with the other sources by rank
           "deep_link": "https://bi.example.internal/reports/R-1042"
         }
       ],
-      "deep_link": "https://bi.example.internal/metrics/fin.net_revenue",
+      "deep_link": "https://bi.example.internal/metrics/hotel.revpar",
       "vendor_rank": 1
     }
   ]

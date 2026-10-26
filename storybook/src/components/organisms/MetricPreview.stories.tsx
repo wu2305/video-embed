@@ -3,12 +3,12 @@ import { expect, fn, userEvent, within } from "storybook/test";
 import { MetricPreview } from "./MetricPreview";
 import { metricRecords, metricReports } from "../../mock/data";
 
-const revenue = metricRecords[0]!;
+const revpar = metricRecords[0]!;
 
 const meta = {
   title: "Organisms/MetricPreview",
   component: MetricPreview,
-  args: { metric: revenue, reports: metricReports[revenue.metric_id], onClose: fn(), onRetry: fn() },
+  args: { metric: revpar, reports: metricReports[revpar.metric_id], onClose: fn(), onRetry: fn() },
 } satisfies Meta<typeof MetricPreview>;
 
 export default meta;
@@ -19,7 +19,7 @@ export const AllReports: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getAllByRole("listitem")).toHaveLength(7);
-    await expect(canvas.getAllByRole("listitem")[2]).toHaveTextContent("dashboard · Sales · Lena Vogt · 3 charts · 2026-10-21");
+    await expect(canvas.getAllByRole("listitem")[2]).toHaveTextContent("dashboard · Hotels / Revenue · Lena Vogt · 3 charts · 2026-10-21");
     await userEvent.type(canvas.getByRole("searchbox", { name: "Filter reports" }), "zzz");
     await expect(canvas.getByText("No reports match.")).toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: /Close/ }));
@@ -29,7 +29,7 @@ export const AllReports: Story = {
 
 /** Two reports: no filter field. */
 export const FewReports: Story = {
-  args: { metric: metricRecords[1]!, reports: metricReports["fin.arpu"] },
+  args: { metric: metricRecords[1]!, reports: metricReports["taxi.revenue_per_trip"] },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryByRole("searchbox")).toBeNull();
   },
