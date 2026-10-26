@@ -10,7 +10,7 @@ import { FaceOverlay } from "../components/organisms/FaceOverlay";
 import { NoteList } from "../components/organisms/NoteList";
 import type { PageId } from "../components/organisms/TopBar";
 import { AppShell } from "../components/templates/AppShell";
-import { useI18n } from "../i18n";
+import { useI18n, type MessageKey } from "../i18n";
 
 export interface ClipPageProps {
   hit: Hit;
@@ -34,7 +34,7 @@ export function ClipPage({
   hit, frameSrc, faces = [], people = [], scenes = [], duration = 0, annotations = [], initialPlayhead,
   index, now, viewer, onNavigate, onBack,
 }: ClipPageProps) {
-  const { t } = useI18n();
+  const { t, s } = useI18n();
   const still = hit.kind !== "video" && hit.kind !== "audio";
   const hasFrame = hit.kind === "video" || hit.kind === "image";
   const matched: Scene | null = hit.scene_start != null && hit.scene_end != null ? { start: hit.scene_start, end: hit.scene_end } : null;
@@ -50,7 +50,7 @@ export function ClipPage({
 
   return (
     <AppShell current="clip" title={name} index={index} now={now} viewer={viewer} onNavigate={onNavigate}
-      crumbs={<><a href="#search" onClick={(e) => { e.preventDefault(); onBack?.(); }}>← {t("clip.back")}</a> / {hit.kind}</>}
+      crumbs={<><a href="#search" onClick={(e) => { e.preventDefault(); onBack?.(); }}>← {t("clip.back")}</a> / {t(`kind.${hit.kind}` as MessageKey)}</>}
       subtitle={<span className="mm-mono">{hit.path}</span>}>
       <div className="mm-split">
         <div style={{ display: "grid", gap: 14 }}>
@@ -61,7 +61,7 @@ export function ClipPage({
               <div className="mm-thumb" style={{ aspectRatio: "16 / 6" }}><span className="mm-glyph" aria-hidden>{hit.kind === "audio" ? "♪" : "▤"}</span></div>
             )}
             {hasFrame && <FaceOverlay faces={faces} people={people} />}
-            {!still && activeNote && <div className="mm-overlay-note">{activeNote.text}</div>}
+            {!still && activeNote && <div className="mm-overlay-note">{s(activeNote.text)}</div>}
           </div>
           {showTrack && (
             <AnnotationTrack duration={duration} scenes={scenes} annotations={notes} playhead={playhead} matched={matched} onSeek={setPlayhead} />
@@ -73,7 +73,7 @@ export function ClipPage({
           </div>
           {(hit.ocr_text || hit.asr_text) && (
             <Panel as="section" title={hit.asr_text ? t("clip.speech") : t("clip.ocr")}>
-              <p className="mm-transcript" style={{ margin: 0 }}>{(hit.asr_text || hit.ocr_text).trim()}</p>
+              <p className="mm-transcript" style={{ margin: 0 }}>{s((hit.asr_text || hit.ocr_text).trim())}</p>
             </Panel>
           )}
         </div>

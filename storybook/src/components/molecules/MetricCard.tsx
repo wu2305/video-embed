@@ -20,7 +20,7 @@ export interface MetricCardProps {
  * the BI platform. Like the Archive card, it leads with source and type.
  */
 export function MetricCard({ metric, rank, maxReports = 3, selected = false, onOpen }: MetricCardProps) {
-  const { t } = useI18n();
+  const { t, s } = useI18n();
   const listed = metric.reports.slice(0, maxReports);
   const more = metric.report_count - listed.length;
   return (
@@ -29,12 +29,12 @@ export function MetricCard({ metric, rank, maxReports = 3, selected = false, onO
         <div className="mm-archive-head mm-mono">
           <span className="mm-source-name">{t("card.biSource")}</span><span>{t("card.metric")}</span>
         </div>
-        <button type="button" className="mm-name mm-card-link" onClick={() => onOpen?.(metric)}>{metric.name}</button>
+        <button type="button" className="mm-name mm-card-link" onClick={() => onOpen?.(metric)}>{s(metric.name)}</button>
         <div className="mm-mono">
           <Tag>{metric.metric_id}</Tag>
-          {metric.domain && <Tag>{metric.domain}</Tag>}
+          {metric.domain && <Tag>{s(metric.domain)}</Tag>}
         </div>
-        {metric.definition && <div className="mm-text mm-definition">{metric.definition}</div>}
+        {metric.definition && <div className="mm-text mm-definition">{s(metric.definition)}</div>}
         {metric.report_count === 0 ? (
           <div className="mm-text">{t("card.noReports")}</div>
         ) : (
@@ -42,11 +42,11 @@ export function MetricCard({ metric, rank, maxReports = 3, selected = false, onO
             <ul className="mm-reports">
               {listed.map((r) => (
                 <li key={r.report_id}>
-                  <a href={r.deep_link} target="_blank" rel="noopener noreferrer" title={r.title}>
-                    <span className="mm-report-title">{r.title}</span><span aria-hidden>↗</span>
+                  <a href={r.deep_link} target="_blank" rel="noopener noreferrer" title={s(r.title)}>
+                    <span className="mm-report-title">{s(r.title)}</span><span aria-hidden>↗</span>
                   </a>
                   <span className="mm-report-meta mm-mono mm-text">
-                    {[formatDate(r.updated_at), r.folder].filter(Boolean).join(" · ")}
+                    {[formatDate(r.updated_at), r.folder && s(r.folder)].filter(Boolean).join(" · ")}
                   </span>
                 </li>
               ))}

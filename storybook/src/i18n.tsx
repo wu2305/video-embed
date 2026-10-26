@@ -15,6 +15,12 @@ const en = {
   "viewer.signedIn": "Signed in as {name} · groups: {groups}",
   "viewer.groupSep": ", ",
   "list.sep": " or ",
+  "kind.video": "video",
+  "kind.image": "image",
+  "kind.audio": "audio",
+  "kind.document": "document",
+  "time.today": "today",
+  "time.yesterday": "yesterday",
 
   "freshness.stale": "not updated since {date}",
   "freshness.staleLong": "Not updated since {date}. Newer files are missing.",
@@ -166,6 +172,12 @@ const zh: Partial<Record<MessageKey, string>> = {
   "viewer.signedIn": "以 {name} 身份登录 · 用户组：{groups}",
   "viewer.groupSep": "、",
   "list.sep": "或",
+  "kind.video": "视频",
+  "kind.image": "图片",
+  "kind.audio": "音频",
+  "kind.document": "文档",
+  "time.today": "今天",
+  "time.yesterday": "昨天",
 
   "freshness.stale": "自 {date} 起未更新",
   "freshness.staleLong": "自 {date} 起未更新，之后的新文件缺失。",
@@ -306,6 +318,63 @@ const zh: Partial<Record<MessageKey, string>> = {
   "face.untagged": "未标注",
 };
 
+
+/**
+ * Chinese for the sample content in `src/mock` (file names and person names stay as they are).
+ * Keyed by the English text, so a sample string with no entry shows as written.
+ */
+const samplesZh: Record<string, string> = {
+  "Ana demonstrates the garlic butter": "Ana 演示蒜香黄油",
+  "Ana is presenting the Q3 budget": "Ana 正在汇报第三季度预算",
+  "Camera shake from here": "此处镜头抖动",
+  "now fold the garlic into the butter and let it soften": "现在把蒜末拌入黄油，静置至软化",
+  "Q3 BUDGET — headcount and spend": "第三季度预算——人员编制与支出",
+  "I started cooking when I was nine, mostly bread": "我九岁开始做饭，主要是面包",
+  "Garlic butter: 4 cloves, 80 g butter, rest 10 min": "蒜香黄油：4 瓣大蒜，80 克黄油，静置 10 分钟",
+  "Catering services agreement — cooking class series 2025": "餐饮服务协议——2025 烹饪课系列",
+  "Counterparty: Lumen Kitchen Studio · term 2025-04 to 2025-12 · status: active": "合作方：Lumen Kitchen Studio · 期限 2025-04 至 2025-12 · 状态：生效中",
+  "Q3 budget review — approved minutes": "第三季度预算审议——已批准会议纪要",
+  "Approved by the finance committee · 14 pages · retention: 10 years": "经财务委员会批准 · 14 页 · 保存期限 10 年",
+  "Purchase order — kitchen equipment for the cooking studio": "采购订单——烹饪工作室厨房设备",
+  "Contract": "合同",
+  "Board minutes": "董事会会议纪要",
+  "Purchase order": "采购订单",
+  "Marketing": "市场部",
+  "Finance": "财务部",
+  "Facilities": "后勤部",
+  "Sales": "销售部",
+  "Product": "产品部",
+  "Growth": "增长部",
+  "Exec": "管理层",
+  "Customer success": "客户成功部",
+  "Media-Library": "媒体库",
+  "Monthly P&L": "月度损益表",
+  "Finance / Close": "财务 / 结账",
+  "Regional sales dashboard": "区域销售看板",
+  "Board pack — Q3 2026": "董事会材料——2026 年第三季度",
+  "Finance / Board": "财务 / 董事会",
+  "Pricing experiment readout": "定价实验总结",
+  "Revenue by channel": "按渠道划分的收入",
+  "Weekly business review": "每周业务回顾",
+  "FY26 forecast vs actuals": "2026 财年预测与实际对比",
+  "Finance / Planning": "财务 / 规划",
+  "Subscriber health": "订阅用户健康度",
+  "Cooking class series 2025": "2025 烹饪课系列",
+  "Marketing / Events": "市场部 / 活动",
+  "Net revenue": "净收入",
+  "Gross sales minus returns, discounts and allowances": "销售总额减去退货、折扣和让利",
+  "Revenue per active user": "每活跃用户收入",
+  "Net revenue ÷ monthly active users": "净收入 ÷ 月活跃用户数",
+  "Cooking class attendance": "烹饪课出勤人数",
+  "Churn rate (legacy)": "流失率（旧版）",
+  "Replaced by cs.churn_rate in 2025": "2025 年已由 cs.churn_rate 取代",
+};
+
+/** The sample text in `zh`, or the text itself when there is no translation. */
+function sampleText(text: string, locale: Locale): string {
+  return locale === "zh" ? samplesZh[text] ?? text : text;
+}
+
 const messages: Record<Locale, Partial<Record<MessageKey, string>>> = { en, zh };
 
 export type Translate = (key: MessageKey, vars?: Record<string, string | number>) => string;
@@ -335,13 +404,19 @@ export function LocaleProvider({ locale, children }: { locale: Locale; children:
 }
 
 /**
- * The current locale, a `t` that translates a message key, and a `rich` that
- * does the same but lets each placeholder be any React node. English when no
- * provider is present.
+ * The current locale, a `t` that translates a message key, a `rich` that
+ * does the same but lets each placeholder be any React node, and an `s` for
+ * sample content. English when no provider is present.
  */
-export function useI18n(): { locale: Locale; t: Translate; rich: (key: MessageKey, vars: Record<string, ReactNode>) => ReactNode[] } {
+export function useI18n(): {
+  locale: Locale;
+  t: Translate;
+  rich: (key: MessageKey, vars: Record<string, ReactNode>) => ReactNode[];
+  /** Translates sample content (mock titles, notes, transcripts). */
+  s: (text: string) => string;
+} {
   const locale = useContext(LocaleContext);
-  return { locale, t: translator(locale), rich: (key, vars) => formatParts(messages[locale][key] ?? en[key], vars) };
+  return { locale, t: translator(locale), rich: (key, vars) => formatParts(messages[locale][key] ?? en[key], vars), s: (text) => sampleText(text, locale) };
 }
 
 export const LOCALES: { value: Locale; title: string }[] = [

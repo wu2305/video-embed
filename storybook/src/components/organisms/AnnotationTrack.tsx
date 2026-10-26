@@ -16,7 +16,7 @@ const pct = (value: number, total: number) => `${(Math.min(Math.max(value, 0), t
 
 /** Timeline of scene cuts, notes and the matched range. Clicking or tapping seeks. On touch the hit band is 44px tall around the 28px track. */
 export function AnnotationTrack({ duration, scenes, annotations = [], playhead = 0, matched = null, onSeek }: AnnotationTrackProps) {
-  const { t } = useI18n();
+  const { t, s } = useI18n();
   const inMatch = matched !== null && playhead >= matched.start && playhead < matched.end;
   function seek(event: React.MouseEvent<HTMLDivElement>) {
     const box = event.currentTarget.getBoundingClientRect();
@@ -50,7 +50,7 @@ export function AnnotationTrack({ duration, scenes, annotations = [], playhead =
           ))}
           {matched && <div className="matched" style={{ left: pct(matched.start, duration), width: pct(matched.end - matched.start, duration) }} />}
           {annotations.map((a) => (
-            <div key={a.id} className="note" title={a.text} style={{ left: pct(a.t_start, duration), width: pct((a.t_end ?? a.t_start + 2) - a.t_start, duration) }} />
+            <div key={a.id} className="note" title={s(a.text)} style={{ left: pct(a.t_start, duration), width: pct((a.t_end ?? a.t_start + 2) - a.t_start, duration) }} />
           ))}
           <div className="playhead" style={{ left: pct(playhead, duration) }} />
         </div>

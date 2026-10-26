@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Hit, Person } from "../../types";
 import { displayName, formatTime } from "../../lib/format";
 import { Tag } from "../atoms/Tag";
-import { useI18n } from "../../i18n";
+import { useI18n, type MessageKey } from "../../i18n";
 
 export interface ResultCardProps {
   hit: Hit;
@@ -29,14 +29,14 @@ function thumbSrc(hit: Hit): string | null {
  * The file name is the button; it stretches over the card, so the whole card is clickable.
  */
 export function ResultCard({ hit, rank, people = [], selected = false, onOpen, compact = false, showSource = false }: ResultCardProps) {
-  const { t } = useI18n();
+  const { t, s } = useI18n();
   const name = hit.path.split("/").pop() ?? hit.path;
   // The folder tells a file from its copy; `title` never shows on touch.
   const folder = hit.path.slice(0, hit.path.length - name.length);
   // A thumbnail that fails to load falls back to the kind glyph, not a broken image.
   const [thumbFailed, setThumbFailed] = useState(false);
   const src = thumbFailed ? null : thumbSrc(hit);
-  const machineText = (hit.ocr_text || hit.asr_text || "").trim();
+  const machineText = s((hit.ocr_text || hit.asr_text || "").trim());
   const hasRange = hit.scene_start != null && hit.scene_end != null;
 
   return (
@@ -52,7 +52,7 @@ export function ResultCard({ hit, rank, people = [], selected = false, onOpen, c
         {/* Scan order: the matched range first, then what the file is and who is in it. */}
         <div className="mm-mono">
           {hasRange && <Tag tone="good">{formatTime(hit.scene_start!)}–{formatTime(hit.scene_end!)}</Tag>}
-          <Tag>{hit.kind}</Tag>
+          <Tag>{t(`kind.${hit.kind}` as MessageKey)}</Tag>
           {hit.face_count > 0 && <Tag>{hit.face_count > 1 ? t("card.faces", { count: hit.face_count }) : t("card.face", { count: hit.face_count })}</Tag>}
           {hit.person_ids.map((id) => {
             const label = displayName(id, people);
@@ -60,7 +60,7 @@ export function ResultCard({ hit, rank, people = [], selected = false, onOpen, c
           })}
           {!hit.is_master && <Tag tone="warn">{t("card.copy")}</Tag>}
         </div>
-        {!compact && hit.notes?.map((note) => <div key={note} className="mm-text note">{note}</div>)}
+        {!compact && hit.notes?.map((note) => <div key={note} className="mm-text note">{s(note)}</div>)}
         {!compact && machineText && <div className="mm-text mm-transcript">{machineText.slice(0, 180)}</div>}
       </div>
     </article>

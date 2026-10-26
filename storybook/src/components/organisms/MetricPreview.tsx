@@ -32,7 +32,7 @@ const FILTER_FROM = 6;
  * the BI platform; Open in BI opens the metric's own page there.
  */
 export function MetricPreview({ metric, reports = null, error = false, onRetry, onClose, modal = false }: MetricPreviewProps) {
-  const { t } = useI18n();
+  const { t, s } = useI18n();
   const dialog = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState("");
 
@@ -55,12 +55,12 @@ export function MetricPreview({ metric, reports = null, error = false, onRetry, 
   return (
     <div ref={dialog} className="mm-metric-preview" role="dialog" aria-modal={modal || undefined}
       aria-label={t("preview.label", { name: metric.name })} tabIndex={-1} onKeyDown={keys}>
-      <h2>{metric.name}</h2>
+      <h2>{s(metric.name)}</h2>
       <div className="mm-mono">
         <Tag>{metric.metric_id}</Tag>
-        {metric.domain && <Tag>{metric.domain}</Tag>}
+        {metric.domain && <Tag>{s(metric.domain)}</Tag>}
       </div>
-      {metric.definition && <p className="mm-text">{metric.definition}</p>}
+      {metric.definition && <p className="mm-text">{s(metric.definition)}</p>}
       {metric.owner && <MetaList items={[[t("metric.owner"), metric.owner]]} />}
 
       <section aria-label={t("metric.reports")} aria-busy={loading || undefined}>
@@ -82,9 +82,9 @@ export function MetricPreview({ metric, reports = null, error = false, onRetry, 
           <ul className="mm-report-rows">
             {shown.map((r) => (
               <li key={r.report_id}>
-                <a href={r.deep_link} target="_blank" rel="noopener noreferrer">{r.title} ↗</a>
+                <a href={r.deep_link} target="_blank" rel="noopener noreferrer">{s(r.title)} ↗</a>
                 <span className="mm-mono mm-text">
-                  {[r.kind === "dashboard" && t("metric.dashboard"), r.folder, r.owner,
+                  {[r.kind === "dashboard" && t("metric.dashboard"), r.folder && s(r.folder), r.owner,
                     r.charts === 1 ? t("metric.chart") : t("metric.charts", { count: r.charts }), formatDate(r.updated_at)]
                     .filter(Boolean).join(" · ")}
                 </span>
