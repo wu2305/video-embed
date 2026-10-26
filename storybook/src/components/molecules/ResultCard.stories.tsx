@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn, waitFor } from "storybook/test";
+import { expect, fn, waitFor, within } from "storybook/test";
 import { ResultCard } from "./ResultCard";
-import { copyHit, cookingHit, people, photoHit, presentingHit } from "../../mock/data";
+import { copyHit, cookingHit, documentHit, people, photoHit, presentingHit } from "../../mock/data";
 
 const meta = {
   title: "Molecules/ResultCard",
@@ -20,6 +20,15 @@ export const Named: Story = {};
 export const Anonymous: Story = { args: { hit: presentingHit, people: [] } };
 
 export const Image: Story = { args: { hit: photoHit } };
+
+/** A NAS document has no thumbnail: the card leads with source and kind, then the OCR text. */
+export const Document: Story = {
+  args: { hit: documentHit, rank: 3 },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector(".mm-thumb, img")).toBeNull();
+    await expect(within(canvasElement).getByText("NAS")).toBeVisible();
+  },
+};
 
 export const NonMasterCopy: Story = { args: { hit: copyHit } };
 
