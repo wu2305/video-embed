@@ -179,8 +179,8 @@ function report(report_id: string, title: string, kind: MetricReport["kind"], fo
   return { report_id, title, kind, folder, owner, charts, updated_at, deep_link: `${BI}/reports/${report_id}` };
 }
 
-const pnl = report("R-1042", "Monthly P&L", "report", "Finance / Close", "Raj Patel", 4, at(2026, 10, 20, 18));
-const regional = report("R-0981", "Regional sales dashboard", "dashboard", "Sales", "Lena Vogt", 3, at(2026, 10, 21, 7));
+const pnl = report("R-1042", "Monthly hotel P&L", "report", "Finance / Close", "Raj Patel", 4, at(2026, 10, 20, 18));
+const portfolio = report("R-0981", "Hotel portfolio dashboard", "dashboard", "Hotels / Revenue", "Lena Vogt", 3, at(2026, 10, 21, 7));
 const board = report("R-1107", "Board pack — Q3 2026", "report", "Finance / Board", "Raj Patel", 2, at(2026, 10, 2, 16));
 
 /** Most used first: by charts that use the metric, then most recently updated. */
@@ -193,16 +193,16 @@ function byUse(reports: MetricReport[]): MetricReport[] {
  * report the viewer may open, most used first (docs/BI_METRIC_API.md).
  */
 export const metricReports: Record<string, MetricReport[]> = Object.fromEntries(Object.entries({
-  "fin.net_revenue": [
-    pnl, regional, board,
-    report("R-0870", "Pricing experiment readout", "report", "Growth", "Sam Okoye", 1, at(2026, 9, 14, 11)),
-    report("R-0655", "Revenue by channel", "dashboard", "Marketing", "Mei Chen", 5, at(2026, 8, 30, 9)),
+  "hotel.revpar": [
+    pnl, portfolio, board,
+    report("R-0870", "Weekend rate test readout", "report", "Hotels / Pricing", "Sam Okoye", 1, at(2026, 9, 14, 11)),
+    report("R-0655", "RevPAR by property", "dashboard", "Hotels / Operations", "Mei Chen", 5, at(2026, 8, 30, 9)),
     report("R-0512", "Weekly business review", "report", "Exec", "Raj Patel", 1, at(2026, 10, 19, 8)),
     report("R-0233", "FY26 forecast vs actuals", "report", "Finance / Planning", "Ines Duarte", 2, at(2026, 7, 1, 12)),
   ],
-  "fin.arpu": [regional, report("R-0712", "Subscriber health", "dashboard", "Product", "Lena Vogt", 2, at(2026, 10, 9, 15))],
-  "mkt.class_attendance": [report("R-1210", "Cooking class series 2025", "dashboard", "Marketing / Events", "Mei Chen", 3, at(2026, 10, 18, 10))],
-  "cs.churn_legacy": [],
+  "taxi.revenue_per_trip": [board, report("R-0712", "Fleet daily dashboard", "dashboard", "Taxi / Operations", "Lena Vogt", 2, at(2026, 10, 9, 15))],
+  "fin.opex_budget_variance": [report("R-1210", "FY26 opex budget tracker", "dashboard", "Finance / Planning", "Ines Duarte", 3, at(2026, 10, 18, 10))],
+  "fin.group_ebitda_margin": [],
 } satisfies Record<string, MetricReport[]>).map(([id, list]) => [id, byUse(list)]));
 
 function metric(m: Omit<MetricRecord, "source" | "reports" | "report_count" | "deep_link">): MetricRecord {
@@ -210,20 +210,23 @@ function metric(m: Omit<MetricRecord, "source" | "reports" | "report_count" | "d
   return { source: "bi", ...m, reports: all.slice(0, 3), report_count: all.length, deep_link: `${BI}/metrics/${m.metric_id}` };
 }
 
-/** Metrics the BI search returns for "revenue", "cooking" and "churn" (docs/BI_METRIC_API.md). */
+/**
+ * BI metrics matching "revenue" and "budget" (docs/BI_METRIC_API.md). The last is
+ * used in no report, so the search leaves it out.
+ */
 export const metricRecords: MetricRecord[] = [
   metric({
-    metric_id: "fin.net_revenue", name: "Net revenue", domain: "Finance", owner: "Raj Patel", vendor_rank: 1,
-    definition: "Gross sales minus returns, discounts and allowances",
+    metric_id: "hotel.revpar", name: "RevPAR", domain: "Hotels", owner: "Lena Vogt", vendor_rank: 1,
+    definition: "Room revenue ÷ available room nights",
   }),
   metric({
-    metric_id: "fin.arpu", name: "Revenue per active user", domain: "Finance", owner: "Raj Patel", vendor_rank: 2,
-    definition: "Net revenue ÷ monthly active users",
+    metric_id: "taxi.revenue_per_trip", name: "Revenue per trip", domain: "Taxi", owner: "Lena Vogt", vendor_rank: 2,
+    definition: "Fare revenue ÷ completed trips",
   }),
-  metric({ metric_id: "mkt.class_attendance", name: "Cooking class attendance", domain: "Marketing", owner: "Mei Chen", vendor_rank: 3 }),
+  metric({ metric_id: "fin.opex_budget_variance", name: "Opex budget variance", domain: "Finance", owner: "Ines Duarte", vendor_rank: 3 }),
   metric({
-    metric_id: "cs.churn_legacy", name: "Churn rate (legacy)", domain: "Customer success", vendor_rank: 4,
-    definition: "Replaced by cs.churn_rate in 2025",
+    metric_id: "fin.group_ebitda_margin", name: "Group EBITDA margin", domain: "Finance", owner: "Raj Patel", vendor_rank: 4,
+    definition: "EBITDA ÷ group revenue",
   }),
 ];
 

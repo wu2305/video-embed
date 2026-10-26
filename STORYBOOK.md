@@ -247,8 +247,8 @@ is specified in [`docs/BI_METRIC_API.md`](docs/BI_METRIC_API.md).
 
 1. A metric card shows the metric name, id, domain and a two-line definition,
    then, under a rule, the top three reports: one line for the title, one for
-   the last-modified date and folder. "+N more" opens the preview. A metric no
-   report the user may open says "No reports use it."
+   the last-modified date and folder. "+N more" opens the preview. A metric that
+   no report the user may open uses is not listed.
 2. The metric name opens the **metric preview** on the search page, as a
    dialog like the media preview: owner, every report with its type, folder,
    owner, charts that use the metric and date, a filter field from six reports

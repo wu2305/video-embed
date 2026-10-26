@@ -35,26 +35,20 @@ export function MetricCard({ metric, rank, maxReports = 3, selected = false, onO
           {metric.domain && <Tag>{s(metric.domain)}</Tag>}
         </div>
         {metric.definition && <div className="mm-text mm-definition">{s(metric.definition)}</div>}
-        {metric.report_count === 0 ? (
-          <div className="mm-text">{t("card.noReports")}</div>
-        ) : (
-          <>
-            <ul className="mm-reports">
-              {listed.map((r) => (
-                <li key={r.report_id}>
-                  <a href={r.deep_link} target="_blank" rel="noopener noreferrer" title={s(r.title)}>
-                    <span className="mm-report-title">{s(r.title)}</span><span aria-hidden>↗</span>
-                  </a>
-                  <span className="mm-report-meta mm-mono mm-text">
-                    {[formatDate(r.updated_at), r.folder && s(r.folder)].filter(Boolean).join(" · ")}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {more > 0 && (
-              <button type="button" className="mm-more" onClick={() => onOpen?.(metric)}>{t("card.moreReports", { count: more })}</button>
-            )}
-          </>
+        <ul className="mm-reports">
+          {listed.map((r) => (
+            <li key={r.report_id}>
+              <a href={r.deep_link} target="_blank" rel="noopener noreferrer" title={s(r.title)}>
+                <span className="mm-report-title">{s(r.title)}</span><span aria-hidden>↗</span>
+              </a>
+              <span className="mm-report-meta mm-mono mm-text">
+                {[formatDate(r.updated_at), r.folder && s(r.folder)].filter(Boolean).join(" · ")}
+              </span>
+            </li>
+          ))}
+        </ul>
+        {more > 0 && (
+          <button type="button" className="mm-more" onClick={() => onOpen?.(metric)}>{t("card.moreReports", { count: more })}</button>
         )}
       </div>
     </article>

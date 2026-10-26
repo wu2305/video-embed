@@ -149,7 +149,7 @@ export function SearchPage({
         <div ref={backdrop} className="mm-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setOpen(null); }}>
           <PreviewPanel
             modal hit={hit} position={position + 1} total={previewable.length}
-            frameSrc={hit.thumb_url ?? kitchenFrame}
+            frameSrc={hit.kind === "video" || hit.kind === "image" ? hit.thumb_url ?? kitchenFrame : undefined}
             faces={hitFaces(hit)} unavailable={gone}
             people={people} annotations={hit.kind === "video" ? annotations : []} scenes={scenes} duration={duration}
             playhead={playhead} onSeek={setPlayhead}

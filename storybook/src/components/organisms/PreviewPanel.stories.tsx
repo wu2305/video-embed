@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, userEvent, within } from "storybook/test";
 import { PreviewPanel } from "./PreviewPanel";
-import { annotations, cookingHit, duration, hitFaces, hits, kitchenFaces, kitchenFrame, people, photoHit, presentingHit, scenes } from "../../mock/data";
+import { annotations, cookingHit, documentHit, duration, hitFaces, hits, kitchenFaces, kitchenFrame, people, photoHit, presentingHit, scenes } from "../../mock/data";
 import type { Hit } from "../../types";
 
 const meta = {
@@ -53,6 +53,27 @@ export const WithNoteOverlay: Story = {
 /** An image has no timeline and no seek. */
 export const Image: Story = {
   args: { hit: photoHit, position: 3, total: 4, frameSrc: photoHit.thumb_url!, people, faces: hitFaces(photoHit) },
+};
+
+/**
+ * A NAS document has no frame to show: the panel holds only its details. The
+ * matched-text slot stays in the component but is left empty here.
+ */
+export const Document: Story = {
+  args: { hit: { ...documentHit, ocr_text: "", asr_text: "" }, position: 2, total: 4 },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector(".mm-stage, img")).toBeNull();
+    await expect(within(canvasElement).getByRole("heading", { name: "recipe_notes.pdf" })).toBeVisible();
+  },
+};
+
+/** A document whose access was revoked says so under its name, with no text. */
+export const DocumentAccessRevoked: Story = {
+  args: { hit: { ...documentHit, ocr_text: "", asr_text: "" }, position: 2, total: 4, unavailable: "forbidden" },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole("alert")).toBeInTheDocument();
+    await expect(canvasElement.querySelector(".mm-transcript")).toBeNull();
+  },
 };
 
 /** The file's permissions changed since last night: no frame, no text, no Open clip. */

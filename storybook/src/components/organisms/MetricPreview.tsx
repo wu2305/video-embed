@@ -65,7 +65,7 @@ export function MetricPreview({ metric, reports = null, error = false, onRetry, 
 
       <section aria-label={t("metric.reports")} aria-busy={loading || undefined}>
         <div className="mm-metric-bar">
-          <h3>{metric.report_count === 0 ? t("card.noReports") : t("metric.reports")}</h3>
+          <h3>{t("metric.reports")}</h3>
           {metric.report_count >= FILTER_FROM && !error && (
             <Field label={t("metric.filter")}>
               <input type="search" value={filter} onChange={(e) => setFilter(e.target.value)} />

@@ -191,10 +191,12 @@ a, button, input, select, textarea, summary, [role=slider] { touch-action: manip
 .mm-why { margin: var(--space-2) 0 0; }
 .mm-skeleton .mm-body span { display: block; height: .75rem; border-radius: var(--radius-sm); background: var(--line); }
 .mm-skeleton .mm-body span:last-child { width: 60%; }
-.mm-archive .mm-body { padding-top: 12px; }
+/* Cards with no thumbnail frame (Archive records, NAS documents) lead with source and kind. */
+.mm-archive .mm-body, .mm-plain .mm-body { padding-top: 12px; }
 .mm-archive .mm-name { white-space: normal; }
-.mm-archive-head { display: flex; gap: var(--space-2); align-items: baseline; }
+.mm-archive-head, .mm-plain-head { display: flex; gap: var(--space-2); align-items: baseline; }
 .mm-archive-head .mm-source-name { color: var(--warn); }
+.mm-plain-head .mm-source-name { color: var(--good); }
 /* BI metric: the name opens the preview; each report opens in the BI platform. */
 .mm-metric .mm-source-name, .mm-metric-preview .mm-source-name { color: var(--accent-strong); }
 .mm-metric a { color: var(--accent); }
@@ -253,6 +255,8 @@ a.mm-button:hover { border-color: var(--muted); }
 .mm-tagger { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(240px, 1fr); gap: var(--space-4); align-items: start; }
 .mm-note-form { display: grid; gap: 12px; }
 .mm-preview { display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); gap: 16px; align-items: start; }
+/* A document has no frame to show: the details take the whole panel, at a reading width. */
+.mm-preview.mm-plain { grid-template-columns: minmax(0, var(--measure)); }
 .mm-preview aside { display: grid; gap: var(--space-3); }
 .mm-preview h2 { margin: 0; font-size: var(--text-lg); line-height: 1.25; overflow-wrap: anywhere; }
 .mm-nav { display: flex; gap: var(--space-3); align-items: center; justify-content: space-between; }

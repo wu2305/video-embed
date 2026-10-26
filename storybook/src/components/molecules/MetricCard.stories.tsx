@@ -18,10 +18,10 @@ export const ManyReports: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getAllByRole("listitem")).toHaveLength(3);
-    await expect(canvas.getByRole("link", { name: "Regional sales dashboard" })).toHaveAttribute("href", "https://bi.example.internal/reports/R-0981");
+    await expect(canvas.getByRole("link", { name: "Hotel portfolio dashboard" })).toHaveAttribute("href", "https://bi.example.internal/reports/R-0981");
     await expect(canvasElement).toHaveTextContent("+4 more");
-    await userEvent.click(canvas.getByRole("button", { name: "Net revenue" }));
-    await expect(args.onOpen).toHaveBeenCalledWith(expect.objectContaining({ metric_id: "fin.net_revenue" }));
+    await userEvent.click(canvas.getByRole("button", { name: "RevPAR" }));
+    await expect(args.onOpen).toHaveBeenCalledWith(expect.objectContaining({ metric_id: "hotel.revpar" }));
     await userEvent.click(canvas.getByRole("button", { name: "+4 more" }));
     await expect(args.onOpen).toHaveBeenCalledTimes(2);
   },
@@ -33,15 +33,6 @@ export const OneReport: Story = {
     await expect(within(canvasElement).getAllByRole("listitem")).toHaveLength(1);
     await expect(within(canvasElement).queryByText(/more/)).toBeNull();
     await expect(within(canvasElement).getAllByRole("button")).toHaveLength(1);
-  },
-};
-
-/** The metric exists but nothing uses it. */
-export const NoReports: Story = {
-  args: { metric: metricRecords[3]! },
-  play: async ({ canvasElement }) => {
-    await expect(canvasElement).toHaveTextContent("No reports use it.");
-    await expect(within(canvasElement).queryByRole("list")).toBeNull();
   },
 };
 
