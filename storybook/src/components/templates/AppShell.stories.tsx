@@ -24,8 +24,8 @@ export const ListPage: Story = { args: { actions: <Button variant="primary">Prim
 /** A detail page adds breadcrumbs and a two-column split. */
 export const DetailPage: Story = {
   args: {
-    current: "clip", title: "cooking_class_03.mp4",
-    crumbs: <><a href="#search">Search</a> / clip</>,
+    title: "Q3_budget_review.xlsx",
+    crumbs: <><a href="#search">Search</a> / file</>,
     children: (
       <div className="mm-split">
         <Panel>Main column</Panel>

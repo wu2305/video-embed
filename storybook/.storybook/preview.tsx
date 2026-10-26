@@ -86,7 +86,7 @@ const preview: Preview = {
         order: [
           "Overview", "Foundations", ["Colour", "Type", "Space and shape"],
           "Atoms", "Molecules", "Organisms", "Templates",
-          "Pages", ["Overview", "Prototype", "Search", "People", "Clip"], "Scenes",
+          "Pages", ["Overview", "Search"], "Scenes",
         ],
       },
     },

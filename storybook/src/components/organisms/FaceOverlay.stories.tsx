@@ -5,6 +5,8 @@ import { kitchenFaces, kitchenFrame, people } from "../../mock/data";
 
 const meta = {
   title: "Organisms/FaceOverlay",
+  // Media (faces, notes, clips): hidden, since no customer searches images, video or audio. Still tested.
+  tags: ["!dev", "!autodocs"],
   component: FaceOverlay,
   args: { faces: kitchenFaces, people },
   render: (args) => (

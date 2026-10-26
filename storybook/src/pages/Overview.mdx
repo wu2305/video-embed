@@ -8,33 +8,16 @@ import { PageGallery } from "./gallery/PageGallery";
 Every page, live, in both themes.
 
 <PageGallery groups={[
-  { title: "Start here", pages: [
-    { id: "pages-prototype--click-through", title: "Prototype" },
-  ] },
   { title: "Search", pages: [
     { id: "pages-search--first-visit", title: "First visit", note: "A search home: brand and one field" },
-    { id: "pages-search--results", title: "Results", note: "A name plus an action" },
-    { id: "pages-search--preview-open", title: "Preview", note: "The matched scene, faces named" },
-    { id: "pages-search--mixed-media", title: "Mixed media", note: "Video, photo, audio and documents" },
-    { id: "pages-search--both-sources", title: "Both sources", note: "NAS and Archive fused by rank" },
+    { id: "pages-search--results", title: "Results", note: "NAS and Archive fused by rank" },
+    { id: "pages-search--preview-open", title: "Preview", note: "A NAS document" },
+    { id: "pages-search--metric-preview-open", title: "Metric", note: "Every report that uses it" },
+    { id: "pages-search--three-sources", title: "Three sources", note: "NAS, Archive and BI" },
     { id: "pages-search--archive-down", title: "Archive down", note: "Partial results, with a warning" },
     { id: "pages-search--server-error", title: "Server error" },
   ] },
-  { title: "People", pages: [
-    { id: "pages-people--directory", title: "Directory", note: "Every face cluster, largest first" },
-    { id: "pages-people--named-person", title: "Named person", note: "Where they appear" },
-    { id: "pages-people--merge-warning", title: "Merge warning", note: "Reusing a name is a merge action" },
-    { id: "pages-people--confirm-and-undo-merge", title: "Confirm merge", note: "Both clusters named, then undo" },
-    { id: "pages-people--pending-faces", title: "Pending faces", note: "New faces wait for the next regroup" },
-  ] },
-  { title: "Clip", pages: [
-    { id: "pages-clip--video", title: "Video", note: "Matched scene, faces, notes, timeline" },
-    { id: "pages-clip--photo", title: "Photo", note: "No timeline; notes have no range" },
-    { id: "pages-clip--audio", title: "Audio", note: "Transcript carries the match" },
-  ] },
   { title: "On a phone", device: { width: 390, height: 844 }, pages: [
     { id: "pages-search--results", title: "Search" },
-    { id: "pages-people--directory", title: "People" },
-    { id: "pages-clip--video", title: "Clip" },
   ] },
 ]} />

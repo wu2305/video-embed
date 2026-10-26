@@ -2,14 +2,14 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, within } from "storybook/test";
 import { ResultGrid } from "./ResultGrid";
-import { archiveRecords, hits, metricRecords, people } from "../../mock/data";
+import { archiveRecords, documentHits as hits, metricRecords } from "../../mock/data";
 import { fuseByRank } from "../../lib/fuse";
 import type { Hit, SourceStatus } from "../../types";
 
 const meta = {
   title: "Organisms/ResultGrid",
   component: ResultGrid,
-  args: { results: hits, people, query: "Ana Ruiz is cooking" },
+  args: { results: hits, query: "budget" },
   render: (args) => {
     const [selected, setSelected] = useState<number | null>(args.selectedId ?? null);
     return <ResultGrid {...args} selectedId={selected} onOpen={(h: Hit) => setSelected(h.unit_id)} />;
@@ -32,19 +32,19 @@ export const Populated: Story = {
   },
 };
 /** NAS and Archive results fused by rank; source badges and a source filter appear. */
-export const BothSources: Story = { args: { results: fuseByRank([hits, archiveRecords.slice(0, 2)]), query: "cooking" } };
+export const BothSources: Story = { args: { results: fuseByRank([hits, archiveRecords.slice(0, 2)]), query: "budget" } };
 /** BI metrics with the reports that use them, fused with NAS hits and Archive records. */
 export const WithMetrics: Story = { args: { results: fuseByRank([hits, archiveRecords.slice(0, 1), metricRecords.slice(0, 2)]), query: "revenue" } };
 /** One source failed: show what the other returned, and say the list is incomplete. */
-export const SourceDown: Story = { args: { sources: archiveDown, query: "cooking" } };
+export const SourceDown: Story = { args: { sources: archiveDown, query: "budget" } };
 export const Loading: Story = { args: { loading: true, results: [] } };
-export const NoHits: Story = { args: { results: [], query: "Ana Ruiz is skydiving" } };
+export const NoHits: Story = { args: { results: [], query: "fleet insurance" } };
 /**
  * 200% zoom on a 640px window leaves 320 CSS pixels: one column, in Chinese, with both sources and the status line.
  * Nothing scrolls sideways.
  */
 export const Zoom200Chinese: Story = {
-  args: { results: fuseByRank([hits, archiveRecords.slice(0, 2), metricRecords.slice(0, 1)]), query: "做饭" },
+  args: { results: fuseByRank([hits, archiveRecords.slice(0, 2), metricRecords.slice(0, 1)]), query: "预算" },
   globals: { locale: "zh" },
   decorators: [(Story) => <div style={{ width: 320 }}><Story /></div>],
   play: async ({ canvasElement }) => {

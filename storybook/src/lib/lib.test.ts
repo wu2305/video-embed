@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { displayName, formatTime, parseTime } from "./format";
 import { parseQuery } from "./parseQuery";
 import { searchBiMock, searchGateway } from "../pages/search";
-import { archiveRecords, hits, metricRecords, people } from "../mock/data";
+import { archiveRecords, documentHits, hits, metricRecords, people } from "../mock/data";
 
 describe("formatTime / parseTime", () => {
   it("formats seconds as mm:ss and clamps negatives", () => {
@@ -49,10 +49,10 @@ describe("BI metric search", () => {
     expect(results.some((r) => r.source === "archive")).toBe(true);
   });
   it("asks only the sources the search type names", () => {
-    const videos = searchGateway(hits, archiveRecords, people, { query: "cooking", type: "video" }, {}, metricRecords);
-    expect(videos.sources.map((s) => s.source)).toEqual(["nas"]);
-    expect(videos.results.length).toBeGreaterThan(0);
-    expect(videos.results.every((r) => !r.source && r.kind === "video")).toBe(true);
+    const nas = searchGateway(documentHits, archiveRecords, people, { query: "budget", type: "nas" }, {}, metricRecords);
+    expect(nas.sources.map((s) => s.source)).toEqual(["nas"]);
+    expect(nas.results.length).toBeGreaterThan(0);
+    expect(nas.results.every((r) => !r.source)).toBe(true);
     const bi = searchGateway(hits, archiveRecords, people, { query: "cooking", type: "bi" }, { archive: true }, metricRecords);
     expect(bi.sources).toEqual([{ source: "bi", state: "ok", count: 1 }]);
     expect(bi.results.every((r) => r.source === "bi")).toBe(true);

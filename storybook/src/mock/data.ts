@@ -107,6 +107,43 @@ export const documentHit = hit(106, {
   ocr_text: "Garlic butter: 4 cloves, 80 g butter, rest 10 min",
 });
 
+/** NAS documents: the only NAS kind the console shows. Ids 201+ keep them apart from the media hits. */
+export const budgetDoc = hit(201, {
+  path: "/nas/finance/2025/Q3_budget_review.xlsx",
+  kind: "document",
+  score: 0.402,
+  similarity: 0.352,
+  text_bonus: 0.05,
+  ocr_text: "Q3 budget: headcount, spend and forecast by department",
+});
+
+export const bookingDoc = hit(202, {
+  path: "/nas/hotels/harbourview/group_booking_terms.pdf",
+  kind: "document",
+  score: 0.318,
+  similarity: 0.318,
+  ocr_text: "Groups of 10 rooms or more: 30% deposit, rooms released 21 days before arrival",
+});
+
+export const fareDoc = hit(203, {
+  path: "/nas/taxi/fleet/fare_schedule_2026.pdf",
+  kind: "document",
+  score: 0.291,
+  similarity: 0.291,
+  ocr_text: "Flag fall 13.00 · 2.30 per km · night surcharge 20% from 23:00",
+});
+
+export const budgetCopyDoc = hit(204, {
+  path: "/nas/backup/finance/Q3_budget_review (1).xlsx",
+  kind: "document",
+  score: 0.399,
+  similarity: 0.349,
+  is_master: false,
+  ocr_text: "Q3 budget: headcount, spend and forecast by department",
+});
+
+export const documentHits: Hit[] = [budgetDoc, bookingDoc, fareDoc, budgetCopyDoc];
+
 /** Local time, so "today" and "tonight" read the same in every time zone. */
 function at(y: number, m: number, d: number, h: number, min = 0): number {
   return Math.floor(new Date(y, m - 1, d, h, min).getTime() / 1000);
@@ -194,7 +231,7 @@ export const metricRecords: MetricRecord[] = [
 ];
 
 /** The signed-in user. Groups come from the IdP on every query. */
-export const viewer: Viewer = { name: "Mei Chen", groups: ["Marketing", "Media-Library"] };
+export const viewer: Viewer = { name: "Mei Chen", groups: ["Marketing"] };
 
 export const hits: Hit[] = [cookingHit, presentingHit, photoHit, copyHit];
 

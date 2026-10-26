@@ -5,6 +5,8 @@ import { people } from "../../mock/data";
 
 const meta = {
   title: "Organisms/AnnotationComposer",
+  // Media (faces, notes, clips): hidden, since no customer searches images, video or audio. Still tested.
+  tags: ["!dev", "!autodocs"],
   component: AnnotationComposer,
   args: { time: 44, scene: { start: 42, end: 71 }, inFrame: people.slice(0, 2), people, onSave: fn() },
   decorators: [(Story) => <div style={{ maxWidth: 420 }}><Story /></div>],

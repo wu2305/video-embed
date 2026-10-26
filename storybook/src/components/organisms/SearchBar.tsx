@@ -13,7 +13,7 @@ export interface SearchParams {
   type: SearchType;
 }
 
-const TYPES: readonly SearchType[] = ["all", "video", "image", "archive", "bi"];
+const TYPES: readonly SearchType[] = ["all", "nas", "archive", "bi"];
 
 export interface SearchBarProps {
   people: readonly Person[];
@@ -26,8 +26,8 @@ export interface SearchBarProps {
 }
 
 /**
- * The console form. People are named in the query itself ("Ana and Ben are
- * cooking"), never picked by cluster id; an unknown name blocks the search.
+ * The console form: the query, a limit and the source to search. A query that
+ * names an unknown person blocks the search.
  */
 export function SearchBar({ people, initialQuery = "", initialType = "all", busy = false, home = false, onSearch }: SearchBarProps) {
   const { t } = useI18n();

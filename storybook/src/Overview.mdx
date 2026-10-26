@@ -5,14 +5,17 @@ import { Meta } from "@storybook/addon-docs/blocks";
 # Unified Search component gallery
 
 Components for the Unified Search Gateway's console and the scenes in `STORYBOOK.md` at the repo root.
-The gateway searches the NAS media library (the `mmindex` index) and the Archive System in one query,
-filters every result to what the signed-in user may open, and is updated nightly
+The gateway searches the Archive System, NAS documents (the `mmindex` index) and a BI platform's metrics in one
+query, filters every result to what the signed-in user may open, and is updated nightly
 (`docs/UNIFIED_SEARCH_DESIGN.md`). The data is mocked, so no index, gateway or backend is needed.
+
+Image, video and audio search is hidden: the customer does not search media. Those components (faces, notes,
+clips, the People and Clip pages) stay in `src/` and in `npm test`, tagged `!dev` so the sidebar leaves them out.
 
 ## How the gallery is organised
 
-Atomic design, smallest first. Start at **Pages/Overview** to see every page at a glance, **Pages/Prototype**
-for a demo, and **Foundations** to build.
+Atomic design, smallest first. Start at **Pages/Overview** to see every page at a glance, and **Foundations**
+to build.
 
 Every story renders in a dark and a light theme. Switch with the **Theme** toolbar, or pick **Side by side**.
 
@@ -20,10 +23,10 @@ Every story renders in a dark and a light theme. Switch with the **Theme** toolb
 |---|---|---|
 | **Foundations** | Colour, Type, Space and shape | the tokens at the top of `styles.css` |
 | **Atoms** | `Button`, `Tag`, `Label`, `Chip`, `Kbd`, `Panel` | tokens only |
-| **Molecules** | `Field`, `FaceBox`, `ResultCard`, `ArchiveCard`, `Freshness`, `PersonCard`, `NoteItem`, `MetaList` | atoms |
-| **Organisms** | `TopBar`, `SearchBar`, `ResultGrid`, `PeopleGrid`, `FaceOverlay`, `FaceTagger`, `AnnotationTrack`, `AnnotationComposer`, `NoteList`, `PreviewPanel` | molecules and atoms |
+| **Molecules** | `Field`, `ResultCard`, `ArchiveCard`, `MetricCard`, `Freshness`, `MetaList` | atoms |
+| **Organisms** | `TopBar`, `SearchBar`, `ResultGrid`, `PreviewPanel`, `MetricPreview` | molecules and atoms |
 | **Templates** | `AppShell` | top bar, page header, body slot |
-| **Pages** | `Overview` (live previews), `Prototype`, `Search`, `People`, `Clip` | organisms in the shell, with mock state |
+| **Pages** | `Overview` (live previews), `Search` | organisms in the shell, with mock state |
 | **Scenes** | scenes 6 and 7 of `STORYBOOK.md`, which no page shows | organisms |
 
 Every story is also a test: `npm test` runs each one in Chromium, once per theme, including its `play`
@@ -33,13 +36,12 @@ Component stories hold the states and the interaction tests; the pages show each
 
 | Scene | Where to see it | Status in the repo |
 |---|---|---|
-| 1 · Name a face | Organisms/FaceTagger, Pages/People | **new.** The index stores no face boxes yet. |
-| 2 · Write on the video | Pages/Clip | **new.** Needs a sidecar notes store. |
-| 3 · Who is doing what | Pages/Search | **partial.** The card and grid match the console. Naming people in the query is new. |
-| 4 · More media, more sources | Pages/Search (Mixed media, Three sources) | **partial.** Images exist. Audio, documents and the Archive System are new. |
-| 5 · Preview | Pages/Search (Preview open) | **partial.** The console plays the source file but does not seek to the scene. |
+| 4 · More sources | Pages/Search (Results, Three sources) | **partial.** NAS documents, the Archive System and BI metrics are new. |
+| 5 · Preview | Pages/Search (Preview open) | **partial.** |
 | 6 · Only what you may open | Scenes/6 | **new.** No sign-in, ACL capture or query-time filtering yet. |
 | 7 · Today's files, tomorrow morning | Scenes/7 | **new.** The nightly incremental cycle is not built yet. |
+
+Scenes 1–3 (name a face, write on the video, who is doing what) are media scenes and are hidden.
 
 `src/types.ts` marks which `Hit` fields do not exist in `SearchHit.to_dict()` today. `ArchiveRecord`, `Viewer`
 and `IndexInfo` are all proposals: the Archive vendor's response shape is still to be confirmed.

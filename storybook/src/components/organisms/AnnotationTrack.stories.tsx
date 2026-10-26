@@ -6,6 +6,8 @@ import { annotations, duration, scenes } from "../../mock/data";
 
 const meta = {
   title: "Organisms/AnnotationTrack",
+  // Media (faces, notes, clips): hidden, since no customer searches images, video or audio. Still tested.
+  tags: ["!dev", "!autodocs"],
   component: AnnotationTrack,
   args: { duration, scenes, annotations, playhead: 50 },
   render: (args) => {

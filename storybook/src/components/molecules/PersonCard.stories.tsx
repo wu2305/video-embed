@@ -5,6 +5,8 @@ import { people, personSamples } from "../../mock/data";
 
 const meta = {
   title: "Molecules/PersonCard",
+  // Media (faces, notes, clips): hidden, since no customer searches images, video or audio. Still tested.
+  tags: ["!dev", "!autodocs"],
   component: PersonCard,
   args: { person: people[0]!, sampleSrc: personSamples["person-0003"], onOpen: fn() },
   decorators: [(Story) => <div style={{ width: 200 }}><Story /></div>],

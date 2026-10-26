@@ -14,10 +14,8 @@ type Story = StoryObj<typeof meta>;
 export const File: Story = {
   args: {
     items: [
-      ["path", <span className="mm-mono">/media/2025/cooking_class_03.mp4</span>],
-      ["kind", <Tag>video</Tag>],
-      ["duration", "03:00"],
-      ["scenes", "6"],
+      ["path", <span className="mm-mono">/nas/finance/2025/Q3_budget_review.xlsx</span>],
+      ["kind", <Tag>document</Tag>],
       ["copies", <Tag tone="warn">1 copy</Tag>],
     ],
   },

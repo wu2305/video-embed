@@ -9,6 +9,8 @@ import type { Hit, Person } from "../types";
 
 const meta = {
   title: "Pages/Prototype",
+  // Media (faces, notes, clips): hidden, since no customer searches images, video or audio. Still tested.
+  tags: ["!dev", "!autodocs"],
   parameters: {
     layout: "fullscreen",
     docs: { description: { component: "The three pages wired together for demos. Search both sources, open a NAS hit, open its clip, name people; names carry across pages." } },
